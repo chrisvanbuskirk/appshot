@@ -36,6 +36,7 @@ appshot clean --all # Remove all generated files including .appshot/
 
 # Custom Commands for Claude Code
 /commit <branch> "<message>" "<title>" "<body>"  # Create PR with lint & test checks
+/build                                           # Build and install appshot locally
 ```
 
 ## Architecture
@@ -141,3 +142,5 @@ appshot build --preset iphone-6-9-portrait,ipad-13-landscape
 appshot validate --fix  # Shows suggestions for invalid resolutions
 ```
 - Don't create PR's without my direction.
+- Never install libraries without asking.
+- NEVER INSTALL librsvg.  It's not necessary.
