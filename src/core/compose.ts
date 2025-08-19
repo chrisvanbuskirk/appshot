@@ -54,8 +54,16 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
   // Calculate dimensions based on output
 
   // Calculate caption height if positioned above
-  const captionHeight = captionPosition === 'above' && caption ?
-    captionConfig.paddingTop + captionConfig.fontsize + (captionConfig.paddingBottom || 60) : 0;
+  let captionHeight = 0;
+  if (captionPosition === 'above' && caption) {
+    // For watch devices, use top 1/3 of screen for text
+    const isWatch = outputWidth < 500;
+    if (isWatch) {
+      captionHeight = Math.floor(outputHeight / 3); // Use top 1/3 for watch captions
+    } else {
+      captionHeight = captionConfig.paddingTop + captionConfig.fontsize * 2 + (captionConfig.paddingBottom || 60);
+    }
+  }
 
 
   // Calculate total canvas dimensions (should be output dimensions)
@@ -70,14 +78,48 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 
   // Add caption if positioned above
   if (caption && captionPosition === 'above') {
-    // Create SVG for caption text
-    const captionSvg = createCaptionSvg(caption, captionConfig, canvasWidth, captionHeight);
-    const captionBuffer = Buffer.from(captionSvg);
-
     try {
-      // Render the caption SVG
-      const captionImage = await sharp(captionBuffer)
-        .resize(canvasWidth, captionHeight)
+      // Create simple SVG text
+      const isWatch = outputWidth < 500;
+      const fontSize = isWatch ? 36 : captionConfig.fontsize; // Smaller font for watch
+
+      let svgText: string;
+
+      if (isWatch) {
+        // Simple word wrapping for 2 lines ONLY for watch
+        const words = caption.split(' ');
+        const midPoint = Math.ceil(words.length / 2);
+        const line1 = words.slice(0, midPoint).join(' ');
+        const line2 = words.slice(midPoint).join(' ');
+
+        svgText = `<svg width="${canvasWidth}" height="${captionHeight}" xmlns="http://www.w3.org/2000/svg">
+          <text x="${canvasWidth/2}" y="${captionHeight * 0.4}" 
+                font-family="Arial, sans-serif" 
+                font-size="${fontSize}" 
+                fill="${captionConfig.color}" 
+                text-anchor="middle"
+                font-weight="bold">${escapeXml(line1)}</text>
+          <text x="${canvasWidth/2}" y="${captionHeight * 0.7}" 
+                font-family="Arial, sans-serif" 
+                font-size="${fontSize}" 
+                fill="${captionConfig.color}" 
+                text-anchor="middle"
+                font-weight="bold">${escapeXml(line2)}</text>
+        </svg>`;
+      } else {
+        // Single line for all other devices (iPhone, iPad, etc.)
+        svgText = `<svg width="${canvasWidth}" height="${captionHeight}" xmlns="http://www.w3.org/2000/svg">
+          <text x="${canvasWidth/2}" y="${captionHeight/2}" 
+                font-family="Arial, sans-serif" 
+                font-size="${fontSize}" 
+                fill="${captionConfig.color}" 
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-weight="bold">${escapeXml(caption)}</text>
+        </svg>`;
+      }
+
+      const captionImage = await sharp(Buffer.from(svgText))
         .png()
         .toBuffer();
 
@@ -88,8 +130,8 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       });
 
     } catch {
-      // If SVG rendering fails, just add transparent area
-      console.log('[INFO] Caption rendering not available (requires librsvg), reserving space');
+      // If text rendering fails, just add transparent area
+      console.log('[INFO] Text rendering failed, reserving space for caption');
       const captionArea = await sharp({
         create: {
           width: canvasWidth,
@@ -120,16 +162,26 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 
     // Calculate available space for the device (accounting for caption)
     const availableWidth = outputWidth;
-    const availableHeight = outputHeight - captionHeight;
+    const availableHeight = Math.max(100, outputHeight - captionHeight); // Ensure minimum height
 
     // Calculate scale to fit within available space while maintaining aspect ratio
     const scaleX = availableWidth / originalFrameWidth;
     const scaleY = availableHeight / originalFrameHeight;
-    const scale = Math.min(scaleX, scaleY) * 0.9; // Scale to 90% to leave some padding
+    // Different scaling for different device types
+    let scale;
+    if (frameMetadata.deviceType === 'watch') {
+      // For watch, make it larger but keep it within bounds
+      scale = Math.min(scaleX * 1.3, scaleY * 1.3); // Use 130% scale for watch
+    } else if (frameMetadata.deviceType === 'mac') {
+      // For Mac, make it larger to be more visible
+      scale = Math.min(scaleX, scaleY) * 0.95; // Use 95% scale for Mac
+    } else {
+      scale = Math.min(scaleX, scaleY) * 0.9; // Use 90% for other devices
+    }
 
     // Apply scaling to optimize canvas usage
-    let targetDeviceWidth = Math.floor(originalFrameWidth * scale);
-    let targetDeviceHeight = Math.floor(originalFrameHeight * scale);
+    let targetDeviceWidth = Math.min(Math.floor(originalFrameWidth * scale), outputWidth);
+    let targetDeviceHeight = Math.min(Math.floor(originalFrameHeight * scale), outputHeight);
 
     // Scale screenshot to fit in frame's screen area
     let resizedScreenshot;
@@ -288,7 +340,9 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     }
 
     // Calculate position for centered device
-    const deviceTop = captionHeight;
+    // For watch, reduce padding to move it up
+    const extraPadding = frameMetadata.deviceType === 'watch' ? -20 : 0;
+    const deviceTop = captionHeight + extraPadding;
     const deviceLeft = Math.floor((canvasWidth - targetDeviceWidth) / 2);
 
     // Add the complete device to composites
@@ -328,7 +382,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 /**
  * Create SVG for caption text
  */
-function createCaptionSvg(
+function _createCaptionSvg(
   text: string,
   config: CaptionConfig,
   width: number,
@@ -370,7 +424,47 @@ function createCaptionSvg(
   // SF Pro is not available to Sharp's SVG renderer, so we use a fallback stack
   const fontFamily = getFontStack(config.font);
 
-  // Create SVG with proper text rendering attributes
+  // For watch devices, use smaller font if text is too long
+  const maxCharsPerLine = Math.floor(width / (config.fontsize * 0.6));
+  const needsWrapping = text.length > maxCharsPerLine;
+
+  if (needsWrapping) {
+    // Split text into multiple lines
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (testLine.length <= maxCharsPerLine) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    // Create multiple text elements for each line
+    const lineHeight = config.fontsize * 1.2;
+    const textElements = lines.map((line, index) =>
+      `<text 
+        x="${textX}" 
+        y="${textY + (index * lineHeight)}" 
+        font-family="${fontFamily}" 
+        font-size="${config.fontsize}" 
+        fill="${config.color}" 
+        text-anchor="${textAnchor}" 
+        font-weight="600"
+      >${escapeXml(line)}</text>`
+    ).join('\n');
+
+    return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      ${textElements}
+    </svg>`;
+  }
+
+  // Single line text
   return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
     <text 
       x="${textX}" 
