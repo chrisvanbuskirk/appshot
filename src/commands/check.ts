@@ -11,16 +11,16 @@ export default function checkCmd() {
     .action(async (opts) => {
       try {
         console.log(pc.bold('Checking appshot project...\n'));
-        
+
         let errors = 0;
         let warnings = 0;
-        
+
         // Check config file
         console.log(pc.cyan('Configuration:'));
         try {
           const config = await loadConfig();
           console.log(pc.green('  ✓'), 'appshot.json found and valid');
-          
+
           // Check output directory
           if (!await fileExists(config.output)) {
             if (opts.fix) {
@@ -33,12 +33,12 @@ export default function checkCmd() {
           } else {
             console.log(pc.green('  ✓'), `Output directory exists: ${config.output}`);
           }
-          
+
           // Check device configurations
           console.log('\n' + pc.cyan('Devices:'));
           for (const [device, deviceConfig] of Object.entries(config.devices)) {
             console.log(`  ${device}:`);
-            
+
             // Check input directory
             const inputPath = path.resolve(deviceConfig.input);
             if (!await fileExists(inputPath)) {
@@ -54,7 +54,7 @@ export default function checkCmd() {
               const files = await fs.readdir(inputPath);
               const screenshots = files.filter(f => f.match(/\.(png|jpg|jpeg)$/i));
               console.log(pc.green('    ✓'), `${screenshots.length} screenshots found`);
-              
+
               // Check captions file
               const captionsPath = path.join(inputPath, 'captions.json');
               if (!await fileExists(captionsPath)) {
@@ -70,7 +70,7 @@ export default function checkCmd() {
               }
             }
           }
-          
+
           // Check frames directory
           console.log('\n' + pc.cyan('Frames:'));
           const framesPath = path.resolve(config.frames);
@@ -87,12 +87,12 @@ export default function checkCmd() {
             const frameFiles = frames.filter(f => f.match(/\.(png|jpg|jpeg)$/i));
             console.log(pc.green('  ✓'), `${frameFiles.length} frame files found`);
           }
-          
+
         } catch (error) {
           console.log(pc.red('  ✗'), error instanceof Error ? error.message : String(error));
           errors++;
         }
-        
+
         // Summary
         console.log('\n' + pc.bold('Summary:'));
         if (errors === 0 && warnings === 0) {
@@ -108,7 +108,7 @@ export default function checkCmd() {
             console.log(pc.dim('\nRun with --fix to attempt automatic fixes'));
           }
         }
-        
+
         if (errors > 0) {
           process.exit(1);
         }

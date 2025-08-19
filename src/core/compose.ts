@@ -46,18 +46,17 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 
   // Calculate dimensions
   let finalWidth = outputWidth;
-  let finalHeight = outputHeight;
-  
+
   // If we have a frame, determine the appropriate dimensions
   let frameWidth = frameMetadata?.frameWidth || outputWidth;
   let frameHeight = frameMetadata?.frameHeight || outputHeight;
-  
+
   // Ensure canvas is at least as large as the output dimensions
   frameWidth = Math.max(frameWidth, outputWidth);
   frameHeight = Math.max(frameHeight, outputHeight);
-  
+
   // Calculate caption height if positioned above
-  const captionHeight = captionPosition === 'above' && caption ? 
+  const captionHeight = captionPosition === 'above' && caption ?
     captionConfig.paddingTop + captionConfig.fontsize + (captionConfig.paddingBottom || 60) : 0;
 
   // If partial frame, we'll crop the bottom
@@ -73,7 +72,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 
   // Create gradient background
   const gradient = await renderGradient(canvasWidth, canvasHeight, gradientConfig);
-  
+
   // Start compositing
   const composites: sharp.OverlayOptions[] = [];
 
@@ -85,7 +84,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       canvasWidth,
       captionHeight
     );
-    
+
     composites.push({
       input: Buffer.from(captionSvg),
       top: 0,
@@ -97,29 +96,29 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     // Calculate scale factor if frame needs to be resized to fit output
     const originalFrameWidth = frameMetadata.frameWidth;
     const originalFrameHeight = frameMetadata.frameHeight;
-    
+
     // Determine target device size (may be smaller than frame if output is smaller)
     let targetDeviceWidth = Math.min(originalFrameWidth, outputWidth);
     let targetDeviceHeight = Math.min(originalFrameHeight, outputHeight);
-    
+
     // Calculate scale to fit within output dimensions while maintaining aspect ratio
     const scaleX = outputWidth / originalFrameWidth;
     const scaleY = (outputHeight - captionHeight) / originalFrameHeight;
     const scale = Math.min(1, Math.min(scaleX, scaleY)); // Never scale up, only down
-    
+
     if (scale < 1) {
       // Need to scale down the device
       targetDeviceWidth = Math.floor(originalFrameWidth * scale);
       targetDeviceHeight = Math.floor(originalFrameHeight * scale);
     }
-    
+
     // Scale screenshot to fit in frame's screen area (at original size first)
     const resizedScreenshot = await sharp(screenshot)
       .resize(frameMetadata.screenRect.width, frameMetadata.screenRect.height, {
         fit: 'fill'
       })
       .toBuffer();
-    
+
     // Composite screenshot into frame at original size
     let deviceComposite = await sharp({
       create: {
@@ -129,21 +128,21 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         background: { r: 0, g: 0, b: 0, alpha: 0 }
       }
     })
-    .png()
-    .composite([
-      {
-        input: resizedScreenshot,
-        left: frameMetadata.screenRect.x,
-        top: frameMetadata.screenRect.y
-      },
-      {
-        input: frame,
-        left: 0,
-        top: 0
-      }
-    ])
-    .toBuffer();
-    
+      .png()
+      .composite([
+        {
+          input: resizedScreenshot,
+          left: frameMetadata.screenRect.x,
+          top: frameMetadata.screenRect.y
+        },
+        {
+          input: frame,
+          left: 0,
+          top: 0
+        }
+      ])
+      .toBuffer();
+
     // If partial frame, crop the bottom
     if (partialFrame) {
       const cropHeight = Math.floor(originalFrameHeight * (1 - frameOffset / 100));
@@ -157,7 +156,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         .toBuffer();
       targetDeviceHeight = Math.floor(cropHeight * scale);
     }
-    
+
     // Scale the complete device if needed
     if (scale < 1) {
       deviceComposite = await sharp(deviceComposite)
@@ -166,11 +165,11 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         })
         .toBuffer();
     }
-    
+
     // Calculate position for centered device
     const deviceTop = captionHeight;
     const deviceLeft = Math.floor((canvasWidth - targetDeviceWidth) / 2);
-    
+
     // Add the complete device to composites
     composites.push({
       input: deviceComposite,
@@ -181,7 +180,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     // No frame, just use the screenshot
     const deviceTop = captionHeight;
     const deviceLeft = Math.floor((canvasWidth - outputWidth) / 2);
-    
+
     composites.push({
       input: screenshot,
       top: deviceTop,
@@ -197,7 +196,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       canvasWidth,
       canvasHeight
     );
-    
+
     composites.push({
       input: Buffer.from(overlayCaptionSvg),
       top: 0,
@@ -223,12 +222,12 @@ function createCaptionSvg(
   height: number
 ): string {
   const position = config.position || 'above';
-  
+
   // Calculate text position
   let textY: number;
   let textX: number;
   let textAnchor: string;
-  
+
   if (position === 'above') {
     // Position in the caption area
     textY = config.paddingTop + config.fontsize;
@@ -236,24 +235,24 @@ function createCaptionSvg(
     // Overlay position (legacy)
     textY = config.paddingTop + config.fontsize;
   }
-  
+
   // Handle text alignment
   switch (config.align) {
-    case 'left':
-      textX = config.paddingLeft || 50;
-      textAnchor = 'start';
-      break;
-    case 'right':
-      textX = width - (config.paddingRight || 50);
-      textAnchor = 'end';
-      break;
-    case 'center':
-    default:
-      textX = width / 2;
-      textAnchor = 'middle';
-      break;
+  case 'left':
+    textX = config.paddingLeft || 50;
+    textAnchor = 'start';
+    break;
+  case 'right':
+    textX = width - (config.paddingRight || 50);
+    textAnchor = 'end';
+    break;
+  case 'center':
+  default:
+    textX = width / 2;
+    textAnchor = 'middle';
+    break;
   }
-  
+
   return `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <text

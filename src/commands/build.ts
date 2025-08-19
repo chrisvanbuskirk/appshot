@@ -3,8 +3,6 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import pc from 'picocolors';
 import sharp from 'sharp';
-import type { AppshotConfig, CaptionsFile } from '../types.js';
-import { renderGradient, compositeScreenshot, addCaption } from '../core/render.js';
 import { loadConfig, loadCaptions } from '../core/files.js';
 import { autoSelectFrame, getImageDimensions, initializeFrameRegistry } from '../core/devices.js';
 import { composeAppStoreScreenshot } from '../core/compose.js';
@@ -24,33 +22,33 @@ export default function buildCmd() {
     .action(async (opts) => {
       try {
         console.log(pc.bold('Building screenshots...'));
-        
+
         // Load configuration
         const config = await loadConfig();
         const devices = opts.devices.split(',').map((d: string) => d.trim());
         const langs = opts.langs.split(',').map((l: string) => l.trim());
         const concurrency = parseInt(opts.concurrency, 10);
-        
+
         // Initialize frame registry from Frames.json if available
         await initializeFrameRegistry(path.resolve(config.frames));
-        
+
         // Ensure output directory exists
         await fs.mkdir(config.output, { recursive: true });
-        
+
         let totalProcessed = 0;
         let totalErrors = 0;
-        
+
         // Process each device
         for (const device of devices) {
           if (!config.devices[device]) {
             console.log(pc.yellow('⚠'), `Device '${device}' not configured in appshot.json`);
             continue;
           }
-          
+
           const deviceConfig = config.devices[device];
           const inputDir = path.resolve(deviceConfig.input);
           const outputDir = path.join(config.output, device);
-          
+
           // Check if input directory exists
           try {
             await fs.access(inputDir);
@@ -58,30 +56,30 @@ export default function buildCmd() {
             console.log(pc.yellow('⚠'), `Input directory not found: ${inputDir}`);
             continue;
           }
-          
+
           // Create device output directory
           await fs.mkdir(outputDir, { recursive: true });
-          
+
           // Get screenshots
           const screenshots = (await fs.readdir(inputDir))
             .filter(f => f.match(/\.(png|jpg|jpeg)$/i))
             .sort();
-          
+
           if (screenshots.length === 0) {
             console.log(pc.yellow('⚠'), `No screenshots found in ${inputDir}`);
             continue;
           }
-          
+
           // Load captions
           const captions = await loadCaptions(path.join(inputDir, 'captions.json'));
-          
+
           console.log(pc.cyan(`\n${device}:`), `Processing ${screenshots.length} screenshots`);
-          
+
           // Process each language
           for (const lang of langs) {
             const langDir = langs.length > 1 ? path.join(outputDir, lang) : outputDir;
             await fs.mkdir(langDir, { recursive: true });
-            
+
             // Process screenshots in batches
             for (let i = 0; i < screenshots.length; i += concurrency) {
               const batch = screenshots.slice(i, i + concurrency);
@@ -89,7 +87,7 @@ export default function buildCmd() {
                 try {
                   const inputPath = path.join(inputDir, screenshot);
                   const outputPath = path.join(langDir, screenshot);
-                  
+
                   // Get caption for this screenshot and language
                   const captionData = captions[screenshot];
                   let captionText = '';
@@ -98,21 +96,21 @@ export default function buildCmd() {
                   } else if (captionData && typeof captionData === 'object') {
                     captionText = captionData[lang] || '';
                   }
-                  
+
                   // Get screenshot dimensions and orientation
-                  const { width, height, orientation } = await getImageDimensions(inputPath);
-                  
+                  const { orientation } = await getImageDimensions(inputPath);
+
                   // Load screenshot
                   const screenshotBuffer = await sharp(inputPath).toBuffer();
-                  
+
                   // Parse resolution for output dimensions
                   const [outWidth, outHeight] = deviceConfig.resolution.split('x').map(Number);
-                  
+
                   // Auto-select frame if enabled
                   let frame = null;
                   let frameMetadata = null;
                   let frameUsed = false;
-                  
+
                   if (opts.frame !== false && (deviceConfig.autoFrame !== false)) {
                     const result = await autoSelectFrame(
                       inputPath,
@@ -120,16 +118,16 @@ export default function buildCmd() {
                       device as 'iphone' | 'ipad' | 'mac' | 'watch',
                       deviceConfig.preferredFrame
                     );
-                    
+
                     frame = result.frame;
                     frameMetadata = result.metadata;
-                    
+
                     if (frame && frameMetadata) {
                       frameUsed = true;
                       console.log(pc.dim(`    Using ${frameMetadata.displayName} ${orientation} frame`));
                     }
                   }
-                  
+
                   // Use the new compose function
                   const image = await composeAppStoreScreenshot({
                     screenshot: screenshotBuffer,
@@ -146,7 +144,7 @@ export default function buildCmd() {
                     outputWidth: outWidth,
                     outputHeight: outHeight
                   });
-                  
+
                   // Save final image
                   await sharp(image)
                     .resize(opts.preview ? 800 : undefined, undefined, {
@@ -154,8 +152,8 @@ export default function buildCmd() {
                       withoutEnlargement: true
                     })
                     .toFile(outputPath);
-                  
-                  console.log(pc.green('  ✓'), path.basename(outputPath), 
+
+                  console.log(pc.green('  ✓'), path.basename(outputPath),
                     pc.dim(`[${orientation}${frameUsed ? ', framed' : ''}${captionText ? ', captioned' : ''}]`));
                   totalProcessed++;
                 } catch (error) {
@@ -163,12 +161,12 @@ export default function buildCmd() {
                   totalErrors++;
                 }
               });
-              
+
               await Promise.all(promises);
             }
           }
         }
-        
+
         // Summary
         console.log('\n' + pc.bold('Build complete!'));
         console.log(pc.green(`✓ ${totalProcessed} screenshots processed`));
@@ -176,7 +174,7 @@ export default function buildCmd() {
           console.log(pc.red(`✗ ${totalErrors} errors`));
         }
         console.log(pc.dim(`Output directory: ${config.output}`));
-        
+
       } catch (error) {
         console.error(pc.red('Error:'), error instanceof Error ? error.message : String(error));
         process.exit(1);

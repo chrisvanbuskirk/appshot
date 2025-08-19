@@ -51,7 +51,7 @@ export default function captionCmd() {
         for (const file of files) {
           const existing = captions[file];
           let currentCaption = '';
-          
+
           if (typeof existing === 'string') {
             currentCaption = existing;
           } else if (existing && typeof existing === 'object') {
@@ -74,7 +74,7 @@ export default function captionCmd() {
 
         // Save updated captions
         await fs.writeFile(captionsFile, JSON.stringify(captions, null, 2), 'utf8');
-        
+
         console.log('\n' + pc.green('✓'), `Updated ${path.relative(process.cwd(), captionsFile)}`);
         console.log(pc.dim('Run'), pc.cyan('appshot build'), pc.dim('to generate screenshots with these captions'));
       } catch (error) {

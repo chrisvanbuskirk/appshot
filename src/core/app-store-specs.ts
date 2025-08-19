@@ -449,15 +449,15 @@ export function getPresetById(id: string): DevicePreset | undefined {
 export function validateResolution(width: number, height: number, deviceType: string): boolean {
   const presets = ALL_PRESETS[deviceType as keyof typeof ALL_PRESETS];
   if (!presets) return false;
-  
+
   for (const preset of presets) {
     const portrait = preset.resolutions.portrait?.split('x').map(Number);
     const landscape = preset.resolutions.landscape?.split('x').map(Number);
-    
+
     if (portrait && portrait[0] === width && portrait[1] === height) return true;
     if (landscape && landscape[0] === width && landscape[1] === height) return true;
   }
-  
+
   return false;
 }
 
@@ -467,14 +467,14 @@ export function validateResolution(width: number, height: number, deviceType: st
 export function recommendPreset(width: number, height: number, deviceType: string): DevicePreset | undefined {
   const presets = ALL_PRESETS[deviceType as keyof typeof ALL_PRESETS];
   if (!presets) return undefined;
-  
+
   for (const preset of presets) {
     const portrait = preset.resolutions.portrait?.split('x').map(Number);
     const landscape = preset.resolutions.landscape?.split('x').map(Number);
-    
+
     if (portrait && portrait[0] === width && portrait[1] === height) return preset;
     if (landscape && landscape[0] === width && landscape[1] === height) return preset;
   }
-  
+
   return undefined;
 }

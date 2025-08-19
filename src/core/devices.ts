@@ -60,7 +60,7 @@ export let frameRegistry: DeviceFrame[] = [
     screenRect: { x: 100, y: 150, width: 750, height: 1334 },
     deviceType: 'iphone'
   },
-  
+
   // iPad frames
   {
     name: 'ipad-pro-12-portrait',
@@ -98,7 +98,7 @@ export let frameRegistry: DeviceFrame[] = [
     screenRect: { x: 150, y: 100, width: 2388, height: 1668 },
     deviceType: 'ipad'
   },
-  
+
   // Mac frames (always landscape)
   {
     name: 'macbook-pro-16',
@@ -127,7 +127,7 @@ export let frameRegistry: DeviceFrame[] = [
     screenRect: { x: 200, y: 200, width: 4480, height: 2520 },
     deviceType: 'mac'
   },
-  
+
   // Watch frames (always portrait)
   {
     name: 'watch-ultra-2',
@@ -164,7 +164,7 @@ export async function getImageDimensions(imagePath: string): Promise<{ width: nu
   const width = metadata.width || 0;
   const height = metadata.height || 0;
   const orientation = detectOrientation(width, height);
-  
+
   return { width, height, orientation };
 }
 
@@ -178,42 +178,42 @@ export function findBestFrame(
   preferredFrame?: string
 ): DeviceFrame | null {
   const orientation = detectOrientation(screenshotWidth, screenshotHeight);
-  
+
   // If preferred frame specified and matches orientation, use it
   if (preferredFrame) {
-    const preferred = frameRegistry.find(f => 
-      f.name === preferredFrame && 
+    const preferred = frameRegistry.find(f =>
+      f.name === preferredFrame &&
       f.orientation === orientation &&
       f.deviceType === deviceType
     );
     if (preferred) return preferred;
   }
-  
+
   // Find frames matching device type and orientation
-  const candidates = frameRegistry.filter(f => 
-    f.deviceType === deviceType && 
+  const candidates = frameRegistry.filter(f =>
+    f.deviceType === deviceType &&
     f.orientation === orientation
   );
-  
+
   if (candidates.length === 0) return null;
-  
+
   // Calculate aspect ratio of screenshot
   const aspectRatio = screenshotWidth / screenshotHeight;
-  
+
   // Find frame with closest aspect ratio match
   let bestFrame = candidates[0];
   let bestDiff = Math.abs((bestFrame.screenRect.width / bestFrame.screenRect.height) - aspectRatio);
-  
+
   for (const frame of candidates) {
     const frameAspectRatio = frame.screenRect.width / frame.screenRect.height;
     const diff = Math.abs(frameAspectRatio - aspectRatio);
-    
+
     if (diff < bestDiff) {
       bestDiff = diff;
       bestFrame = frame;
     }
   }
-  
+
   return bestFrame;
 }
 
@@ -224,7 +224,7 @@ export async function initializeFrameRegistry(framesDir: string): Promise<void> 
   try {
     const framesJsonPath = path.join(framesDir, 'Frames.json');
     await fs.access(framesJsonPath);
-    
+
     // Frames.json exists, build dynamic registry
     console.log('Loading frames from Frames.json...');
     const dynamicRegistry = await buildFrameRegistry(framesDir);
@@ -246,7 +246,7 @@ export async function loadFrame(framePath: string, frameName: string): Promise<B
     // First try to find frame by originalName (for Frames.json compatibility)
     const frame = frameRegistry.find(f => f.name === frameName);
     const fileName = frame?.originalName || frameName;
-    
+
     // Try with .png extension
     let fullPath = path.join(framePath, `${fileName}.png`);
     try {
@@ -273,17 +273,17 @@ export async function autoSelectFrame(
   try {
     // Get screenshot dimensions
     const { width, height } = await getImageDimensions(screenshotPath);
-    
+
     // Find best matching frame
     const frameMetadata = findBestFrame(width, height, deviceType, preferredFrame);
-    
+
     if (!frameMetadata) {
       return { frame: null, metadata: null };
     }
-    
+
     // Try to load the frame image
     const frame = await loadFrame(framesDir, frameMetadata.name);
-    
+
     return { frame, metadata: frameMetadata };
   } catch (error) {
     console.error('Error auto-selecting frame:', error);
