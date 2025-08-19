@@ -218,22 +218,51 @@ export function findBestFrame(
 }
 
 /**
+ * Get the bundled frames directory path
+ */
+function getBundledFramesPath(): string {
+  // When running from installed package, frames are in node_modules/appshot/frames
+  // When running in development, frames are in the project root
+  const dirname = path.dirname(new URL(import.meta.url).pathname);
+  const projectRoot = path.resolve(dirname, '..', '..');
+  return path.join(projectRoot, 'frames');
+}
+
+/**
  * Initialize frame registry from Frames.json if available
  */
 export async function initializeFrameRegistry(framesDir: string): Promise<void> {
+  let effectiveFramesDir = framesDir;
+  
   try {
+    // First try the configured frames directory
     const framesJsonPath = path.join(framesDir, 'Frames.json');
     await fs.access(framesJsonPath);
-
-    // Frames.json exists, build dynamic registry
-    console.log('Loading frames from Frames.json...');
-    const dynamicRegistry = await buildFrameRegistry(framesDir);
+    console.log('Loading frames from project directory...');
+  } catch {
+    // Fall back to bundled frames
+    const bundledFramesDir = getBundledFramesPath();
+    try {
+      const bundledFramesJsonPath = path.join(bundledFramesDir, 'Frames.json');
+      await fs.access(bundledFramesJsonPath);
+      effectiveFramesDir = bundledFramesDir;
+      console.log('Using bundled frames (project frames not found)...');
+    } catch {
+      // No frames available, use default registry
+      console.log('Using default frame registry');
+      return;
+    }
+  }
+  
+  // Load frames from the effective directory
+  try {
+    const dynamicRegistry = await buildFrameRegistry(effectiveFramesDir);
     if (dynamicRegistry.length > 0) {
       frameRegistry = dynamicRegistry;
-      console.log(`Loaded ${frameRegistry.length} frames from Frames.json`);
+      console.log(`Loaded ${frameRegistry.length} frames from ${effectiveFramesDir === framesDir ? 'project' : 'bundled'} Frames.json`);
     }
-  } catch {
-    // Frames.json doesn't exist, use default registry
+  } catch (error) {
+    console.error('Failed to build frame registry:', error);
     console.log('Using default frame registry');
   }
 }
@@ -242,23 +271,39 @@ export async function initializeFrameRegistry(framesDir: string): Promise<void> 
  * Load frame image from disk
  */
 export async function loadFrame(framePath: string, frameName: string): Promise<Buffer | null> {
-  try {
-    // First try to find frame by originalName (for Frames.json compatibility)
-    const frame = frameRegistry.find(f => f.name === frameName);
-    const fileName = frame?.originalName || frameName;
+  // First try to find frame by originalName (for Frames.json compatibility)
+  const frame = frameRegistry.find(f => f.name === frameName);
+  const fileName = frame?.originalName || frameName;
 
-    // Try with .png extension
-    let fullPath = path.join(framePath, `${fileName}.png`);
+  // Try loading from provided path first
+  const tryLoadFrom = async (basePath: string): Promise<Buffer | null> => {
     try {
-      return await fs.readFile(fullPath);
+      // Try with .png extension
+      let fullPath = path.join(basePath, `${fileName}.png`);
+      try {
+        return await fs.readFile(fullPath);
+      } catch {
+        // Try without modification (in case the name already has extension)
+        fullPath = path.join(basePath, fileName);
+        return await fs.readFile(fullPath);
+      }
     } catch {
-      // Try without modification (in case the name already has extension)
-      fullPath = path.join(framePath, fileName);
-      return await fs.readFile(fullPath);
+      return null;
     }
-  } catch {
-    return null;
+  };
+
+  // Try provided frames directory first
+  let result = await tryLoadFrom(framePath);
+  if (result) return result;
+
+  // Fall back to bundled frames
+  const bundledFramesDir = getBundledFramesPath();
+  if (bundledFramesDir !== framePath) {
+    result = await tryLoadFrom(bundledFramesDir);
+    if (result) return result;
   }
+
+  return null;
 }
 
 /**

@@ -70,8 +70,9 @@ export default function buildCmd() {
             continue;
           }
 
-          // Load captions
-          const captions = await loadCaptions(path.join(inputDir, 'captions.json'));
+          // Load captions from .appshot/captions/
+          const captionsPath = path.join(process.cwd(), '.appshot', 'captions', `${device}.json`);
+          const captions = await loadCaptions(captionsPath);
 
           console.log(pc.cyan(`\n${device}:`), `Processing ${screenshots.length} screenshots`);
 
