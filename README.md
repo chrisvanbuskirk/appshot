@@ -155,6 +155,13 @@ Options:
 ### `appshot specs`
 Display device specifications and resolutions.
 
+### `appshot clean`
+Remove generated screenshots and temporary files.
+
+Options:
+- `--all` - Remove all generated files including .appshot/ directory
+- `--force` - Skip confirmation prompt
+
 Options:
 - `--device <name>` - Filter by device type
 - `--json` - Output as JSON
