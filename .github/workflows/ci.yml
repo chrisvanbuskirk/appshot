@@ -84,9 +84,37 @@ jobs:
           cd examples/minimal-project
           # Add sample screenshots for testing
           mkdir -p screenshots/iphone screenshots/ipad
-          # Create test images using ImageMagick (available on GitHub runners)
-          convert -size 1290x2796 xc:blue -pointsize 100 -draw "text 400,1400 'Test iPhone'" screenshots/iphone/test.png
-          convert -size 2048x2732 xc:green -pointsize 100 -draw "text 800,1400 'Test iPad'" screenshots/ipad/test.png
+          # Create test images using Node.js script
+          cat > create-test-images.js << 'EOF'
+          import sharp from 'sharp';
+          
+          // Create iPhone test image
+          await sharp({
+            create: {
+              width: 1290,
+              height: 2796,
+              channels: 4,
+              background: { r: 0, g: 0, b: 255, alpha: 1 }
+            }
+          })
+          .png()
+          .toFile('screenshots/iphone/test.png');
+          
+          // Create iPad test image
+          await sharp({
+            create: {
+              width: 2048,
+              height: 2732,
+              channels: 4,
+              background: { r: 0, g: 255, b: 0, alpha: 1 }
+            }
+          })
+          .png()
+          .toFile('screenshots/ipad/test.png');
+          
+          console.log('Test images created');
+          EOF
+          node create-test-images.js
       
       - name: Build example screenshots
         run: |

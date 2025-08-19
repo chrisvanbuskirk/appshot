@@ -10,7 +10,9 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:watch": "vitest",
     "prepare": "npm run build"
   },
   "dependencies": {

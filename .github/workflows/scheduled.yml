@@ -37,9 +37,23 @@ jobs:
       - name: Test example project
         run: |
           cd examples/minimal-project
-          # Create test images
+          # Create test images using sharp
           mkdir -p screenshots/iphone
-          convert -size 1290x2796 xc:blue screenshots/iphone/test.png 2>/dev/null || echo "ImageMagick not available"
+          node -e "
+          const sharp = require('sharp');
+          sharp({
+            create: {
+              width: 1290,
+              height: 2796,
+              channels: 4,
+              background: { r: 0, g: 0, b: 255, alpha: 1 }
+            }
+          })
+          .png()
+          .toFile('screenshots/iphone/test.png')
+          .then(() => console.log('Test image created'))
+          .catch(console.error);
+          "
           # Build
           node ../../dist/cli.js build --devices iphone
           test -d final
@@ -103,11 +117,21 @@ jobs:
       - name: Measure build performance
         run: |
           cd examples/minimal-project
-          # Create test images
+          # Create test images using Node.js
           mkdir -p screenshots/iphone screenshots/ipad
-          convert -size 1290x2796 xc:blue screenshots/iphone/test1.png 2>/dev/null || echo "ImageMagick not available"
-          convert -size 1290x2796 xc:red screenshots/iphone/test2.png 2>/dev/null || echo "ImageMagick not available"
-          convert -size 2048x2732 xc:green screenshots/ipad/test1.png 2>/dev/null || echo "ImageMagick not available"
+          node -e "
+          const sharp = require('sharp');
+          const fs = require('fs');
+          
+          Promise.all([
+            sharp({ create: { width: 1290, height: 2796, channels: 4, background: { r: 0, g: 0, b: 255, alpha: 1 } } })
+              .png().toFile('screenshots/iphone/test1.png'),
+            sharp({ create: { width: 1290, height: 2796, channels: 4, background: { r: 255, g: 0, b: 0, alpha: 1 } } })
+              .png().toFile('screenshots/iphone/test2.png'),
+            sharp({ create: { width: 2048, height: 2732, channels: 4, background: { r: 0, g: 255, b: 0, alpha: 1 } } })
+              .png().toFile('screenshots/ipad/test1.png')
+          ]).then(() => console.log('Test images created'));
+          "
           echo "Running performance test..."
           start=$(date +%s)
           node ../../dist/cli.js build --devices iphone,ipad
