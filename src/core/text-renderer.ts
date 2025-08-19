@@ -22,19 +22,19 @@ export async function renderTextBitmap(
   const validateColor = (color: string): string => {
     // Remove any whitespace and convert to lowercase
     const clean = color.trim().toLowerCase();
-    
+
     // Check if it's a valid hex color
     const hexPattern = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/;
     if (hexPattern.test(clean)) {
       return clean.startsWith('#') ? clean : `#${clean}`;
     }
-    
+
     // Check if it's a valid named color (basic set)
     const namedColors = ['black', 'white', 'red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'gray', 'grey'];
     if (namedColors.includes(clean)) {
       return clean;
     }
-    
+
     // Default to black if invalid
     console.warn(`Invalid color "${color}" provided, using default #000000`);
     return '#000000';
