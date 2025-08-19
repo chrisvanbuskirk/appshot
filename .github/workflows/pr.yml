@@ -26,39 +26,12 @@ jobs:
       
       - name: Check bundle size
         run: |
-          echo "Bundle size report:"
+          echo "## 📦 Bundle Size Report"
+          echo "Total dist size:"
           du -sh dist/
-          find dist -name "*.js" -exec du -h {} \;
-      
-      - name: Comment PR with size report
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const { execSync } = require('child_process');
-            
-            const sizeReport = execSync('du -sh dist/').toString();
-            const files = execSync('find dist -name "*.js" -exec du -h {} \\;').toString();
-            
-            const body = `## 📦 Bundle Size Report
-            
-            Total dist size: ${sizeReport}
-            
-            <details>
-            <summary>File sizes</summary>
-            
-            \`\`\`
-            ${files}
-            \`\`\`
-            </details>`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
+          echo ""
+          echo "File sizes:"
+          find dist -name "*.js" -exec du -h {} \; | sort -h
 
   integration-test:
     name: Integration Test
