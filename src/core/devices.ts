@@ -179,14 +179,20 @@ export function findBestFrame(
 ): DeviceFrame | null {
   const orientation = detectOrientation(screenshotWidth, screenshotHeight);
 
-  // If preferred frame specified and matches orientation, use it
+  // If preferred frame specified, check if it matches orientation
   if (preferredFrame) {
-    const preferred = frameRegistry.find(f =>
-      f.name === preferredFrame &&
-      f.orientation === orientation &&
-      f.deviceType === deviceType
-    );
-    if (preferred) return preferred;
+    const preferred = frameRegistry.find(f => f.name === preferredFrame);
+    if (preferred) {
+      // Warn if orientation mismatch
+      if (preferred.orientation !== orientation) {
+        console.warn(
+          `Warning: Preferred frame '${preferredFrame}' is ${preferred.orientation} but screenshot is ${orientation}`
+        );
+        // Don't use mismatched frame
+      } else if (preferred.deviceType === deviceType) {
+        return preferred;
+      }
+    }
   }
 
   // Find frames matching device type and orientation
@@ -195,7 +201,12 @@ export function findBestFrame(
     f.orientation === orientation
   );
 
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) {
+    console.warn(
+      `No ${orientation} frames found for ${deviceType}. Frame will be skipped.`
+    );
+    return null;
+  }
 
   // Calculate aspect ratio of screenshot
   const aspectRatio = screenshotWidth / screenshotHeight;
@@ -212,6 +223,15 @@ export function findBestFrame(
       bestDiff = diff;
       bestFrame = frame;
     }
+  }
+
+  // Warn if aspect ratio is significantly different (>10% difference)
+  const finalAspectRatio = bestFrame.screenRect.width / bestFrame.screenRect.height;
+  const percentDiff = Math.abs(finalAspectRatio - aspectRatio) / aspectRatio * 100;
+  if (percentDiff > 10) {
+    console.warn(
+      `Warning: Best matching frame has ${percentDiff.toFixed(1)}% aspect ratio difference`
+    );
   }
 
   return bestFrame;

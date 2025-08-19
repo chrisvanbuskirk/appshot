@@ -241,19 +241,22 @@ function createCaptionSvg(
     break;
   }
 
-  return `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <text
-        x="${textX}"
-        y="${textY}"
-        font-family="${config.font}"
-        font-size="${config.fontsize}"
-        fill="${config.color}"
-        text-anchor="${textAnchor}"
-        font-weight="600"
-      >${escapeXml(text)}</text>
-    </svg>
-  `;
+  // Use a safe font stack that Sharp can render properly
+  // SF Pro is not available to Sharp's SVG renderer, so we use a fallback stack
+  const fontFamily = getFontStack(config.font);
+
+  // Create SVG with proper text rendering attributes
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <text 
+      x="${textX}" 
+      y="${textY}" 
+      font-family="${fontFamily}" 
+      font-size="${config.fontsize}" 
+      fill="${config.color}" 
+      text-anchor="${textAnchor}" 
+      font-weight="600"
+    >${escapeXml(text)}</text>
+  </svg>`;
 }
 
 function escapeXml(text: string): string {
@@ -263,4 +266,22 @@ function escapeXml(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+/**
+ * Get a safe font stack that Sharp's SVG renderer can use
+ */
+function getFontStack(requestedFont: string): string {
+  // Map common macOS fonts to web-safe alternatives
+  // Note: Using single quotes inside to avoid XML attribute quote conflicts
+  const fontMap: Record<string, string> = {
+    'SF Pro': "system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+    'SF Pro Display': "system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+    'SF Pro Text': "system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+    'San Francisco': "system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+    'New York': "Georgia, 'Times New Roman', Times, serif"
+  };
+
+  // Return the mapped font stack or use the requested font with fallbacks
+  return fontMap[requestedFont] || `'${requestedFont}', system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif`;
 }
