@@ -105,7 +105,27 @@ export default function buildCmd() {
                   const screenshotBuffer = await sharp(inputPath).toBuffer();
 
                   // Parse resolution for output dimensions
-                  const [outWidth, outHeight] = deviceConfig.resolution.split('x').map(Number);
+                  const [configWidth, configHeight] = deviceConfig.resolution.split('x').map(Number);
+                  
+                  // Ensure output dimensions match screenshot orientation
+                  let outWidth: number;
+                  let outHeight: number;
+                  
+                  if (orientation === 'portrait') {
+                    // For portrait, ensure height > width
+                    outWidth = Math.min(configWidth, configHeight);
+                    outHeight = Math.max(configWidth, configHeight);
+                  } else {
+                    // For landscape, ensure width > height
+                    outWidth = Math.max(configWidth, configHeight);
+                    outHeight = Math.min(configWidth, configHeight);
+                  }
+                  
+                  // Warn if orientation mismatch detected
+                  const configOrientation = configWidth > configHeight ? 'landscape' : 'portrait';
+                  if (configOrientation !== orientation) {
+                    console.log(pc.yellow('    ⚠'), pc.dim(`Config specifies ${configOrientation} (${deviceConfig.resolution}) but screenshot is ${orientation} - auto-adjusting`));
+                  }
 
                   // Auto-select frame if enabled
                   let frame = null;
