@@ -6,12 +6,13 @@ import type { AppshotConfig } from '../types.js';
 
 export default function initCmd() {
   const cmd = new Command('init')
-    .description('Scaffold appshot.json and per-device captions.json files')
+    .description('Scaffold appshot configuration and per-device captions files')
     .option('--force', 'overwrite existing files')
     .action(async (opts) => {
       try {
         const root = process.cwd();
-        const configPath = path.join(root, 'appshot.json');
+        const appshotDir = path.join(root, '.appshot');
+        const configPath = path.join(appshotDir, 'config.json');
         const devices = ['iphone', 'ipad', 'mac', 'watch'];
 
         const scaffold: AppshotConfig = {
@@ -36,10 +37,13 @@ export default function initCmd() {
           }
         };
 
+        // Create .appshot directory
+        await fs.mkdir(appshotDir, { recursive: true });
+
         if (!opts.force) {
           try {
             await fs.access(configPath);
-            console.error(pc.red('Error:'), 'appshot.json already exists (use --force to overwrite)');
+            console.error(pc.red('Error:'), '.appshot/config.json already exists (use --force to overwrite)');
             process.exit(1);
           } catch {
             // File doesn't exist, proceed
@@ -47,14 +51,18 @@ export default function initCmd() {
         }
 
         await fs.writeFile(configPath, JSON.stringify(scaffold, null, 2), 'utf8');
-        console.log(pc.green('✓'), 'Created appshot.json');
+        console.log(pc.green('✓'), 'Created .appshot/config.json');
 
         for (const device of devices) {
           const dir = path.join(root, 'screenshots', device);
           await fs.mkdir(dir, { recursive: true });
           console.log(pc.green('✓'), `Created ${path.relative(root, dir)}/`);
 
-          const captionsPath = path.join(dir, 'captions.json');
+          // Put captions in .appshot/captions/
+          const captionsPath = path.join(appshotDir, 'captions', `${device}.json`);
+          // Create captions directory
+          await fs.mkdir(path.dirname(captionsPath), { recursive: true });
+
           try {
             await fs.access(captionsPath);
             if (!opts.force) {

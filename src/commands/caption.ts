@@ -13,7 +13,7 @@ export default function captionCmd() {
     .action(async ({ device, lang }) => {
       try {
         const dir = path.join(process.cwd(), 'screenshots', device);
-        const captionsFile = path.join(dir, 'captions.json');
+        const captionsFile = path.join(process.cwd(), '.appshot', 'captions', `${device}.json`);
 
         // Check if directory exists
         try {

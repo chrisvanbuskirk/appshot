@@ -44,31 +44,16 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
   const partialFrame = deviceConfig.partialFrame || false;
   const frameOffset = deviceConfig.frameOffset || 25; // Default 25% cut off
 
-  // Calculate dimensions
-  let finalWidth = outputWidth;
-
-  // If we have a frame, determine the appropriate dimensions
-  let frameWidth = frameMetadata?.frameWidth || outputWidth;
-  let frameHeight = frameMetadata?.frameHeight || outputHeight;
-
-  // Ensure canvas is at least as large as the output dimensions
-  frameWidth = Math.max(frameWidth, outputWidth);
-  frameHeight = Math.max(frameHeight, outputHeight);
+  // Calculate dimensions based on output
 
   // Calculate caption height if positioned above
   const captionHeight = captionPosition === 'above' && caption ?
     captionConfig.paddingTop + captionConfig.fontsize + (captionConfig.paddingBottom || 60) : 0;
 
-  // If partial frame, we'll crop the bottom
-  let frameCropBottom = 0;
-  if (partialFrame && frameMetadata) {
-    frameCropBottom = Math.floor(frameHeight * (frameOffset / 100));
-  }
 
-  // Calculate total canvas dimensions
-  const effectiveFrameHeight = partialFrame ? frameHeight - frameCropBottom : frameHeight;
-  const canvasHeight = captionHeight + effectiveFrameHeight;
-  const canvasWidth = Math.max(finalWidth, frameWidth);
+  // Calculate total canvas dimensions (should be output dimensions)
+  const canvasWidth = outputWidth;
+  const canvasHeight = outputHeight;
 
   // Create gradient background
   const gradient = await renderGradient(canvasWidth, canvasHeight, gradientConfig);
@@ -97,26 +82,28 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     const originalFrameWidth = frameMetadata.frameWidth;
     const originalFrameHeight = frameMetadata.frameHeight;
 
-    // Determine target device size (may be smaller than frame if output is smaller)
-    let targetDeviceWidth = Math.min(originalFrameWidth, outputWidth);
-    let targetDeviceHeight = Math.min(originalFrameHeight, outputHeight);
+    // Calculate available space for the device (accounting for caption)
+    const availableWidth = outputWidth;
+    const availableHeight = outputHeight - captionHeight;
 
-    // Calculate scale to fit within output dimensions while maintaining aspect ratio
-    const scaleX = outputWidth / originalFrameWidth;
-    const scaleY = (outputHeight - captionHeight) / originalFrameHeight;
-    const scale = Math.min(1, Math.min(scaleX, scaleY)); // Never scale up, only down
+    // Calculate scale to fit within available space while maintaining aspect ratio
+    const scaleX = availableWidth / originalFrameWidth;
+    const scaleY = availableHeight / originalFrameHeight;
+    const scale = Math.min(scaleX, scaleY) * 0.9; // Scale to 90% to leave some padding
 
-    if (scale < 1) {
-      // Need to scale down the device
-      targetDeviceWidth = Math.floor(originalFrameWidth * scale);
-      targetDeviceHeight = Math.floor(originalFrameHeight * scale);
-    }
+    // Apply scaling to optimize canvas usage
+    let targetDeviceWidth = Math.floor(originalFrameWidth * scale);
+    let targetDeviceHeight = Math.floor(originalFrameHeight * scale);
 
-    // Scale screenshot to fit in frame's screen area (at original size first)
+    // Scale screenshot to fit in frame's screen area
     const resizedScreenshot = await sharp(screenshot)
-      .resize(frameMetadata.screenRect.width, frameMetadata.screenRect.height, {
-        fit: 'fill'
-      })
+      .resize(
+        frameMetadata.screenRect.width,
+        frameMetadata.screenRect.height,
+        {
+          fit: 'fill'
+        }
+      )
       .toBuffer();
 
     // Composite screenshot into frame at original size
@@ -157,11 +144,12 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       targetDeviceHeight = Math.floor(cropHeight * scale);
     }
 
-    // Scale the complete device if needed
-    if (scale < 1) {
+    // Scale the complete device if needed (now scales up or down)
+    if (scale !== 1) {
       deviceComposite = await sharp(deviceComposite)
         .resize(targetDeviceWidth, targetDeviceHeight, {
-          fit: 'fill'
+          fit: 'inside',  // Preserve aspect ratio
+          withoutEnlargement: false  // Allow scaling up
         })
         .toBuffer();
     }

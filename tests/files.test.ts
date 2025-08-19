@@ -29,7 +29,7 @@ describe('files', () => {
   });
 
   describe('loadConfig', () => {
-    it('should load valid appshot.json', async () => {
+    it('should load valid .appshot/config.json', async () => {
       const config = {
         output: './final',
         frames: './frames',
@@ -40,7 +40,10 @@ describe('files', () => {
         }
       };
       
-      const configPath = path.join(tempDir, 'appshot.json');
+      // Create .appshot directory and config.json
+      const appshotDir = path.join(tempDir, '.appshot');
+      await fs.mkdir(appshotDir, { recursive: true });
+      const configPath = path.join(appshotDir, 'config.json');
       await fs.writeFile(configPath, JSON.stringify(config));
       
       // Change to tempDir for loadConfig to work
@@ -54,24 +57,26 @@ describe('files', () => {
       }
     });
 
-    it('should throw error when appshot.json not found', async () => {
+    it('should throw error when config.json not found', async () => {
       const originalCwd = process.cwd();
       process.chdir(tempDir);
       try {
-        await expect(loadConfig()).rejects.toThrow('appshot.json not found');
+        await expect(loadConfig()).rejects.toThrow('Configuration not found');
       } finally {
         process.chdir(originalCwd);
       }
     });
 
     it('should throw error for invalid JSON', async () => {
-      const configPath = path.join(tempDir, 'appshot.json');
+      const appshotDir = path.join(tempDir, '.appshot');
+      await fs.mkdir(appshotDir, { recursive: true });
+      const configPath = path.join(appshotDir, 'config.json');
       await fs.writeFile(configPath, 'invalid json');
       
       const originalCwd = process.cwd();
       process.chdir(tempDir);
       try {
-        await expect(loadConfig()).rejects.toThrow('Failed to load appshot.json');
+        await expect(loadConfig()).rejects.toThrow('Failed to load configuration');
       } finally {
         process.chdir(originalCwd);
       }

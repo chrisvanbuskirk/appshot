@@ -33,6 +33,11 @@
   "engines": {
     "node": ">=18"
   },
+  "files": [
+    "dist",
+    "bin",
+    "frames"
+  ],
   "license": "MIT",
   "homepage": "https://github.com/chrisvanbuskirk/appshot",
   "repository": {
