@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import { promises as fs } from 'fs';
 import type { GradientConfig, CaptionConfig, DeviceConfig } from '../types.js';
 import { renderGradient } from './render.js';
 
@@ -15,6 +16,9 @@ export interface ComposeOptions {
       height: number;
     };
     maskPath?: string;
+    deviceType?: 'iphone' | 'ipad' | 'mac' | 'watch';
+    displayName?: string;
+    name?: string;
   };
   caption?: string;
   captionConfig: CaptionConfig;
@@ -97,7 +101,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     let targetDeviceHeight = Math.floor(originalFrameHeight * scale);
 
     // Scale screenshot to fit in frame's screen area
-    const resizedScreenshot = await sharp(screenshot)
+    let resizedScreenshot = await sharp(screenshot)
       .resize(
         frameMetadata.screenRect.width,
         frameMetadata.screenRect.height,
@@ -107,16 +111,93 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       )
       .toBuffer();
 
-    // Create the device composite by starting with the frame
-    // Then place the screenshot UNDER it using dest-over blend mode
-    // This ensures the frame bezels cover the screenshot edges
-    let deviceComposite = await sharp(frame)
+    // If we have a mask, apply it to the screenshot to clip corners
+    if (frameMetadata.maskPath) {
+      try {
+        // Load the mask
+        const maskBuffer = await fs.readFile(frameMetadata.maskPath);
+        
+        // Resize mask to match screenshot dimensions
+        const resizedMask = await sharp(maskBuffer)
+          .resize(frameMetadata.screenRect.width, frameMetadata.screenRect.height, {
+            fit: 'fill'
+          })
+          .toBuffer();
+        
+        // Apply mask to screenshot using composite with dest-in blend mode
+        // This keeps only the parts of the screenshot where the mask is white
+        resizedScreenshot = await sharp(resizedScreenshot)
+          .composite([{
+            input: resizedMask,
+            blend: 'dest-in'
+          }])
+          .toBuffer();
+      } catch (error) {
+        console.warn(`Could not load mask: ${error}`);
+      }
+    } else if (frameMetadata.deviceType === 'iphone') {
+      // No mask available, create a rounded corner mask for iPhone
+      // iPhone screens have significant corner radius
+      // Different iPhone models have different corner radii
+      let cornerRadius: number;
+      
+      // Detect iPhone model from frame name for accurate corner radius
+      const frameName = frameMetadata.displayName?.toLowerCase() || frameMetadata.name?.toLowerCase() || '';
+      
+      if (frameName.includes('16 pro') || frameName.includes('15 pro') || frameName.includes('14 pro')) {
+        // Newer Pro models have larger corner radius (~12% of width)
+        cornerRadius = Math.floor(frameMetadata.screenRect.width * 0.12);
+      } else if (frameName.includes('se') || frameName.includes('8')) {
+        // SE and iPhone 8 have no rounded corners on the screen
+        cornerRadius = 0;
+      } else {
+        // Standard models and older Pro models (~10% of width)
+        cornerRadius = Math.floor(frameMetadata.screenRect.width * 0.10);
+      }
+      
+      if (cornerRadius > 0) {
+        // Create SVG mask with rounded rectangle
+        const maskSvg = `
+          <svg width="${frameMetadata.screenRect.width}" height="${frameMetadata.screenRect.height}" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" 
+                  width="${frameMetadata.screenRect.width}" 
+                  height="${frameMetadata.screenRect.height}" 
+                  rx="${cornerRadius}" 
+                  ry="${cornerRadius}" 
+                  fill="white"/>
+          </svg>`;
+        
+        const maskBuffer = Buffer.from(maskSvg);
+        
+        // Apply the rounded corner mask
+        resizedScreenshot = await sharp(resizedScreenshot)
+          .composite([{
+            input: maskBuffer,
+            blend: 'dest-in'
+          }])
+          .toBuffer();
+      }
+    }
+
+    // Create the device composite - screenshot on transparent background, then add frame
+    let deviceComposite = await sharp({
+      create: {
+        width: originalFrameWidth,
+        height: originalFrameHeight,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      }
+    })
       .composite([
         {
           input: resizedScreenshot,
           left: frameMetadata.screenRect.x,
-          top: frameMetadata.screenRect.y,
-          blend: 'dest-over'  // Place screenshot behind frame
+          top: frameMetadata.screenRect.y
+        },
+        {
+          input: frame,
+          left: 0,
+          top: 0
         }
       ])
       .toBuffer();
