@@ -18,16 +18,27 @@ export async function renderTextBitmap(
     font?: string;
   }
 ): Promise<Buffer> {
-  // Text color would be used here if we had full text rendering
-  // const parseHex = (hex: string) => {
-  //   const clean = hex.replace('#', '');
-  //   return {
-  //     r: parseInt(clean.slice(0, 2), 16),
-  //     g: parseInt(clean.slice(2, 4), 16),
-  //     b: parseInt(clean.slice(4, 6), 16)
-  //   };
-  // };
-  // const textColor = parseHex(config.color || '#000000');
+  // Validate and sanitize color to prevent XSS
+  const validateColor = (color: string): string => {
+    // Remove any whitespace and convert to lowercase
+    const clean = color.trim().toLowerCase();
+    
+    // Check if it's a valid hex color
+    const hexPattern = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/;
+    if (hexPattern.test(clean)) {
+      return clean.startsWith('#') ? clean : `#${clean}`;
+    }
+    
+    // Check if it's a valid named color (basic set)
+    const namedColors = ['black', 'white', 'red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'gray', 'grey'];
+    if (namedColors.includes(clean)) {
+      return clean;
+    }
+    
+    // Default to black if invalid
+    console.warn(`Invalid color "${color}" provided, using default #000000`);
+    return '#000000';
+  };
 
   // Create a transparent background
   const background = await sharp({
@@ -52,9 +63,11 @@ export async function renderTextBitmap(
     }
 
     // Create text as an image using Sharp's text feature
+    const safeColor = validateColor(config.color || '#000000');
+    const safeFontSize = Math.max(1, Math.min(1000, config.fontsize || 64)); // Clamp to reasonable range
     const textBuffer = await sharp({
       text: {
-        text: `<span foreground="${config.color}" size="${config.fontsize * 1000}">${escapeText(text)}</span>`,
+        text: `<span foreground="${safeColor}" size="${safeFontSize * 1000}">${escapeText(text)}</span>`,
         width: width - (config.paddingLeft || 50) - (config.paddingRight || 50),
         height: height,
         align: config.align || 'center',
