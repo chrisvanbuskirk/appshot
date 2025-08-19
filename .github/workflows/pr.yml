@@ -66,5 +66,6 @@ jobs:
           mkdir test-project
           cd test-project
           node ../dist/cli.js init --force
-          test -f appshot.json
-          cat appshot.json
+          test -d .appshot
+          test -f .appshot/config.json
+          cat .appshot/config.json

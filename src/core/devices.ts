@@ -233,7 +233,7 @@ function getBundledFramesPath(): string {
  */
 export async function initializeFrameRegistry(framesDir: string): Promise<void> {
   let effectiveFramesDir = framesDir;
-  
+
   try {
     // First try the configured frames directory
     const framesJsonPath = path.join(framesDir, 'Frames.json');
@@ -253,7 +253,7 @@ export async function initializeFrameRegistry(framesDir: string): Promise<void> 
       return;
     }
   }
-  
+
   // Load frames from the effective directory
   try {
     const dynamicRegistry = await buildFrameRegistry(effectiveFramesDir);

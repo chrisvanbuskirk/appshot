@@ -62,7 +62,7 @@ export default function initCmd() {
           const captionsPath = path.join(appshotDir, 'captions', `${device}.json`);
           // Create captions directory
           await fs.mkdir(path.dirname(captionsPath), { recursive: true });
-          
+
           try {
             await fs.access(captionsPath);
             if (!opts.force) {

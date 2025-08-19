@@ -82,6 +82,8 @@ jobs:
       - name: Initialize example project
         run: |
           cd examples/minimal-project
+          # Initialize with new structure
+          ../../bin/appshot.js init --force
           # Add sample screenshots for testing
           mkdir -p screenshots/iphone screenshots/ipad
           # Create test images using Node.js script

@@ -4,7 +4,7 @@ import type { AppshotConfig, CaptionsFile } from '../types.js';
 
 export async function loadConfig(): Promise<AppshotConfig> {
   const configPath = path.join(process.cwd(), '.appshot', 'config.json');
-  
+
   try {
     const content = await fs.readFile(configPath, 'utf8');
     return JSON.parse(content) as AppshotConfig;

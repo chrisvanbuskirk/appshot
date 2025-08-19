@@ -44,26 +44,12 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
   const partialFrame = deviceConfig.partialFrame || false;
   const frameOffset = deviceConfig.frameOffset || 25; // Default 25% cut off
 
-  // Calculate dimensions
-  let finalWidth = outputWidth;
-
-  // If we have a frame, determine the appropriate dimensions
-  let frameWidth = frameMetadata?.frameWidth || outputWidth;
-  let frameHeight = frameMetadata?.frameHeight || outputHeight;
-
-  // Ensure canvas is at least as large as the output dimensions
-  frameWidth = Math.max(frameWidth, outputWidth);
-  frameHeight = Math.max(frameHeight, outputHeight);
+  // Calculate dimensions based on output
 
   // Calculate caption height if positioned above
   const captionHeight = captionPosition === 'above' && caption ?
     captionConfig.paddingTop + captionConfig.fontsize + (captionConfig.paddingBottom || 60) : 0;
 
-  // If partial frame, we'll crop the bottom
-  let frameCropBottom = 0;
-  if (partialFrame && frameMetadata) {
-    frameCropBottom = Math.floor(frameHeight * (frameOffset / 100));
-  }
 
   // Calculate total canvas dimensions (should be output dimensions)
   const canvasWidth = outputWidth;
