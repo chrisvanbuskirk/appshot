@@ -1,51 +1,33 @@
 import sharp from 'sharp';
 import type { GradientConfig, CaptionConfig } from '../types.js';
+import { createGradientBitmap } from './text-renderer.js';
 
 export async function renderGradient(
   width: number,
   height: number,
   config: GradientConfig
 ): Promise<Buffer> {
-  // Create SVG gradient
+  // Use bitmap gradient instead of SVG
   const { colors, direction } = config;
 
-  let x1 = '0%', y1 = '0%', x2 = '0%', y2 = '100%';
+  // Use bitmap gradient instead of SVG - works without librsvg!
+  const directionMap: Record<string, 'vertical' | 'horizontal' | 'diagonal'> = {
+    'top-bottom': 'vertical',
+    'bottom-top': 'vertical', // Will need to reverse colors
+    'left-right': 'horizontal',
+    'right-left': 'horizontal', // Will need to reverse colors
+    'diagonal': 'diagonal'
+  };
 
-  switch (direction) {
-  case 'top-bottom':
-    x1 = '0%'; y1 = '0%'; x2 = '0%'; y2 = '100%';
-    break;
-  case 'bottom-top':
-    x1 = '0%'; y1 = '100%'; x2 = '0%'; y2 = '0%';
-    break;
-  case 'left-right':
-    x1 = '0%'; y1 = '0%'; x2 = '100%'; y2 = '0%';
-    break;
-  case 'right-left':
-    x1 = '100%'; y1 = '0%'; x2 = '0%'; y2 = '0%';
-    break;
-  case 'diagonal':
-    x1 = '0%'; y1 = '0%'; x2 = '100%'; y2 = '100%';
-    break;
+  const mappedDirection = directionMap[direction || 'top-bottom'] || 'vertical';
+  let effectiveColors = [...colors];
+
+  // Reverse colors for bottom-top or right-left
+  if (direction === 'bottom-top' || direction === 'right-left') {
+    effectiveColors = effectiveColors.reverse();
   }
 
-  const stops = colors.map((color, i) => {
-    const offset = (i / (colors.length - 1)) * 100;
-    return `<stop offset="${offset}%" stop-color="${color}"/>`;
-  }).join('');
-
-  const svg = `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="grad" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">
-          ${stops}
-        </linearGradient>
-      </defs>
-      <rect width="${width}" height="${height}" fill="url(#grad)"/>
-    </svg>
-  `;
-
-  return sharp(Buffer.from(svg)).png().toBuffer();
+  return await createGradientBitmap(width, height, effectiveColors, mappedDirection);
 }
 
 export async function addCaption(

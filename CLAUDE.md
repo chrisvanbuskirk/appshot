@@ -16,6 +16,8 @@ npm run dev -- [cmd] # Run CLI in development mode (e.g., npm run dev -- init)
 npm test            # Run all tests
 npm run test -- devices.test.ts  # Run specific test file
 npm link            # Link CLI globally for testing
+npm run clean       # Remove final/ directory
+npm run clean:all   # Remove final/, dist/, and .appshot/ directories
 
 # CLI Commands (after build/link)
 appshot init        # Scaffold new project
@@ -29,6 +31,8 @@ appshot presets --required  # Show only required presets
 appshot presets --generate iphone-6-9,ipad-13  # Generate config for specific presets
 appshot validate    # Validate screenshots against App Store requirements
 appshot validate --strict  # Check against required presets only
+appshot clean       # Remove generated screenshots from final/
+appshot clean --all # Remove all generated files including .appshot/
 
 # Custom Commands for Claude Code
 /commit <branch> "<message>" "<title>" "<body>"  # Create PR with lint & test checks
@@ -136,3 +140,4 @@ appshot build --preset iphone-6-9-portrait,ipad-13-landscape
 # Validate existing screenshots
 appshot validate --fix  # Shows suggestions for invalid resolutions
 ```
+- Don't create PR's without my direction.

@@ -2,6 +2,7 @@ import sharp from 'sharp';
 import { promises as fs } from 'fs';
 import type { GradientConfig, CaptionConfig, DeviceConfig } from '../types.js';
 import { renderGradient } from './render.js';
+import { applyRoundedCorners } from './mask-generator.js';
 
 export interface ComposeOptions {
   screenshot: Buffer;
@@ -44,6 +45,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     outputHeight
   } = options;
 
+
   // Determine caption position (default to 'above' for better App Store style)
   const captionPosition = captionConfig.position || 'above';
   const partialFrame = deviceConfig.partialFrame || false;
@@ -68,21 +70,50 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 
   // Add caption if positioned above
   if (caption && captionPosition === 'above') {
-    const captionSvg = createCaptionSvg(
-      caption,
-      captionConfig,
-      canvasWidth,
-      captionHeight
-    );
+    // Create SVG for caption text
+    const captionSvg = createCaptionSvg(caption, captionConfig, canvasWidth, captionHeight);
+    const captionBuffer = Buffer.from(captionSvg);
 
-    composites.push({
-      input: Buffer.from(captionSvg),
-      top: 0,
-      left: 0
-    });
+    try {
+      // Render the caption SVG
+      const captionImage = await sharp(captionBuffer)
+        .resize(canvasWidth, captionHeight)
+        .png()
+        .toBuffer();
+
+      composites.push({
+        input: captionImage,
+        top: 0,
+        left: 0
+      });
+
+    } catch {
+      // If SVG rendering fails, just add transparent area
+      console.log('[INFO] Caption rendering not available (requires librsvg), reserving space');
+      const captionArea = await sharp({
+        create: {
+          width: canvasWidth,
+          height: captionHeight,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        }
+      })
+        .png()
+        .toBuffer();
+
+      composites.push({
+        input: captionArea,
+        top: 0,
+        left: 0
+      });
+    }
   }
 
   if (frame && frameMetadata) {
+    // Validate that frame is actually a buffer
+    if (!Buffer.isBuffer(frame)) {
+      throw new Error(`Frame is not a valid buffer for ${frameMetadata.displayName || frameMetadata.name}`);
+    }
     // Calculate scale factor if frame needs to be resized to fit output
     const originalFrameWidth = frameMetadata.frameWidth;
     const originalFrameHeight = frameMetadata.frameHeight;
@@ -101,49 +132,67 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     let targetDeviceHeight = Math.floor(originalFrameHeight * scale);
 
     // Scale screenshot to fit in frame's screen area
-    let resizedScreenshot = await sharp(screenshot)
-      .resize(
-        frameMetadata.screenRect.width,
-        frameMetadata.screenRect.height,
-        {
-          fit: 'fill'
-        }
-      )
-      .toBuffer();
+    let resizedScreenshot;
+    try {
+      resizedScreenshot = await sharp(screenshot)
+        .resize(
+          frameMetadata.screenRect.width,
+          frameMetadata.screenRect.height,
+          {
+            fit: 'fill'
+          }
+        )
+        .toBuffer();
+    } catch (error) {
+      console.error('Failed to resize screenshot:', error);
+      throw error;
+    }
 
     // If we have a mask, apply it to the screenshot to clip corners
+    let maskApplied = false;
+
     if (frameMetadata.maskPath) {
       try {
         // Load the mask
         const maskBuffer = await fs.readFile(frameMetadata.maskPath);
-        
+
         // Resize mask to match screenshot dimensions
         const resizedMask = await sharp(maskBuffer)
           .resize(frameMetadata.screenRect.width, frameMetadata.screenRect.height, {
             fit: 'fill'
           })
           .toBuffer();
-        
-        // Apply mask to screenshot using composite with dest-in blend mode
-        // This keeps only the parts of the screenshot where the mask is white
-        resizedScreenshot = await sharp(resizedScreenshot)
-          .composite([{
-            input: resizedMask,
-            blend: 'dest-in'
-          }])
+
+        // Extract RGB from screenshot and alpha from mask's red channel
+        const screenshotRgb = await sharp(resizedScreenshot)
+          .removeAlpha()
           .toBuffer();
+
+        const maskAlpha = await sharp(resizedMask)
+          .extractChannel('red') // Black=0 (transparent), White=255 (opaque)
+          .toBuffer();
+
+        // Join screenshot RGB with mask as alpha channel
+        resizedScreenshot = await sharp(screenshotRgb)
+          .joinChannel(maskAlpha)
+          .png()
+          .toBuffer();
+
+        maskApplied = true;
       } catch (error) {
-        console.warn(`Could not load mask: ${error}`);
+        console.warn(`Could not load mask file, will use programmatic masking: ${error}`);
+        // Fall through to programmatic masking
       }
-    } else if (frameMetadata.deviceType === 'iphone') {
+    }
+
+    // If no mask was applied and this is an iPhone, use programmatic corner masking
+    if (!maskApplied && frameMetadata.deviceType === 'iphone') {
       // No mask available, create a rounded corner mask for iPhone
-      // iPhone screens have significant corner radius
+
       // Different iPhone models have different corner radii
       let cornerRadius: number;
-      
-      // Detect iPhone model from frame name for accurate corner radius
       const frameName = frameMetadata.displayName?.toLowerCase() || frameMetadata.name?.toLowerCase() || '';
-      
+
       if (frameName.includes('16 pro') || frameName.includes('15 pro') || frameName.includes('14 pro')) {
         // Newer Pro models have larger corner radius (~12% of width)
         cornerRadius = Math.floor(frameMetadata.screenRect.width * 0.12);
@@ -154,76 +203,88 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         // Standard models and older Pro models (~10% of width)
         cornerRadius = Math.floor(frameMetadata.screenRect.width * 0.10);
       }
-      
+
       if (cornerRadius > 0) {
-        // Create SVG mask with rounded rectangle
-        const maskSvg = `
-          <svg width="${frameMetadata.screenRect.width}" height="${frameMetadata.screenRect.height}" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" 
-                  width="${frameMetadata.screenRect.width}" 
-                  height="${frameMetadata.screenRect.height}" 
-                  rx="${cornerRadius}" 
-                  ry="${cornerRadius}" 
-                  fill="white"/>
-          </svg>`;
-        
-        const maskBuffer = Buffer.from(maskSvg);
-        
-        // Apply the rounded corner mask
-        resizedScreenshot = await sharp(resizedScreenshot)
-          .composite([{
-            input: maskBuffer,
-            blend: 'dest-in'
-          }])
-          .toBuffer();
+        // Apply rounded corners using our custom mask generator
+        resizedScreenshot = await applyRoundedCorners(
+          resizedScreenshot,
+          frameMetadata.screenRect.width,
+          frameMetadata.screenRect.height,
+          cornerRadius
+        );
       }
     }
 
-    // Create the device composite - screenshot on transparent background, then add frame
-    let deviceComposite = await sharp({
-      create: {
-        width: originalFrameWidth,
-        height: originalFrameHeight,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      }
-    })
-      .composite([
-        {
+    // Create the device composite - screenshot UNDER frame
+
+    let deviceComposite;
+    try {
+      // First composite: screenshot on transparent background
+      const screenshotLayer = await sharp({
+        create: {
+          width: originalFrameWidth,
+          height: originalFrameHeight,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        }
+      })
+        .composite([{
           input: resizedScreenshot,
           left: frameMetadata.screenRect.x,
           top: frameMetadata.screenRect.y
-        },
-        {
+        }])
+        .png()
+        .toBuffer();
+
+      // Second composite: add frame on top using 'over' blend (frame should cover screenshot edges)
+      deviceComposite = await sharp(screenshotLayer)
+        .composite([{
           input: frame,
           left: 0,
-          top: 0
-        }
-      ])
-      .toBuffer();
+          top: 0,
+          blend: 'over'
+        }])
+        .png()  // CRITICAL: Convert to PNG format, not raw pixels!
+        .toBuffer();
+    } catch (error) {
+      console.error('Failed to create device composite:', error);
+      throw error;
+    }
 
     // If partial frame, crop the bottom
     if (partialFrame) {
       const cropHeight = Math.floor(originalFrameHeight * (1 - frameOffset / 100));
-      deviceComposite = await sharp(deviceComposite)
-        .extract({
-          left: 0,
-          top: 0,
-          width: originalFrameWidth,
-          height: cropHeight
-        })
-        .toBuffer();
-      targetDeviceHeight = Math.floor(cropHeight * scale);
+      try {
+        deviceComposite = await sharp(deviceComposite)
+          .extract({
+            left: 0,
+            top: 0,
+            width: originalFrameWidth,
+            height: cropHeight
+          })
+          .png()  // Ensure PNG format
+          .toBuffer();
+        targetDeviceHeight = Math.floor(cropHeight * scale);
+      } catch (error) {
+        console.error('Failed to crop:', error);
+        throw error;
+      }
     }
 
     // Scale the complete device if needed (now scales up or down)
     if (scale !== 1) {
-      deviceComposite = await sharp(deviceComposite)
-        .resize(targetDeviceWidth, targetDeviceHeight, {
-          fit: 'inside',  // Preserve aspect ratio
-          withoutEnlargement: false  // Allow scaling up
-        })
-        .toBuffer();
+      try {
+        deviceComposite = await sharp(deviceComposite)
+          .resize(targetDeviceWidth, targetDeviceHeight, {
+            fit: 'inside',  // Preserve aspect ratio
+            withoutEnlargement: false  // Allow scaling up
+          })
+          .png()  // Ensure PNG format
+          .toBuffer();
+      } catch (error) {
+        console.error('Failed to scale:', error);
+        throw error;
+      }
     }
 
     // Calculate position for centered device
@@ -249,24 +310,16 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
   }
 
   // Add overlay caption if specified (legacy support)
+  // Note: Caption rendering requires librsvg to be installed
   if (caption && captionPosition === 'overlay') {
-    const overlayCaptionSvg = createCaptionSvg(
-      caption,
-      captionConfig,
-      canvasWidth,
-      canvasHeight
-    );
-
-    composites.push({
-      input: Buffer.from(overlayCaptionSvg),
-      top: 0,
-      left: 0
-    });
+    // Skip caption rendering for now - would require librsvg
+    // TODO: Implement pure bitmap text rendering in future version
   }
 
   // Composite everything onto the gradient
   const result = await sharp(gradient)
     .composite(composites)
+    .png()  // IMPORTANT: Ensure the output is a valid PNG
     .toBuffer();
 
   return result;

@@ -102,7 +102,19 @@ export default function buildCmd() {
                   const { orientation } = await getImageDimensions(inputPath);
 
                   // Load screenshot
-                  const screenshotBuffer = await sharp(inputPath).toBuffer();
+                  let screenshotBuffer: Buffer;
+                  try {
+                    // First verify the file exists and is readable
+                    await fs.access(inputPath, fs.constants.R_OK);
+
+                    // Load the screenshot into a buffer
+                    screenshotBuffer = await sharp(inputPath)
+                      .png() // Ensure output is PNG
+                      .toBuffer();
+                  } catch (error) {
+                    console.error(pc.red(`  ✗ ${path.basename(inputPath)}`), `Failed to load screenshot: ${error instanceof Error ? error.message : String(error)}`);
+                    return;
+                  }
 
                   // Parse resolution for output dimensions
                   const [configWidth, configHeight] = deviceConfig.resolution.split('x').map(Number);
@@ -146,26 +158,37 @@ export default function buildCmd() {
                     if (frame && frameMetadata) {
                       frameUsed = true;
                       console.log(pc.dim(`    Using ${frameMetadata.displayName} ${orientation} frame`));
+                    } else if (frameMetadata && !frame) {
+                      console.error(pc.red('    ERROR: Frame metadata found but image failed to load!'));
                     }
                   }
 
                   // Use the new compose function
-                  const image = await composeAppStoreScreenshot({
-                    screenshot: screenshotBuffer,
-                    frame: frame,
-                    frameMetadata: frameMetadata ? {
-                      frameWidth: frameMetadata.frameWidth,
-                      frameHeight: frameMetadata.frameHeight,
-                      screenRect: frameMetadata.screenRect,
-                      maskPath: frameMetadata.maskPath
-                    } : undefined,
-                    caption: opts.caption !== false ? captionText : undefined,
-                    captionConfig: config.caption,
-                    gradientConfig: config.gradient,
-                    deviceConfig: deviceConfig,
-                    outputWidth: outWidth,
-                    outputHeight: outHeight
-                  });
+                  let image: Buffer;
+                  try {
+                    image = await composeAppStoreScreenshot({
+                      screenshot: screenshotBuffer,
+                      frame: frame,
+                      frameMetadata: frameMetadata ? {
+                        frameWidth: frameMetadata.frameWidth,
+                        frameHeight: frameMetadata.frameHeight,
+                        screenRect: frameMetadata.screenRect,
+                        maskPath: frameMetadata.maskPath,
+                        deviceType: frameMetadata.deviceType,
+                        displayName: frameMetadata.displayName,
+                        name: frameMetadata.name
+                      } : undefined,
+                      caption: opts.caption !== false ? captionText : undefined,
+                      captionConfig: config.caption,
+                      gradientConfig: config.gradient,
+                      deviceConfig: deviceConfig,
+                      outputWidth: outWidth,
+                      outputHeight: outHeight
+                    });
+                  } catch (error) {
+                    console.error(pc.red(`  ✗ ${path.basename(inputPath)}`), error instanceof Error ? error.message : String(error));
+                    return;
+                  }
 
                   // Save final image
                   await sharp(image)
@@ -173,6 +196,7 @@ export default function buildCmd() {
                       fit: 'inside',
                       withoutEnlargement: true
                     })
+                    .png()  // Ensure output is PNG
                     .toFile(outputPath);
 
                   console.log(pc.green('  ✓'), path.basename(outputPath),

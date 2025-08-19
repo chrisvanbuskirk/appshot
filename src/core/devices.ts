@@ -418,11 +418,13 @@ export async function loadFrame(framePath: string, frameName: string): Promise<B
       // Try with .png extension
       let fullPath = path.join(basePath, `${fileName}.png`);
       try {
-        return await fs.readFile(fullPath);
+        const buffer = await fs.readFile(fullPath);
+        return buffer;
       } catch {
         // Try without modification (in case the name already has extension)
         fullPath = path.join(basePath, fileName);
-        return await fs.readFile(fullPath);
+        const buffer = await fs.readFile(fullPath);
+        return buffer;
       }
     } catch {
       return null;
@@ -440,6 +442,9 @@ export async function loadFrame(framePath: string, frameName: string): Promise<B
     if (result) return result;
   }
 
+  console.error(`ERROR: Could not load frame image: ${frameName} (tried as ${fileName})`);
+  console.error(`  Looked in: ${framePath}`);
+  console.error(`  Also tried: ${getBundledFramesPath()}`);
   return null;
 }
 

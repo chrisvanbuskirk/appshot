@@ -8,6 +8,7 @@ import specsCmd from './commands/specs.js';
 import checkCmd from './commands/check.js';
 import presetsCmd from './commands/presets.js';
 import validateCmd from './commands/validate.js';
+import { createCleanCommand } from './commands/clean.js';
 
 const program = new Command();
 
@@ -24,6 +25,7 @@ program.addCommand(specsCmd());
 program.addCommand(checkCmd());
 program.addCommand(presetsCmd());
 program.addCommand(validateCmd());
+program.addCommand(createCleanCommand());
 
 program.showHelpAfterError(pc.dim('\nUse --help for usage.'));
 
