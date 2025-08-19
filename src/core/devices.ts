@@ -19,6 +19,7 @@ export interface DeviceFrame {
   };
   deviceType: 'iphone' | 'ipad' | 'mac' | 'watch';
   originalName?: string;
+  maskPath?: string;
 }
 
 // Dynamic frame registry - will be populated from Frames.json
@@ -168,6 +169,70 @@ export async function getImageDimensions(imagePath: string): Promise<{ width: nu
   return { width, height, orientation };
 }
 
+// Map exact resolutions to specific devices
+const RESOLUTION_TO_DEVICE: Record<string, string> = {
+  // iPhone resolutions (portrait)
+  '1320x2868': 'iphone-16-pro-max',
+  '1206x2622': 'iphone-16-pro',
+  '1290x2796': 'iphone-15-pro-max',
+  '1179x2556': 'iphone-15-pro',
+  '1284x2778': 'iphone-14-plus',
+  '1170x2532': 'iphone-14',
+  '1125x2436': 'iphone-11-pro',
+  '1242x2688': 'iphone-11-pro-max',
+  '828x1792': 'iphone-11',
+  '1080x2340': 'iphone-12-mini',
+  '750x1334': 'iphone-8-and-2020-se',
+
+  // iPhone resolutions (landscape)
+  '2868x1320': 'iphone-16-pro-max-landscape',
+  '2622x1206': 'iphone-16-pro-landscape',
+  '2796x1290': 'iphone-15-pro-max-landscape',
+  '2556x1179': 'iphone-15-pro-landscape',
+  '2778x1284': 'iphone-14-plus-landscape',
+  '2532x1170': 'iphone-14-landscape',
+  '2436x1125': 'iphone-11-pro-landscape',
+  '2688x1242': 'iphone-11-pro-max-landscape',
+  '1792x828': 'iphone-11-landscape',
+  '2340x1080': 'iphone-12-mini-landscape',
+
+  // iPad resolutions (portrait)
+  '2048x2732': 'ipad pro 2018 2021',  // iPad Pro 12.9"
+  '1668x2388': 'ipad pro 2018 2021 11',  // iPad Pro 11"
+  '1640x2360': 'ipad air 2020',     // iPad Air
+  '1620x2160': 'ipad 2021',         // Regular iPad & iPad mini (same resolution)
+  '2064x2752': 'ipad pro 2024 11',  // iPad Pro 11" M4
+  '2420x3212': 'ipad pro 2024 13',  // iPad Pro 13" M4
+
+  // iPad resolutions (landscape)
+  '2732x2048': 'ipad pro 2018 2021',  // iPad Pro 12.9"
+  '2388x1668': 'ipad pro 2018 2021 11',  // iPad Pro 11"
+  '2360x1640': 'ipad air 2020',     // iPad Air
+  '2160x1620': 'ipad 2021',         // Regular iPad & iPad mini (same resolution)
+  '2752x2064': 'ipad pro 2024 13',  // iPad Pro 13" M4
+  '3212x2420': 'ipad pro 2024 13',  // iPad Pro 13" M4
+
+  // Mac resolutions
+  '3456x2234': 'macbook-pro-16',
+  '3024x1964': 'macbook-pro-14',
+  '2880x1864': 'macbook-air-15',
+  '2560x1664': 'macbook-air-13',
+  '4480x2520': 'imac-24',
+
+  // Watch resolutions
+  '410x502': 'watch-ultra',
+  '396x484': 'watch-series-9-45mm',
+  '368x448': 'watch-series-9-41mm'
+};
+
+/**
+ * Detect exact device from screenshot resolution
+ */
+function detectExactDevice(width: number, height: number): string | null {
+  const key = `${width}x${height}`;
+  return RESOLUTION_TO_DEVICE[key] || null;
+}
+
 /**
  * Find best matching frame for a screenshot
  */
@@ -179,7 +244,7 @@ export function findBestFrame(
 ): DeviceFrame | null {
   const orientation = detectOrientation(screenshotWidth, screenshotHeight);
 
-  // If preferred frame specified, check if it matches orientation
+  // If preferred frame specified, check if it matches orientation first
   if (preferredFrame) {
     const preferred = frameRegistry.find(f => f.name === preferredFrame);
     if (preferred) {
@@ -194,6 +259,49 @@ export function findBestFrame(
       }
     }
   }
+
+  // Try exact resolution matching
+  const exactDevice = detectExactDevice(screenshotWidth, screenshotHeight);
+  if (exactDevice) {
+    console.log(`    Detected exact device: ${exactDevice} from resolution ${screenshotWidth}x${screenshotHeight}`);
+
+    // Find frame that matches this exact device AND orientation
+    let exactFrame = frameRegistry.find(f => {
+      const normalizedName = f.name.toLowerCase().replace(/-/g, ' ');
+      const searchName = exactDevice.toLowerCase().replace(/-/g, ' ');
+      const nameMatches = normalizedName.includes(searchName) ||
+                          (f.originalName && f.originalName.toLowerCase().includes(searchName));
+      // Must match both name AND orientation
+      return nameMatches && f.orientation === orientation;
+    });
+
+    // Special case: For 2752x2064 (iPad Pro 13" M4), ensure we don't get the 11" frame
+    if (screenshotWidth === 2752 && screenshotHeight === 2064) {
+      // Try to find iPad Pro 2024 13 Landscape frame first
+      const ipad13Frame = frameRegistry.find(f =>
+        (f.displayName === 'iPad Pro 2024 13 Landscape' ||
+         f.originalName === 'iPad Pro 2024 13 Landscape') &&
+        f.orientation === 'landscape'
+      );
+
+      if (ipad13Frame) {
+        exactFrame = ipad13Frame;
+      } else {
+        // Fall back to the larger 12.9" frame if 13" not found
+        exactFrame = frameRegistry.find(f =>
+          f.displayName === 'iPad Pro 2018-2021 Landscape' &&
+          f.orientation === 'landscape' &&
+          !f.displayName.includes('11')
+        );
+      }
+    }
+
+    if (exactFrame) {
+      console.log(`    Found exact frame: ${exactFrame.displayName}`);
+      return exactFrame;
+    }
+  }
+
 
   // Find frames matching device type and orientation
   const candidates = frameRegistry.filter(f =>
@@ -211,7 +319,16 @@ export function findBestFrame(
   // Calculate aspect ratio of screenshot
   const aspectRatio = screenshotWidth / screenshotHeight;
 
-  // Find frame with closest aspect ratio match
+  // Find frame with exact resolution match first
+  for (const frame of candidates) {
+    if (frame.screenRect.width === screenshotWidth &&
+        frame.screenRect.height === screenshotHeight) {
+      console.log(`    Found exact resolution match: ${frame.displayName}`);
+      return frame;
+    }
+  }
+
+  // Otherwise find frame with closest aspect ratio match
   let bestFrame = candidates[0];
   let bestDiff = Math.abs((bestFrame.screenRect.width / bestFrame.screenRect.height) - aspectRatio);
 
