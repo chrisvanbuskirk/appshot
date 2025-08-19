@@ -9,15 +9,23 @@ describe('files', () => {
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'appshot-test-'));
-    process.chdir(tempDir);
   });
 
   afterEach(async () => {
+    // Change back to root temp dir before cleanup (Windows can't delete current directory)
+    process.chdir(os.tmpdir());
+    
     // Add delay for Windows file system
     if (process.platform === 'win32') {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    await fs.rm(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (err) {
+      // Ignore cleanup errors in tests
+      console.warn('Cleanup warning:', err);
+    }
   });
 
   describe('loadConfig', () => {
@@ -32,19 +40,41 @@ describe('files', () => {
         }
       };
       
-      await fs.writeFile('appshot.json', JSON.stringify(config));
-      const loaded = await loadConfig();
+      const configPath = path.join(tempDir, 'appshot.json');
+      await fs.writeFile(configPath, JSON.stringify(config));
       
-      expect(loaded).toEqual(config);
+      // Change to tempDir for loadConfig to work
+      const originalCwd = process.cwd();
+      process.chdir(tempDir);
+      try {
+        const loaded = await loadConfig();
+        expect(loaded).toEqual(config);
+      } finally {
+        process.chdir(originalCwd);
+      }
     });
 
     it('should throw error when appshot.json not found', async () => {
-      await expect(loadConfig()).rejects.toThrow('appshot.json not found');
+      const originalCwd = process.cwd();
+      process.chdir(tempDir);
+      try {
+        await expect(loadConfig()).rejects.toThrow('appshot.json not found');
+      } finally {
+        process.chdir(originalCwd);
+      }
     });
 
     it('should throw error for invalid JSON', async () => {
-      await fs.writeFile('appshot.json', 'invalid json');
-      await expect(loadConfig()).rejects.toThrow('Failed to load appshot.json');
+      const configPath = path.join(tempDir, 'appshot.json');
+      await fs.writeFile(configPath, 'invalid json');
+      
+      const originalCwd = process.cwd();
+      process.chdir(tempDir);
+      try {
+        await expect(loadConfig()).rejects.toThrow('Failed to load appshot.json');
+      } finally {
+        process.chdir(originalCwd);
+      }
     });
   });
 
@@ -78,19 +108,22 @@ describe('files', () => {
 
   describe('fileExists', () => {
     it('should return true for existing file', async () => {
-      await fs.writeFile('test.txt', 'content');
-      const exists = await fileExists('test.txt');
+      const testFile = path.join(tempDir, 'test.txt');
+      await fs.writeFile(testFile, 'content');
+      const exists = await fileExists(testFile);
       expect(exists).toBe(true);
     });
 
     it('should return false for non-existing file', async () => {
-      const exists = await fileExists('nonexistent.txt');
+      const testFile = path.join(tempDir, 'nonexistent.txt');
+      const exists = await fileExists(testFile);
       expect(exists).toBe(false);
     });
 
     it('should return true for existing directory', async () => {
-      await fs.mkdir('testdir');
-      const exists = await fileExists('testdir');
+      const testDir = path.join(tempDir, 'testdir');
+      await fs.mkdir(testDir);
+      const exists = await fileExists(testDir);
       expect(exists).toBe(true);
     });
   });
