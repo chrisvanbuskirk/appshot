@@ -12,11 +12,15 @@ on:
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    # Skip review when the PR is updated by a bot (including github-actions bot)
+    # or when it's a synchronize event from github-actions
+    if: |
+      !(github.event_name == 'pull_request' && 
+        github.event.action == 'synchronize' && 
+        (github.actor == 'github-actions[bot]' || 
+         github.actor == 'dependabot[bot]' || 
+         github.actor == 'claude[bot]' ||
+         endsWith(github.actor, '[bot]')))
     
     runs-on: ubuntu-latest
     permissions:
