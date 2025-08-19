@@ -1,0 +1,97 @@
+name: Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  size-check:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Check bundle size
+        run: |
+          echo "Bundle size report:"
+          du -sh dist/
+          find dist -name "*.js" -exec du -h {} \;
+      
+      - name: Comment PR with size report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            
+            const sizeReport = execSync('du -sh dist/').toString();
+            const files = execSync('find dist -name "*.js" -exec du -h {} \\;').toString();
+            
+            const body = `## 📦 Bundle Size Report
+            
+            Total dist size: ${sizeReport}
+            
+            <details>
+            <summary>File sizes</summary>
+            
+            \`\`\`
+            ${files}
+            \`\`\`
+            </details>`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Test CLI commands
+        run: |
+          node dist/cli.js --version
+          node dist/cli.js --help
+          node dist/cli.js init --help
+          node dist/cli.js build --help
+          node dist/cli.js presets --help
+          node dist/cli.js validate --help
+      
+      - name: Test init command (dry run)
+        run: |
+          mkdir test-project
+          cd test-project
+          node ../dist/cli.js init --force
+          test -f appshot.json
+          cat appshot.json

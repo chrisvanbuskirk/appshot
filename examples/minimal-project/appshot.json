@@ -1,0 +1,28 @@
+{
+  "output": "./final",
+  "frames": "../../frames",
+  "gradient": {
+    "colors": ["#FF5733", "#FFC300"],
+    "direction": "top-bottom"
+  },
+  "caption": {
+    "font": "SF Pro",
+    "fontsize": 64,
+    "color": "#FFFFFF",
+    "align": "center",
+    "paddingTop": 100
+  },
+  "devices": {
+    "iphone": {
+      "input": "./screenshots/iphone",
+      "resolution": "1290x2796",
+      "autoFrame": true,
+      "partialFrame": true
+    },
+    "ipad": {
+      "input": "./screenshots/ipad",
+      "resolution": "2048x2732",
+      "autoFrame": true
+    }
+  }
+}

@@ -1,0 +1,40 @@
+# Source files
+src/
+*.ts
+!*.d.ts
+
+# Tests
+tests/
+*.test.*
+coverage/
+.nyc_output/
+
+# Development files
+.github/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+CONTRIBUTING.md
+SECURITY.md
+
+# Examples
+examples/
+
+# Config files
+tsconfig.json
+vitest.config.ts
+.eslintrc.*
+.prettierrc.*
+
+# Git
+.git/
+.gitignore
+
+# Misc
+*.log
+.DS_Store
+tmp/
+temp/

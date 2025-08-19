@@ -1,0 +1,308 @@
+{
+  "Mac": {
+    "2020 MacBook Air": {
+      "x": "620",
+      "y": "652",
+      "name": "MacBook Air 2020"
+    },
+    "2021 iMac": {
+      "x": "141",
+      "y": "161",
+      "name": "iMac 2021"
+    },
+    "2021 MacBook Pro": {
+      "14": {
+        "x": "460",
+        "y": "300",
+        "name": "MacBook Pro 2021 14"
+      },
+      "16": {
+        "x": "442",
+        "y": "313",
+        "name": "MacBook Pro 2021 16"
+      }
+    },
+    "2022 MacBook Air": {
+      "x": "330",
+      "y": "218",
+      "name": "MacBook Air 2022"
+    },
+    "MacBook Pro 13": {
+      "x": "620",
+      "y": "261",
+      "name": "MacBook Pro 13"
+    }
+  },
+  "iPhone": {
+    "16 and 16 Pro": {
+      "Pro": {
+        "Landscape": {
+          "y": "72",
+          "x": "69",
+          "name": "iPhone 16 Pro Landscape"
+        },
+        "Portrait": {
+          "y": "69",
+          "x": "72",
+          "name": "iPhone 16 Pro Portrait"
+        }
+      },
+      "Plus": {
+        "Landscape": {
+          "y": "90",
+          "x": "87",
+          "name": "iPhone 16 Plus Landscape"
+        },
+        "Portrait": {
+          "y": "87",
+          "x": "90",
+          "name": "iPhone 16 Plus Portrait"
+        }
+      },
+      "16": {
+        "Portrait": {
+          "x": "90",
+          "y": "90",
+          "name": "iPhone 16 Portrait"
+        },
+        "Landscape": {
+          "x": "90",
+          "y": "90",
+          "name": "iPhone 16 Landscape"
+        }
+      },
+      "Pro Max": {
+        "Portrait": {
+          "x": "75",
+          "y": "66",
+          "name": "iPhone 16 Pro Max Portrait"
+        },
+        "Landscape": {
+          "x": "66",
+          "y": "75",
+          "name": "iPhone 16 Pro Max Landscape"
+        }
+      }
+    },
+    "iPhone 8 and 2020 SE": {
+      "Portrait": {
+        "x": "125",
+        "y": "334",
+        "name": "iPhone 8 and 2020 SE"
+      }
+    },
+    "12-13": {
+      "mini": {
+        "Landscape": {
+          "x": "80",
+          "y": "80",
+          "name": "iPhone 12-13 mini Landscape"
+        },
+        "Portrait": {
+          "x": "80",
+          "y": "80",
+          "name": "iPhone 12-13 mini Portrait"
+        }
+      },
+      "Pro": {
+        "Landscape": {
+          "x": "84",
+          "y": "115",
+          "name": "iPhone 12-13 Pro Landscape"
+        },
+        "Portrait": {
+          "x": "115",
+          "y": "84",
+          "name": "iPhone 12-13 Pro Portrait"
+        }
+      },
+      "Pro Max": {
+        "Landscape": {
+          "y": "108",
+          "x": "111",
+          "name": "iPhone 12-13 Pro Max Landscape"
+        },
+        "Portrait": {
+          "y": "111",
+          "x": "108",
+          "name": "iPhone 12-13 Pro Max Portrait"
+        }
+      }
+    },
+    "11": {
+      "Pro Max": {
+        "Landscape": {
+          "x": "155",
+          "y": "179",
+          "name": "iPhone 11 Pro Max Landscape"
+        },
+        "Portrait": {
+          "x": "179",
+          "y": "155",
+          "name": "iPhone 11 Pro Max Portrait"
+        }
+      },
+      "Pro": {
+        "Portrait": {
+          "x": "238",
+          "y": "182",
+          "name": "iPhone 11 Pro Portrait"
+        }
+      },
+      "11": {
+        "Landscape": {
+          "x": "104",
+          "y": "86",
+          "name": "iPhone 11 Landscape"
+        },
+        "Portrait": {
+          "x": "86",
+          "y": "104",
+          "name": "iPhone 11 Portrait"
+        }
+      }
+    },
+    "8 Plus": {
+      "Portrait": {
+        "x": "100",
+        "y": "310",
+        "name": "iPhone 8 Plus Portrait"
+      },
+      "Landscape": {
+        "x": "310",
+        "y": "100",
+        "name": "iPhone 8 Plus Landscape"
+      }
+    }
+  },
+  "iPad": {
+    "2021 iPad mini": {
+      "Landscape": {
+        "x": "142",
+        "y": "146",
+        "name": "iPad mini 2021 Landscape"
+      },
+      "Portrait": {
+        "x": "146",
+        "y": "142",
+        "name": "iPad mini 2021 Portrait"
+      }
+    },
+    "2021 iPad": {
+      "Landscape": {
+        "x": "250",
+        "y": "110",
+        "name": "iPad 2021 Landscape"
+      },
+      "Portrait": {
+        "x": "110",
+        "y": "250",
+        "name": "iPad 2021 Portrait"
+      }
+    },
+    "2020 iPad Air": {
+      "Landscape": {
+        "x": "140",
+        "y": "139",
+        "name": "iPad Air 2020 Landscape"
+      },
+      "Portrait": {
+        "x": "139",
+        "y": "140",
+        "name": "iPad Air 2020 Portrait"
+      }
+    },
+    "2018-2021 iPad Pro 11": {
+      "Landscape": {
+        "x": "120",
+        "y": "120",
+        "name": "iPad Pro 2018-2021 11 Landscape"
+      },
+      "Portrait": {
+        "x": "120",
+        "y": "120",
+        "name": "iPad Pro 2018-2021 11 Portrait"
+      }
+    },
+    "2018-2021 iPad Pro": {
+      "Landscape": {
+        "x": "120",
+        "y": "120",
+        "name": "iPad Pro 2018-2021 Landscape"
+      },
+      "Portrait": {
+        "x": "120",
+        "y": "120",
+        "name": "iPad Pro 2018-2021 Portrait"
+      }
+    },
+    "2024 iPad Pro 13": {
+      "Landscape": {
+        "x": "124",
+        "y": "118",
+        "name": "iPad Pro 2024 13 Landscape"
+      },
+      "Portrait": {
+        "x": "118",
+        "y": "124",
+        "name": "iPad Pro 2024 13 Portrait"
+      }
+    },
+    "2024 iPad Pro 11": {
+      "Landscape": {
+        "x": "110",
+        "y": "106",
+        "name": "iPad Pro 2024 11 Landscape"
+      },
+      "Portrait": {
+        "x": "95",
+        "y": "95",
+        "name": "iPad Pro 2024 11 Portrait"
+      }
+    }
+  },
+  "Watch": {
+    "Ultra": {
+      "x": "95",
+      "y": "219",
+      "name": "Watch Ultra 2024"
+    },
+    "Series 4": {
+      "44": {
+        "x": "66",
+        "y": "222",
+        "name": "Watch Series 4 44"
+      },
+      "40": {
+        "x": "114",
+        "y": "308",
+        "name": "Watch Series 4 40"
+      }
+    },
+    "Series 7": {
+      "45": {
+        "x": "72",
+        "y": "188",
+        "name": "Watch Series 7 45"
+      },
+      "41": {
+        "x": "64",
+        "y": "165",
+        "name": "Watch Series 7 41"
+      }
+    },
+    "Series 10": {
+      "42": {
+        "x": "63",
+        "y": "167",
+        "name": "Watch Series 10 42"
+      },
+      "46": {
+        "x": "72",
+        "y": "192",
+        "name": "Watch Series 10 46"
+      }
+    }
+  },
+  "version": "3.2"
+}

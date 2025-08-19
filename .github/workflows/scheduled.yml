@@ -1,0 +1,121 @@
+name: Scheduled Tests
+
+on:
+  schedule:
+    # Run at 2 AM UTC every Monday
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  compatibility-check:
+    name: Compatibility Check
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [18.x, 20.x, 22.x]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Run all tests
+        run: npm test
+      
+      - name: Test example project
+        run: |
+          cd examples/minimal-project
+          # Create test images
+          mkdir -p screenshots/iphone
+          convert -size 1290x2796 xc:blue screenshots/iphone/test.png 2>/dev/null || echo "ImageMagick not available"
+          # Build
+          node ../../dist/cli.js build --devices iphone
+          test -d final
+
+  frames-integrity:
+    name: Frames Integrity Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Validate frames structure
+        run: npm test -- frames.test.ts
+      
+      - name: Check frame files exist
+        run: |
+          echo "Checking frame files..."
+          cd frames
+          if [ -f Frames.json ]; then
+            echo "✓ Frames.json exists"
+            # Count PNG files
+            png_count=$(find . -name "*.png" | wc -l)
+            echo "Found $png_count PNG files"
+            if [ $png_count -lt 10 ]; then
+              echo "⚠ Warning: Expected more frame files"
+              exit 1
+            fi
+          else
+            echo "✗ Frames.json missing"
+            exit 1
+          fi
+
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Measure build performance
+        run: |
+          cd examples/minimal-project
+          # Create test images
+          mkdir -p screenshots/iphone screenshots/ipad
+          convert -size 1290x2796 xc:blue screenshots/iphone/test1.png 2>/dev/null || echo "ImageMagick not available"
+          convert -size 1290x2796 xc:red screenshots/iphone/test2.png 2>/dev/null || echo "ImageMagick not available"
+          convert -size 2048x2732 xc:green screenshots/ipad/test1.png 2>/dev/null || echo "ImageMagick not available"
+          echo "Running performance test..."
+          start=$(date +%s)
+          node ../../dist/cli.js build --devices iphone,ipad
+          end=$(date +%s)
+          duration=$((end - start))
+          echo "Build completed in ${duration} seconds"
+          if [ $duration -gt 60 ]; then
+            echo "⚠ Build took longer than expected (${duration}s > 60s)"
+          else
+            echo "✓ Build performance acceptable"
+          fi

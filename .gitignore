@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Test output
+test-results/
+junit.xml
+
+# Example output
+examples/*/final/
+examples/*/frames/*.png
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Package files
+*.tgz

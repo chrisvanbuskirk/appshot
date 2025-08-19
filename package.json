@@ -1,0 +1,48 @@
+{
+  "name": "appshot",
+  "version": "0.1.0",
+  "description": "Generate App Store–ready screenshots with frames, gradients, and captions.",
+  "bin": {
+    "appshot": "bin/appshot.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "inquirer": "^12.0.0",
+    "picocolors": "^1.0.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "eslint": "^9.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/chrisvanbuskirk/appshot",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/chrisvanbuskirk/appshot.git"
+  },
+  "keywords": [
+    "app-store",
+    "screenshots",
+    "ios",
+    "android",
+    "cli",
+    "frames",
+    "marketing"
+  ],
+  "author": "Chris Van Buskirk"
+}

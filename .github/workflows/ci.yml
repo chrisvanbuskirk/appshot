@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run TypeScript check
+        run: npm run typecheck
+      
+      - name: Run linter
+        run: npm run lint
+
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [18.x, 20.x, 22.x]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Run frames validation test
+        run: npm test -- frames.test.ts
+
+  example-build:
+    name: Example Project Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build TypeScript
+        run: npm run build
+      
+      - name: Initialize example project
+        run: |
+          cd examples/minimal-project
+          # Add sample screenshots for testing
+          mkdir -p screenshots/iphone screenshots/ipad
+          # Create test images using ImageMagick (available on GitHub runners)
+          convert -size 1290x2796 xc:blue -pointsize 100 -draw "text 400,1400 'Test iPhone'" screenshots/iphone/test.png
+          convert -size 2048x2732 xc:green -pointsize 100 -draw "text 800,1400 'Test iPad'" screenshots/ipad/test.png
+      
+      - name: Build example screenshots
+        run: |
+          cd examples/minimal-project
+          node ../../dist/cli.js build --devices iphone,ipad
+      
+      - name: Verify output exists
+        run: |
+          ls -la examples/minimal-project/final/
+          test -d examples/minimal-project/final/iphone
+          test -d examples/minimal-project/final/ipad
+      
+      - name: Upload example screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-screenshots
+          path: examples/minimal-project/final/
+          retention-days: 7
+
+  release:
+    needs: [lint-and-typecheck, test, example-build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - run: npm ci
+      
+      - run: npm run build
+      
+      - name: Check if version changed
+        id: version
+        uses: EndBug/version-check@v2
+        with:
+          diff-search: true
+      
+      - name: Publish to npm
+        if: steps.version.outputs.changed == 'true'
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Create GitHub Release
+        if: steps.version.outputs.changed == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          generate_release_notes: true
