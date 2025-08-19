@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "clean": "rm -rf final/",
+    "clean:all": "rm -rf final/ dist/ .appshot/"
   },
   "dependencies": {
     "commander": "^12.0.0",
