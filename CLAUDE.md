@@ -29,6 +29,9 @@ appshot presets --required  # Show only required presets
 appshot presets --generate iphone-6-9,ipad-13  # Generate config for specific presets
 appshot validate    # Validate screenshots against App Store requirements
 appshot validate --strict  # Check against required presets only
+
+# Custom Commands for Claude Code
+/commit <branch> "<message>" "<title>" "<body>"  # Create PR with lint & test checks
 ```
 
 ## Architecture
