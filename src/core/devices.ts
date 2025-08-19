@@ -22,7 +22,7 @@ export interface DeviceFrame {
 }
 
 // Dynamic frame registry - will be populated from Frames.json
-let frameRegistry: DeviceFrame[] = [
+export let frameRegistry: DeviceFrame[] = [
   // iPhone frames
   {
     name: 'iphone-15-pro-max-portrait',
