@@ -106,11 +106,11 @@ export default function buildCmd() {
 
                   // Parse resolution for output dimensions
                   const [configWidth, configHeight] = deviceConfig.resolution.split('x').map(Number);
-                  
+
                   // Ensure output dimensions match screenshot orientation
                   let outWidth: number;
                   let outHeight: number;
-                  
+
                   if (orientation === 'portrait') {
                     // For portrait, ensure height > width
                     outWidth = Math.min(configWidth, configHeight);
@@ -120,7 +120,7 @@ export default function buildCmd() {
                     outWidth = Math.max(configWidth, configHeight);
                     outHeight = Math.min(configWidth, configHeight);
                   }
-                  
+
                   // Warn if orientation mismatch detected
                   const configOrientation = configWidth > configHeight ? 'landscape' : 'portrait';
                   if (configOrientation !== orientation) {
