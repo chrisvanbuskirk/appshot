@@ -244,7 +244,23 @@ export function findBestFrame(
 ): DeviceFrame | null {
   const orientation = detectOrientation(screenshotWidth, screenshotHeight);
 
-  // First try exact resolution matching
+  // If preferred frame specified, check if it matches orientation first
+  if (preferredFrame) {
+    const preferred = frameRegistry.find(f => f.name === preferredFrame);
+    if (preferred) {
+      // Warn if orientation mismatch
+      if (preferred.orientation !== orientation) {
+        console.warn(
+          `Warning: Preferred frame '${preferredFrame}' is ${preferred.orientation} but screenshot is ${orientation}`
+        );
+        // Don't use mismatched frame
+      } else if (preferred.deviceType === deviceType) {
+        return preferred;
+      }
+    }
+  }
+
+  // Try exact resolution matching
   const exactDevice = detectExactDevice(screenshotWidth, screenshotHeight);
   if (exactDevice) {
     console.log(`    Detected exact device: ${exactDevice} from resolution ${screenshotWidth}x${screenshotHeight}`);
@@ -286,21 +302,6 @@ export function findBestFrame(
     }
   }
 
-  // If preferred frame specified, check if it matches orientation
-  if (preferredFrame) {
-    const preferred = frameRegistry.find(f => f.name === preferredFrame);
-    if (preferred) {
-      // Warn if orientation mismatch
-      if (preferred.orientation !== orientation) {
-        console.warn(
-          `Warning: Preferred frame '${preferredFrame}' is ${preferred.orientation} but screenshot is ${orientation}`
-        );
-        // Don't use mismatched frame
-      } else if (preferred.deviceType === deviceType) {
-        return preferred;
-      }
-    }
-  }
 
   // Find frames matching device type and orientation
   const candidates = frameRegistry.filter(f =>

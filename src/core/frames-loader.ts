@@ -172,8 +172,11 @@ export async function buildFrameRegistry(framesDir: string) {
           if (dimensions) {
             // Get the actual screenshot dimensions for this device
             const screenshotDims = getScreenshotDimensions(frame.name, orientationKey);
-            const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
-            const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+            const calculatedWidth = dimensions.width - (parseInt(frame.x) || 0) * 2;
+            const calculatedHeight = dimensions.height - (parseInt(frame.y) || 0) * 2;
+            // Use the smaller of the fixed resolution or calculated resolution
+            const screenWidth = screenshotDims.width ? Math.min(screenshotDims.width, calculatedWidth) : calculatedWidth;
+            const screenHeight = screenshotDims.height ? Math.min(screenshotDims.height, calculatedHeight) : calculatedHeight;
 
             // Check if mask file exists
             const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
@@ -216,8 +219,11 @@ export async function buildFrameRegistry(framesDir: string) {
             if (dimensions) {
               // Get the actual screenshot dimensions for this device
               const screenshotDims = getScreenshotDimensions(frame.name, 'portrait');
-              const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
-              const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+              const calculatedWidth = dimensions.width - (parseInt(frame.x) || 0) * 2;
+              const calculatedHeight = dimensions.height - (parseInt(frame.y) || 0) * 2;
+              // Use the smaller of the fixed resolution or calculated resolution
+              const screenWidth = screenshotDims.width ? Math.min(screenshotDims.width, calculatedWidth) : calculatedWidth;
+              const screenHeight = screenshotDims.height ? Math.min(screenshotDims.height, calculatedHeight) : calculatedHeight;
 
               // Check if mask file exists
               const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
@@ -252,8 +258,11 @@ export async function buildFrameRegistry(framesDir: string) {
             if (dimensions) {
               // Get the actual screenshot dimensions for this device
               const screenshotDims = getScreenshotDimensions(frame.name, 'landscape');
-              const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
-              const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+              const calculatedWidth = dimensions.width - (parseInt(frame.x) || 0) * 2;
+              const calculatedHeight = dimensions.height - (parseInt(frame.y) || 0) * 2;
+              // Use the smaller of the fixed resolution or calculated resolution
+              const screenWidth = screenshotDims.width ? Math.min(screenshotDims.width, calculatedWidth) : calculatedWidth;
+              const screenHeight = screenshotDims.height ? Math.min(screenshotDims.height, calculatedHeight) : calculatedHeight;
 
               // Check if mask file exists
               const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
@@ -296,8 +305,11 @@ export async function buildFrameRegistry(framesDir: string) {
           if (dimensions) {
             // Get the actual screenshot dimensions for this device
             const screenshotDims = getScreenshotDimensions(frame.name, 'portrait');
-            const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
-            const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+            const calculatedWidth = dimensions.width - (parseInt(frame.x) || 0) * 2;
+            const calculatedHeight = dimensions.height - (parseInt(frame.y) || 0) * 2;
+            // Use the smaller of the fixed resolution or calculated resolution
+            const screenWidth = screenshotDims.width ? Math.min(screenshotDims.width, calculatedWidth) : calculatedWidth;
+            const screenHeight = screenshotDims.height ? Math.min(screenshotDims.height, calculatedHeight) : calculatedHeight;
 
             // Check if mask file exists
             const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
@@ -332,8 +344,11 @@ export async function buildFrameRegistry(framesDir: string) {
           if (dimensions) {
             // Get the actual screenshot dimensions for this device
             const screenshotDims = getScreenshotDimensions(frame.name, 'landscape');
-            const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
-            const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+            const calculatedWidth = dimensions.width - (parseInt(frame.x) || 0) * 2;
+            const calculatedHeight = dimensions.height - (parseInt(frame.y) || 0) * 2;
+            // Use the smaller of the fixed resolution or calculated resolution
+            const screenWidth = screenshotDims.width ? Math.min(screenshotDims.width, calculatedWidth) : calculatedWidth;
+            const screenHeight = screenshotDims.height ? Math.min(screenshotDims.height, calculatedHeight) : calculatedHeight;
 
             // Check if mask file exists
             const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
