@@ -13,20 +13,20 @@ export default function initCmd() {
         const root = process.cwd();
         const configPath = path.join(root, 'appshot.json');
         const devices = ['iphone', 'ipad', 'mac', 'watch'];
-        
+
         const scaffold: AppshotConfig = {
           output: './final',
           frames: './frames',
-          gradient: { 
-            colors: ['#FF5733', '#FFC300'], 
-            direction: 'top-bottom' 
+          gradient: {
+            colors: ['#FF5733', '#FFC300'],
+            direction: 'top-bottom'
           },
-          caption: { 
-            font: 'SF Pro', 
-            fontsize: 64, 
-            color: '#FFFFFF', 
-            align: 'center', 
-            paddingTop: 100 
+          caption: {
+            font: 'SF Pro',
+            fontsize: 64,
+            color: '#FFFFFF',
+            align: 'center',
+            paddingTop: 100
           },
           devices: {
             iphone: { input: './screenshots/iphone', resolution: '1284x2778', autoFrame: true },
@@ -53,7 +53,7 @@ export default function initCmd() {
           const dir = path.join(root, 'screenshots', device);
           await fs.mkdir(dir, { recursive: true });
           console.log(pc.green('✓'), `Created ${path.relative(root, dir)}/`);
-          
+
           const captionsPath = path.join(dir, 'captions.json');
           try {
             await fs.access(captionsPath);
@@ -64,7 +64,7 @@ export default function initCmd() {
           } catch {
             // File doesn't exist, proceed
           }
-          
+
           await fs.writeFile(captionsPath, JSON.stringify({}, null, 2), 'utf8');
           console.log(pc.green('✓'), `Created ${path.relative(root, captionsPath)}`);
         }

@@ -53,7 +53,7 @@ async function getFrameDimensions(framePath: string): Promise<{ width: number; h
 function parseFrameEntry(entry: any): FrameMetadata | null {
   if (!entry || typeof entry !== 'object') return null;
   if (!entry.name || typeof entry.name !== 'string') return null;
-  
+
   return {
     name: entry.name,
     x: entry.x || '0',
@@ -70,20 +70,20 @@ export async function buildFrameRegistry(framesDir: string) {
 
   // Process iPhones
   if (framesData.iPhone) {
-    for (const [model, variants] of Object.entries(framesData.iPhone)) {
+    for (const [_model, variants] of Object.entries(framesData.iPhone)) {
       if (!variants || typeof variants !== 'object') continue;
-      
+
       // Check for direct Portrait/Landscape
       const processOrientation = async (orientation: 'Portrait' | 'Landscape') => {
         const orientationKey = orientation.toLowerCase() as 'portrait' | 'landscape';
-        
+
         if ((variants as any)[orientation]) {
           const frame = parseFrameEntry((variants as any)[orientation]);
           if (!frame) return;
-          
+
           const framePath = path.join(framesDir, `${frame.name}.png`);
           const dimensions = await getFrameDimensions(framePath);
-          
+
           if (dimensions) {
             registry.push({
               name: frame.name.toLowerCase().replace(/ /g, '-'),
@@ -103,21 +103,21 @@ export async function buildFrameRegistry(framesDir: string) {
           }
         }
       };
-      
+
       // Process nested variants (like Pro, Plus, etc.)
-      for (const [variant, orientations] of Object.entries(variants)) {
+      for (const [_variant, orientations] of Object.entries(variants)) {
         if (!orientations || typeof orientations !== 'object') continue;
-        
+
         await processOrientation('Portrait');
         await processOrientation('Landscape');
-        
+
         // Also check nested orientations
         if ((orientations as any).Portrait) {
           const frame = parseFrameEntry((orientations as any).Portrait);
           if (frame) {
             const framePath = path.join(framesDir, `${frame.name}.png`);
             const dimensions = await getFrameDimensions(framePath);
-            
+
             if (dimensions) {
               registry.push({
                 name: frame.name.toLowerCase().replace(/ /g, '-'),
@@ -137,13 +137,13 @@ export async function buildFrameRegistry(framesDir: string) {
             }
           }
         }
-        
+
         if ((orientations as any).Landscape) {
           const frame = parseFrameEntry((orientations as any).Landscape);
           if (frame) {
             const framePath = path.join(framesDir, `${frame.name}.png`);
             const dimensions = await getFrameDimensions(framePath);
-            
+
             if (dimensions) {
               registry.push({
                 name: frame.name.toLowerCase().replace(/ /g, '-'),
@@ -169,15 +169,15 @@ export async function buildFrameRegistry(framesDir: string) {
 
   // Process iPads
   if (framesData.iPad) {
-    for (const [model, orientations] of Object.entries(framesData.iPad)) {
+    for (const [_model, orientations] of Object.entries(framesData.iPad)) {
       if (!orientations || typeof orientations !== 'object') continue;
-      
+
       if ((orientations as any).Portrait) {
         const frame = parseFrameEntry((orientations as any).Portrait);
         if (frame) {
           const framePath = path.join(framesDir, `${frame.name}.png`);
           const dimensions = await getFrameDimensions(framePath);
-          
+
           if (dimensions) {
             registry.push({
               name: frame.name.toLowerCase().replace(/ /g, '-'),
@@ -197,13 +197,13 @@ export async function buildFrameRegistry(framesDir: string) {
           }
         }
       }
-      
+
       if ((orientations as any).Landscape) {
         const frame = parseFrameEntry((orientations as any).Landscape);
         if (frame) {
           const framePath = path.join(framesDir, `${frame.name}.png`);
           const dimensions = await getFrameDimensions(framePath);
-          
+
           if (dimensions) {
             registry.push({
               name: frame.name.toLowerCase().replace(/ /g, '-'),
@@ -228,14 +228,14 @@ export async function buildFrameRegistry(framesDir: string) {
 
   // Process Macs
   if (framesData.Mac) {
-    for (const [model, frameData] of Object.entries(framesData.Mac)) {
+    for (const [_model, frameData] of Object.entries(framesData.Mac)) {
       if (!frameData || typeof frameData !== 'object') continue;
-      
+
       const frame = parseFrameEntry(frameData);
       if (frame) {
         const framePath = path.join(framesDir, `${frame.name}.png`);
         const dimensions = await getFrameDimensions(framePath);
-        
+
         if (dimensions) {
           registry.push({
             name: frame.name.toLowerCase().replace(/ /g, '-'),
@@ -255,12 +255,12 @@ export async function buildFrameRegistry(framesDir: string) {
         }
       } else {
         // Handle nested Mac models like "2021 MacBook Pro" with 14" and 16" variants
-        for (const [size, sizeData] of Object.entries(frameData)) {
+        for (const [_size, sizeData] of Object.entries(frameData)) {
           const sizeFrame = parseFrameEntry(sizeData);
           if (sizeFrame) {
             const framePath = path.join(framesDir, `${sizeFrame.name}.png`);
             const dimensions = await getFrameDimensions(framePath);
-            
+
             if (dimensions) {
               registry.push({
                 name: sizeFrame.name.toLowerCase().replace(/ /g, '-'),
@@ -286,15 +286,15 @@ export async function buildFrameRegistry(framesDir: string) {
 
   // Process Watches
   if (framesData.Watch) {
-    for (const [model, variants] of Object.entries(framesData.Watch)) {
+    for (const [_model, variants] of Object.entries(framesData.Watch)) {
       if (!variants || typeof variants !== 'object') continue;
-      
+
       const frame = parseFrameEntry(variants);
       if (frame) {
         // Direct watch model like Ultra
         const framePath = path.join(framesDir, `${frame.name}.png`);
         const dimensions = await getFrameDimensions(framePath);
-        
+
         if (dimensions) {
           registry.push({
             name: frame.name.toLowerCase().replace(/ /g, '-'),
@@ -314,12 +314,12 @@ export async function buildFrameRegistry(framesDir: string) {
         }
       } else {
         // Watch with size variants
-        for (const [size, sizeData] of Object.entries(variants)) {
+        for (const [_size, sizeData] of Object.entries(variants)) {
           const sizeFrame = parseFrameEntry(sizeData);
           if (sizeFrame) {
             const framePath = path.join(framesDir, `${sizeFrame.name}.png`);
             const dimensions = await getFrameDimensions(framePath);
-            
+
             if (dimensions) {
               registry.push({
                 name: sizeFrame.name.toLowerCase().replace(/ /g, '-'),

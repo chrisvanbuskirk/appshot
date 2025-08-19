@@ -48,7 +48,7 @@ export default function specsCmd() {
 
         console.log(pc.bold('\nDevice Specifications\n'));
 
-        const devices = opts.device 
+        const devices = opts.device
           ? [opts.device as keyof typeof deviceSpecs]
           : Object.keys(deviceSpecs) as (keyof typeof deviceSpecs)[];
 
@@ -59,8 +59,8 @@ export default function specsCmd() {
           }
 
           console.log(pc.cyan(device.toUpperCase()));
-          
-          for (const [model, spec] of Object.entries(deviceSpecs[device])) {
+
+          for (const [_model, spec] of Object.entries(deviceSpecs[device])) {
             console.log(`  ${spec.displayName.padEnd(30)} ${pc.dim(spec.resolution)}`);
           }
           console.log();

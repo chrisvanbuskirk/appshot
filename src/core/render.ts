@@ -8,32 +8,32 @@ export async function renderGradient(
 ): Promise<Buffer> {
   // Create SVG gradient
   const { colors, direction } = config;
-  
+
   let x1 = '0%', y1 = '0%', x2 = '0%', y2 = '100%';
-  
+
   switch (direction) {
-    case 'top-bottom':
-      x1 = '0%'; y1 = '0%'; x2 = '0%'; y2 = '100%';
-      break;
-    case 'bottom-top':
-      x1 = '0%'; y1 = '100%'; x2 = '0%'; y2 = '0%';
-      break;
-    case 'left-right':
-      x1 = '0%'; y1 = '0%'; x2 = '100%'; y2 = '0%';
-      break;
-    case 'right-left':
-      x1 = '100%'; y1 = '0%'; x2 = '0%'; y2 = '0%';
-      break;
-    case 'diagonal':
-      x1 = '0%'; y1 = '0%'; x2 = '100%'; y2 = '100%';
-      break;
+  case 'top-bottom':
+    x1 = '0%'; y1 = '0%'; x2 = '0%'; y2 = '100%';
+    break;
+  case 'bottom-top':
+    x1 = '0%'; y1 = '100%'; x2 = '0%'; y2 = '0%';
+    break;
+  case 'left-right':
+    x1 = '0%'; y1 = '0%'; x2 = '100%'; y2 = '0%';
+    break;
+  case 'right-left':
+    x1 = '100%'; y1 = '0%'; x2 = '0%'; y2 = '0%';
+    break;
+  case 'diagonal':
+    x1 = '0%'; y1 = '0%'; x2 = '100%'; y2 = '100%';
+    break;
   }
-  
+
   const stops = colors.map((color, i) => {
     const offset = (i / (colors.length - 1)) * 100;
     return `<stop offset="${offset}%" stop-color="${color}"/>`;
   }).join('');
-  
+
   const svg = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -44,7 +44,7 @@ export async function renderGradient(
       <rect width="${width}" height="${height}" fill="url(#grad)"/>
     </svg>
   `;
-  
+
   return sharp(Buffer.from(svg)).png().toBuffer();
 }
 
@@ -54,16 +54,16 @@ export async function addCaption(
   config: CaptionConfig
 ): Promise<Buffer> {
   if (!text) return image;
-  
+
   const metadata = await sharp(image).metadata();
   const width = metadata.width || 1000;
   const height = metadata.height || 1000;
-  
+
   // Create text as SVG
   const textY = config.paddingTop + config.fontsize;
   let textAnchor = 'middle';
   let textX = width / 2;
-  
+
   if (config.align === 'left') {
     textAnchor = 'start';
     textX = config.paddingLeft || 50;
@@ -71,7 +71,7 @@ export async function addCaption(
     textAnchor = 'end';
     textX = width - (config.paddingRight || 50);
   }
-  
+
   const svg = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <text
@@ -84,7 +84,7 @@ export async function addCaption(
       >${escapeXml(text)}</text>
     </svg>
   `;
-  
+
   // Composite text over image
   return sharp(image)
     .composite([{
@@ -101,7 +101,7 @@ export async function compositeScreenshot(
   frameMetadata?: { screenX: number; screenY: number; screenWidth: number; screenHeight: number }
 ): Promise<Buffer> {
   if (!frame) return screenshot;
-  
+
   // Default frame metadata (will be customized per device)
   const meta = frameMetadata || {
     screenX: 100,
@@ -109,12 +109,12 @@ export async function compositeScreenshot(
     screenWidth: 1084,
     screenHeight: 2378
   };
-  
+
   // Resize screenshot to fit frame screen area
   const resizedScreenshot = await sharp(screenshot)
     .resize(meta.screenWidth, meta.screenHeight, { fit: 'fill' })
     .toBuffer();
-  
+
   // Composite screenshot into frame
   return sharp(frame)
     .composite([{
