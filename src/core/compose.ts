@@ -14,6 +14,7 @@ export interface ComposeOptions {
       width: number;
       height: number;
     };
+    maskPath?: string;
   };
   caption?: string;
   captionConfig: CaptionConfig;
@@ -106,26 +107,16 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       )
       .toBuffer();
 
-    // Composite screenshot into frame at original size
-    let deviceComposite = await sharp({
-      create: {
-        width: originalFrameWidth,
-        height: originalFrameHeight,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      }
-    })
-      .png()
+    // Create the device composite by starting with the frame
+    // Then place the screenshot UNDER it using dest-over blend mode
+    // This ensures the frame bezels cover the screenshot edges
+    let deviceComposite = await sharp(frame)
       .composite([
         {
           input: resizedScreenshot,
           left: frameMetadata.screenRect.x,
-          top: frameMetadata.screenRect.y
-        },
-        {
-          input: frame,
-          left: 0,
-          top: 0
+          top: frameMetadata.screenRect.y,
+          blend: 'dest-over'  // Place screenshot behind frame
         }
       ])
       .toBuffer();

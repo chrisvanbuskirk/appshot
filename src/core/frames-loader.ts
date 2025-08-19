@@ -18,6 +18,91 @@ export interface FramesData {
   version?: string;
 }
 
+// Device screenshot resolutions based on Apple's official specifications
+const DEVICE_RESOLUTIONS: Record<string, { portrait: { width: number; height: number }; landscape?: { width: number; height: number } }> = {
+  // iPhone 16 Series
+  'iphone 16 pro max': { portrait: { width: 1320, height: 2868 }, landscape: { width: 2868, height: 1320 } },
+  'iphone 16 pro': { portrait: { width: 1206, height: 2622 }, landscape: { width: 2622, height: 1206 } },
+  'iphone 16 plus': { portrait: { width: 1290, height: 2796 }, landscape: { width: 2796, height: 1290 } },
+  'iphone 16': { portrait: { width: 1179, height: 2556 }, landscape: { width: 2556, height: 1179 } },
+
+  // iPhone 15 Series
+  'iphone 15 pro max': { portrait: { width: 1290, height: 2796 }, landscape: { width: 2796, height: 1290 } },
+  'iphone 15 pro': { portrait: { width: 1179, height: 2556 }, landscape: { width: 2556, height: 1179 } },
+  'iphone 15 plus': { portrait: { width: 1290, height: 2796 }, landscape: { width: 2796, height: 1290 } },
+  'iphone 15': { portrait: { width: 1179, height: 2556 }, landscape: { width: 2556, height: 1179 } },
+
+  // iPhone 14 Series
+  'iphone 14 pro max': { portrait: { width: 1290, height: 2796 }, landscape: { width: 2796, height: 1290 } },
+  'iphone 14 pro': { portrait: { width: 1179, height: 2556 }, landscape: { width: 2556, height: 1179 } },
+  'iphone 14 plus': { portrait: { width: 1284, height: 2778 }, landscape: { width: 2778, height: 1284 } },
+  'iphone 14': { portrait: { width: 1170, height: 2532 }, landscape: { width: 2532, height: 1170 } },
+
+  // iPhone 13 Series
+  'iphone 13 pro max': { portrait: { width: 1284, height: 2778 }, landscape: { width: 2778, height: 1284 } },
+  'iphone 13 pro': { portrait: { width: 1170, height: 2532 }, landscape: { width: 2532, height: 1170 } },
+  'iphone 13': { portrait: { width: 1170, height: 2532 }, landscape: { width: 2532, height: 1170 } },
+  'iphone 13 mini': { portrait: { width: 1080, height: 2340 }, landscape: { width: 2340, height: 1080 } },
+
+  // iPhone 12 Series
+  'iphone 12 pro max': { portrait: { width: 1284, height: 2778 }, landscape: { width: 2778, height: 1284 } },
+  'iphone 12 pro': { portrait: { width: 1170, height: 2532 }, landscape: { width: 2532, height: 1170 } },
+  'iphone 12': { portrait: { width: 1170, height: 2532 }, landscape: { width: 2532, height: 1170 } },
+  'iphone 12 mini': { portrait: { width: 1080, height: 2340 }, landscape: { width: 2340, height: 1080 } },
+
+  // Grouped models (from Frames.json naming)
+  'iphone 12-13 pro max': { portrait: { width: 1284, height: 2778 }, landscape: { width: 2778, height: 1284 } },
+  'iphone 12-13 pro': { portrait: { width: 1170, height: 2532 }, landscape: { width: 2532, height: 1170 } },
+  'iphone 12-13 mini': { portrait: { width: 1080, height: 2340 }, landscape: { width: 2340, height: 1080 } },
+
+  // iPhone 11 Series
+  'iphone 11 pro max': { portrait: { width: 1242, height: 2688 }, landscape: { width: 2688, height: 1242 } },
+  'iphone 11 pro': { portrait: { width: 1125, height: 2436 }, landscape: { width: 2436, height: 1125 } },
+  'iphone 11': { portrait: { width: 828, height: 1792 }, landscape: { width: 1792, height: 828 } },
+
+  // iPhone SE/8
+  'iphone 8 and 2020 se': { portrait: { width: 750, height: 1334 } },
+  'iphone se': { portrait: { width: 750, height: 1334 } },
+
+  // iPad resolutions
+  'ipad pro 2018-2021': { portrait: { width: 2048, height: 2732 }, landscape: { width: 2732, height: 2048 } },
+  'ipad pro 2018-2021 11': { portrait: { width: 1668, height: 2388 }, landscape: { width: 2388, height: 1668 } },
+  'ipad pro 2024 11': { portrait: { width: 2064, height: 2752 }, landscape: { width: 2752, height: 2064 } },
+  'ipad pro 2024 13': { portrait: { width: 2064, height: 2752 }, landscape: { width: 2752, height: 2064 } },
+  'ipad air 2020': { portrait: { width: 1640, height: 2360 }, landscape: { width: 2360, height: 1640 } },
+  'ipad mini 2021': { portrait: { width: 1620, height: 2160 }, landscape: { width: 2160, height: 1620 } },
+  'ipad 2021': { portrait: { width: 1620, height: 2160 }, landscape: { width: 2160, height: 1620 } },
+
+  // Mac resolutions
+  'macbook pro 2021 16': { portrait: { width: 3456, height: 2234 } },
+  'macbook pro 2021 14': { portrait: { width: 3024, height: 1964 } },
+  'macbook air 2022': { portrait: { width: 2560, height: 1664 } },
+  'imac 2021': { portrait: { width: 4480, height: 2520 } },
+
+  // Default fallback
+  'default': { portrait: { width: 0, height: 0 } }
+};
+
+/**
+ * Get screenshot dimensions for a specific device and orientation
+ */
+function getScreenshotDimensions(frameName: string, orientation: 'portrait' | 'landscape'): { width: number; height: number } {
+  const normalizedName = frameName.toLowerCase();
+
+  // Find matching device resolution
+  for (const [key, res] of Object.entries(DEVICE_RESOLUTIONS)) {
+    if (normalizedName.includes(key)) {
+      if (orientation === 'landscape' && res.landscape) {
+        return res.landscape;
+      }
+      return res.portrait;
+    }
+  }
+
+  // Return 0,0 to indicate we need to fall back to calculation
+  return { width: 0, height: 0 };
+}
+
 /**
  * Load and parse the Frames.json metadata
  */
@@ -85,6 +170,15 @@ export async function buildFrameRegistry(framesDir: string) {
           const dimensions = await getFrameDimensions(framePath);
 
           if (dimensions) {
+            // Get the actual screenshot dimensions for this device
+            const screenshotDims = getScreenshotDimensions(frame.name, orientationKey);
+            const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
+            const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+
+            // Check if mask file exists
+            const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
+            const maskExists = await fs.access(maskPath).then(() => true).catch(() => false);
+
             registry.push({
               name: frame.name.toLowerCase().replace(/ /g, '-'),
               displayName: frame.name,
@@ -94,11 +188,12 @@ export async function buildFrameRegistry(framesDir: string) {
               screenRect: {
                 x: parseInt(frame.x) || 0,
                 y: parseInt(frame.y) || 0,
-                width: dimensions.width - (parseInt(frame.x) || 0) * 2,
-                height: dimensions.height - (parseInt(frame.y) || 0) * 2
+                width: screenWidth,
+                height: screenHeight
               },
               deviceType: 'iphone' as const,
-              originalName: frame.name
+              originalName: frame.name,
+              maskPath: maskExists ? maskPath : undefined
             });
           }
         }
@@ -119,6 +214,15 @@ export async function buildFrameRegistry(framesDir: string) {
             const dimensions = await getFrameDimensions(framePath);
 
             if (dimensions) {
+              // Get the actual screenshot dimensions for this device
+              const screenshotDims = getScreenshotDimensions(frame.name, 'portrait');
+              const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
+              const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+
+              // Check if mask file exists
+              const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
+              const maskExists = await fs.access(maskPath).then(() => true).catch(() => false);
+
               registry.push({
                 name: frame.name.toLowerCase().replace(/ /g, '-'),
                 displayName: frame.name,
@@ -128,11 +232,12 @@ export async function buildFrameRegistry(framesDir: string) {
                 screenRect: {
                   x: parseInt(frame.x) || 0,
                   y: parseInt(frame.y) || 0,
-                  width: dimensions.width - (parseInt(frame.x) || 0) * 2,
-                  height: dimensions.height - (parseInt(frame.y) || 0) * 2
+                  width: screenWidth,
+                  height: screenHeight
                 },
                 deviceType: 'iphone' as const,
-                originalName: frame.name
+                originalName: frame.name,
+                maskPath: maskExists ? maskPath : undefined
               });
             }
           }
@@ -145,6 +250,15 @@ export async function buildFrameRegistry(framesDir: string) {
             const dimensions = await getFrameDimensions(framePath);
 
             if (dimensions) {
+              // Get the actual screenshot dimensions for this device
+              const screenshotDims = getScreenshotDimensions(frame.name, 'landscape');
+              const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
+              const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+
+              // Check if mask file exists
+              const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
+              const maskExists = await fs.access(maskPath).then(() => true).catch(() => false);
+
               registry.push({
                 name: frame.name.toLowerCase().replace(/ /g, '-'),
                 displayName: frame.name,
@@ -154,11 +268,12 @@ export async function buildFrameRegistry(framesDir: string) {
                 screenRect: {
                   x: parseInt(frame.x) || 0,
                   y: parseInt(frame.y) || 0,
-                  width: dimensions.width - (parseInt(frame.x) || 0) * 2,
-                  height: dimensions.height - (parseInt(frame.y) || 0) * 2
+                  width: screenWidth,
+                  height: screenHeight
                 },
                 deviceType: 'iphone' as const,
-                originalName: frame.name
+                originalName: frame.name,
+                maskPath: maskExists ? maskPath : undefined
               });
             }
           }
@@ -179,6 +294,15 @@ export async function buildFrameRegistry(framesDir: string) {
           const dimensions = await getFrameDimensions(framePath);
 
           if (dimensions) {
+            // Get the actual screenshot dimensions for this device
+            const screenshotDims = getScreenshotDimensions(frame.name, 'portrait');
+            const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
+            const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+
+            // Check if mask file exists
+            const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
+            const maskExists = await fs.access(maskPath).then(() => true).catch(() => false);
+
             registry.push({
               name: frame.name.toLowerCase().replace(/ /g, '-'),
               displayName: frame.name,
@@ -188,11 +312,12 @@ export async function buildFrameRegistry(framesDir: string) {
               screenRect: {
                 x: parseInt(frame.x) || 0,
                 y: parseInt(frame.y) || 0,
-                width: dimensions.width - (parseInt(frame.x) || 0) * 2,
-                height: dimensions.height - (parseInt(frame.y) || 0) * 2
+                width: screenWidth,
+                height: screenHeight
               },
               deviceType: 'ipad' as const,
-              originalName: frame.name
+              originalName: frame.name,
+              maskPath: maskExists ? maskPath : undefined
             });
           }
         }
@@ -205,6 +330,15 @@ export async function buildFrameRegistry(framesDir: string) {
           const dimensions = await getFrameDimensions(framePath);
 
           if (dimensions) {
+            // Get the actual screenshot dimensions for this device
+            const screenshotDims = getScreenshotDimensions(frame.name, 'landscape');
+            const screenWidth = screenshotDims.width || (dimensions.width - (parseInt(frame.x) || 0) * 2);
+            const screenHeight = screenshotDims.height || (dimensions.height - (parseInt(frame.y) || 0) * 2);
+
+            // Check if mask file exists
+            const maskPath = path.join(framesDir, `${frame.name}_mask.png`);
+            const maskExists = await fs.access(maskPath).then(() => true).catch(() => false);
+
             registry.push({
               name: frame.name.toLowerCase().replace(/ /g, '-'),
               displayName: frame.name,
@@ -214,11 +348,12 @@ export async function buildFrameRegistry(framesDir: string) {
               screenRect: {
                 x: parseInt(frame.x) || 0,
                 y: parseInt(frame.y) || 0,
-                width: dimensions.width - (parseInt(frame.x) || 0) * 2,
-                height: dimensions.height - (parseInt(frame.y) || 0) * 2
+                width: screenWidth,
+                height: screenHeight
               },
               deviceType: 'ipad' as const,
-              originalName: frame.name
+              originalName: frame.name,
+              maskPath: maskExists ? maskPath : undefined
             });
           }
         }

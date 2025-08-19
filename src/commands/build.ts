@@ -156,7 +156,8 @@ export default function buildCmd() {
                     frameMetadata: frameMetadata ? {
                       frameWidth: frameMetadata.frameWidth,
                       frameHeight: frameMetadata.frameHeight,
-                      screenRect: frameMetadata.screenRect
+                      screenRect: frameMetadata.screenRect,
+                      maskPath: frameMetadata.maskPath
                     } : undefined,
                     caption: opts.caption !== false ? captionText : undefined,
                     captionConfig: config.caption,
