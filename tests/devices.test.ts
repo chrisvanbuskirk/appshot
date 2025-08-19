@@ -20,7 +20,11 @@ describe('devices', () => {
   });
 
   afterEach(async () => {
-    await fs.rm(tempDir, { recursive: true, force: true });
+    // Add delay for Windows file system
+    if (process.platform === 'win32') {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    await fs.rm(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   });
 
   describe('detectOrientation', () => {

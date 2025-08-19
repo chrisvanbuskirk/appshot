@@ -32,7 +32,7 @@ describe('render', () => {
         expect(metadata.width).toBe(50);
         expect(metadata.height).toBe(50);
       }
-    });
+    }, 60000); // Increase timeout for Windows CI
 
     it('should handle multiple colors', async () => {
       const gradient = await renderGradient(100, 100, {
