@@ -53,11 +53,17 @@ screenshots/
 
 ### Add captions
 
-Use the interactive caption editor:
+Use the interactive caption editor with autocomplete:
 
 ```bash
 appshot caption --device iphone
 ```
+
+Features:
+- 🔍 **Autocomplete** - Smart suggestions as you type
+- 📊 **Frequency tracking** - Most-used captions appear first  
+- 🎯 **Device-specific** - Suggestions tailored to device type
+- ⌨️ **Keyboard shortcuts** - Tab to complete, arrows to navigate
 
 ### Build final screenshots
 
@@ -132,11 +138,24 @@ Options:
 - `--force` - Overwrite existing files
 
 ### `appshot caption`
-Interactively add or edit captions for screenshots.
+Interactively add or edit captions for screenshots with intelligent autocomplete.
+
+Features:
+- **Autocomplete suggestions** - Shows previous captions as you type
+- **Fuzzy search** - Finds captions even with typos
+- **Usage tracking** - Frequently used captions appear first
+- **Learning system** - Improves suggestions over time
+- **Device-specific** - Prioritizes captions used for the same device
 
 Options:
 - `--device <name>` - Device name (required)
 - `--lang <code>` - Language code (default: en)
+
+Keyboard shortcuts:
+- **Tab** - Autocomplete the top suggestion
+- **↑↓** - Navigate through suggestions
+- **Enter** - Select current suggestion
+- **Esc** - Dismiss suggestions
 
 ### `appshot build`
 Generate final screenshots with frames, gradients, and captions.
@@ -160,7 +179,9 @@ Remove generated screenshots and temporary files.
 
 Options:
 - `--all` - Remove all generated files including .appshot/ directory
-- `--force` - Skip confirmation prompt
+- `--history` - Clear caption autocomplete history
+- `--keep-history` - Preserve caption history when using --all
+- `--yes` - Skip confirmation prompt
 
 Options:
 - `--device <name>` - Filter by device type
