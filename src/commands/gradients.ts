@@ -15,7 +15,7 @@ function getColorBlock(color: string): string {
   const r = parseInt(color.slice(1, 3), 16);
   const g = parseInt(color.slice(3, 5), 16);
   const b = parseInt(color.slice(5, 7), 16);
-  
+
   // Use bright colors for better visibility
   if (r > 200 && g < 100 && b < 100) return pc.red('█');
   if (r > 200 && g > 200 && b < 100) return pc.yellow('█');

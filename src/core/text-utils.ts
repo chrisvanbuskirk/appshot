@@ -32,8 +32,8 @@ export function calculateCharsPerLine(width: number, fontSize: number, padding: 
   const actualPadding = width < NARROW_WIDTH_THRESHOLD ? PADDING_NARROW : padding;
   const availableWidth = width - (actualPadding * 2);
   // For watch (narrow width), use smaller character width factor since font is smaller
-  const avgCharWidth = width < NARROW_WIDTH_THRESHOLD 
-    ? fontSize * CHAR_WIDTH_FACTOR_NARROW 
+  const avgCharWidth = width < NARROW_WIDTH_THRESHOLD
+    ? fontSize * CHAR_WIDTH_FACTOR_NARROW
     : fontSize * CHAR_WIDTH_FACTOR_NORMAL;
   return Math.floor(availableWidth / avgCharWidth);
 }
