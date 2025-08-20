@@ -3,6 +3,19 @@ import { promises as fs } from 'fs';
 import type { GradientConfig, CaptionConfig, DeviceConfig } from '../types.js';
 import { renderGradient } from './render.js';
 import { applyRoundedCorners } from './mask-generator.js';
+import { calculateAdaptiveCaptionHeight, wrapText } from './text-utils.js';
+
+/**
+ * Escape special XML/HTML characters in text
+ */
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
 
 export interface ComposeOptions {
   screenshot: Buffer;
@@ -47,21 +60,86 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 
 
   // Determine caption position (default to 'above' for better App Store style)
-  const captionPosition = captionConfig.position || 'above';
+  // Check for device-specific override first
+  const captionPosition = deviceConfig.captionPosition || captionConfig.position || 'above';
   const partialFrame = deviceConfig.partialFrame || false;
   const frameOffset = deviceConfig.frameOffset || 25; // Default 25% cut off
+  const framePosition = deviceConfig.framePosition || 'center';
+  const deviceFrameScale = deviceConfig.frameScale;
 
   // Calculate dimensions based on output
 
+  // Pre-calculate device dimensions for caption height calculation
+  let targetDeviceHeight = 0;
+  let deviceTop = 0;
+
+  if (frame && frameMetadata) {
+    const originalFrameHeight = frameMetadata.frameHeight;
+    const availableHeight = Math.max(100, outputHeight - 100); // Temporary estimate
+    const scaleY = availableHeight / originalFrameHeight;
+    const scale = deviceConfig.frameScale ? scaleY * deviceConfig.frameScale : scaleY * 0.9;
+    targetDeviceHeight = Math.floor(originalFrameHeight * scale);
+
+    // Calculate preliminary device position
+    if (typeof framePosition === 'number') {
+      const availableSpace = outputHeight - targetDeviceHeight;
+      deviceTop = Math.floor(availableSpace * (framePosition / 100));
+    } else if (framePosition === 'top') {
+      deviceTop = 100; // Temporary estimate
+    } else if (framePosition === 'bottom') {
+      deviceTop = outputHeight - targetDeviceHeight;
+    } else {
+      deviceTop = Math.floor((outputHeight - targetDeviceHeight) / 2);
+    }
+  }
+
   // Calculate caption height if positioned above
   let captionHeight = 0;
+  let captionLines: string[] = [];
+
   if (captionPosition === 'above' && caption) {
-    // For watch devices, use top 1/3 of screen for text
     const isWatch = outputWidth < 500;
+    const captionFontSize = deviceConfig.captionSize || captionConfig.fontsize;
+
+    // Get caption box config (device-specific or global)
+    const captionBoxConfig = deviceConfig.captionBox || captionConfig.box || {};
+    const autoSize = captionBoxConfig.autoSize !== false; // Default true
+
     if (isWatch) {
-      captionHeight = Math.floor(outputHeight / 3); // Use top 1/3 for watch captions
+      // Use proper text wrapping for watch with padding
+      captionHeight = Math.floor(outputHeight / 3);
+      // Use smaller font size for watch (36px max)
+      const watchFontSize = Math.min(36, captionFontSize);
+      // Use wrapText which now accounts for watch padding - allow 3 lines for watch
+      captionLines = wrapText(caption, outputWidth, watchFontSize, 3);
+    } else if (autoSize) {
+      // Use adaptive caption height
+      const result = calculateAdaptiveCaptionHeight(
+        caption,
+        captionFontSize,
+        outputWidth,
+        outputHeight,
+        deviceTop,
+        targetDeviceHeight,
+        framePosition
+      );
+      captionHeight = result.height;
+      captionLines = result.lines;
     } else {
-      captionHeight = captionConfig.paddingTop + captionConfig.fontsize * 2 + (captionConfig.paddingBottom || 60);
+      // Use fixed height with text wrapping
+      const maxLines = captionBoxConfig.maxLines || 3;
+      captionLines = wrapText(caption, outputWidth, captionFontSize, maxLines);
+      const lineHeight = captionBoxConfig.lineHeight || 1.4;
+      const textHeight = captionLines.length * captionFontSize * lineHeight;
+      captionHeight = captionConfig.paddingTop + textHeight + (captionConfig.paddingBottom || 60);
+
+      // Apply min/max constraints
+      if (captionBoxConfig.minHeight) {
+        captionHeight = Math.max(captionBoxConfig.minHeight, captionHeight);
+      }
+      if (captionBoxConfig.maxHeight) {
+        captionHeight = Math.min(captionBoxConfig.maxHeight, captionHeight);
+      }
     }
   }
 
@@ -81,43 +159,39 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     try {
       // Create simple SVG text
       const isWatch = outputWidth < 500;
-      const fontSize = isWatch ? 36 : captionConfig.fontsize; // Smaller font for watch
+      // Use device-specific caption size if provided
+      const baseFontSize = deviceConfig.captionSize || captionConfig.fontsize;
+      const fontSize = isWatch ? Math.min(36, baseFontSize) : baseFontSize; // Smaller font for watch
 
       let svgText: string;
 
-      if (isWatch) {
-        // Simple word wrapping for 2 lines ONLY for watch
-        const words = caption.split(' ');
-        const midPoint = Math.ceil(words.length / 2);
-        const line1 = words.slice(0, midPoint).join(' ');
-        const line2 = words.slice(midPoint).join(' ');
+      // Get caption box config
+      const captionBoxConfig = deviceConfig.captionBox || captionConfig.box || {};
+      const lineHeight = captionBoxConfig.lineHeight || 1.4;
 
-        svgText = `<svg width="${canvasWidth}" height="${captionHeight}" xmlns="http://www.w3.org/2000/svg">
-          <text x="${canvasWidth/2}" y="${captionHeight * 0.4}" 
-                font-family="Arial, sans-serif" 
-                font-size="${fontSize}" 
-                fill="${captionConfig.color}" 
-                text-anchor="middle"
-                font-weight="bold">${escapeXml(line1)}</text>
-          <text x="${canvasWidth/2}" y="${captionHeight * 0.7}" 
-                font-family="Arial, sans-serif" 
-                font-size="${fontSize}" 
-                fill="${captionConfig.color}" 
-                text-anchor="middle"
-                font-weight="bold">${escapeXml(line2)}</text>
-        </svg>`;
-      } else {
-        // Single line for all other devices (iPhone, iPad, etc.)
-        svgText = `<svg width="${canvasWidth}" height="${captionHeight}" xmlns="http://www.w3.org/2000/svg">
-          <text x="${canvasWidth/2}" y="${captionHeight/2}" 
-                font-family="Arial, sans-serif" 
-                font-size="${fontSize}" 
-                fill="${captionConfig.color}" 
-                text-anchor="middle"
-                dominant-baseline="middle"
-                font-weight="bold">${escapeXml(caption)}</text>
-        </svg>`;
+      if (captionLines.length === 0) {
+        // Fallback if no lines were calculated
+        captionLines = [caption];
       }
+
+      // Calculate vertical positioning for centered text block
+      const totalTextHeight = captionLines.length * fontSize * lineHeight;
+      const startY = (captionHeight - totalTextHeight) / 2 + fontSize;
+
+      // Create SVG with multiple text lines
+      const textElements = captionLines.map((line, index) => {
+        const y = startY + (index * fontSize * lineHeight);
+        return `<text x="${canvasWidth/2}" y="${y}" 
+                font-family="Arial, sans-serif" 
+                font-size="${fontSize}" 
+                fill="${captionConfig.color}" 
+                text-anchor="middle"
+                font-weight="bold">${escapeXml(line)}</text>`;
+      }).join('\n');
+
+      svgText = `<svg width="${canvasWidth}" height="${captionHeight}" xmlns="http://www.w3.org/2000/svg">
+        ${textElements}
+      </svg>`;
 
       const captionImage = await sharp(Buffer.from(svgText))
         .png()
@@ -160,16 +234,23 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     const originalFrameWidth = frameMetadata.frameWidth;
     const originalFrameHeight = frameMetadata.frameHeight;
 
-    // Calculate available space for the device (accounting for caption)
+    // Calculate available space for the device
     const availableWidth = outputWidth;
-    const availableHeight = Math.max(100, outputHeight - captionHeight); // Ensure minimum height
+    let availableHeight = Math.max(100, outputHeight - captionHeight); // Default: account for caption
+
+    // If frameScale is explicitly set, use total output height for consistent sizing
+    if (deviceFrameScale !== undefined) {
+      availableHeight = outputHeight; // Use full height for consistent scale
+    }
 
     // Calculate scale to fit within available space while maintaining aspect ratio
     const scaleX = availableWidth / originalFrameWidth;
     const scaleY = availableHeight / originalFrameHeight;
-    // Different scaling for different device types
+    // Use device-specific scale if provided, otherwise use defaults
     let scale;
-    if (frameMetadata.deviceType === 'watch') {
+    if (deviceFrameScale !== undefined) {
+      scale = Math.min(scaleX, scaleY) * deviceFrameScale;
+    } else if (frameMetadata.deviceType === 'watch') {
       // For watch, make it larger since bottom will be cut off
       scale = Math.min(scaleX, scaleY) * 1.3; // Use 130% scale for watch
     } else if (frameMetadata.deviceType === 'mac') {
@@ -339,15 +420,31 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       }
     }
 
-    // Calculate position for centered device
-    // For watch, position lower to cut off bottom band
-    let deviceTop;
-    if (frameMetadata.deviceType === 'watch') {
-      // Position watch so bottom 1/4 is cut off, raised 25px total
-      deviceTop = canvasHeight - Math.floor(targetDeviceHeight * 0.75) - 25;
+    // Recalculate position with actual caption height
+    if (typeof framePosition === 'number') {
+      // Custom position as percentage from top (0-100)
+      const availableSpace = canvasHeight - captionHeight - targetDeviceHeight;
+      deviceTop = captionHeight + Math.floor(availableSpace * (framePosition / 100));
+    } else if (framePosition === 'top') {
+      deviceTop = captionHeight;
+    } else if (framePosition === 'bottom') {
+      deviceTop = canvasHeight - targetDeviceHeight;
+    } else if (framePosition === 'center') {
+      // Default centered positioning
+      if (frameMetadata.deviceType === 'watch' && !deviceConfig.framePosition) {
+        // Special watch positioning (unless explicitly overridden)
+        deviceTop = canvasHeight - Math.floor(targetDeviceHeight * 0.75) - 25;
+      } else {
+        const availableSpace = canvasHeight - captionHeight;
+        deviceTop = captionHeight + Math.floor((availableSpace - targetDeviceHeight) / 2);
+      }
     } else {
+      // Default to centered
       deviceTop = captionHeight;
     }
+
+    // Ensure device doesn't go off canvas
+    deviceTop = Math.floor(Math.max(captionHeight, Math.min(deviceTop, canvasHeight - targetDeviceHeight)));
     const deviceLeft = Math.floor((canvasWidth - targetDeviceWidth) / 2);
 
     // Add the complete device to composites
@@ -358,7 +455,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     });
   } else {
     // No frame, just use the screenshot
-    const deviceTop = captionHeight;
+    const deviceTop = Math.floor(captionHeight);
     const deviceLeft = Math.floor((canvasWidth - outputWidth) / 2);
 
     composites.push({
@@ -481,15 +578,6 @@ function _createCaptionSvg(
       font-weight="600"
     >${escapeXml(text)}</text>
   </svg>`;
-}
-
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 /**

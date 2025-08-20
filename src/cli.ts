@@ -8,6 +8,8 @@ import specsCmd from './commands/specs.js';
 import checkCmd from './commands/check.js';
 import presetsCmd from './commands/presets.js';
 import validateCmd from './commands/validate.js';
+import styleCmd from './commands/style.js';
+import gradientsCmd from './commands/gradients.js';
 import { createCleanCommand } from './commands/clean.js';
 
 const program = new Command();
@@ -19,6 +21,8 @@ program
 
 program.addCommand(initCmd());
 program.addCommand(captionCmd());
+program.addCommand(styleCmd());
+program.addCommand(gradientsCmd());
 program.addCommand(localizeCmd());
 program.addCommand(buildCmd());
 program.addCommand(specsCmd());

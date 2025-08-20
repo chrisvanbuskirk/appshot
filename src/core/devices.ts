@@ -25,6 +25,91 @@ export interface DeviceFrame {
 // Dynamic frame registry - will be populated from Frames.json
 export let frameRegistry: DeviceFrame[] = [
   // iPhone frames
+  // iPhone 16 Pro Max
+  {
+    name: 'iphone-16-pro-max-portrait',
+    displayName: 'iPhone 16 Pro Max',
+    orientation: 'portrait',
+    frameWidth: 1458,
+    frameHeight: 3054,
+    screenRect: { x: 75, y: 66, width: 1320, height: 2868 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 16 Pro Max Portrait_mask.png'
+  },
+  {
+    name: 'iphone-16-pro-max-landscape',
+    displayName: 'iPhone 16 Pro Max',
+    orientation: 'landscape',
+    frameWidth: 3054,
+    frameHeight: 1458,
+    screenRect: { x: 66, y: 75, width: 2868, height: 1320 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 16 Pro Max Landscape_mask.png'
+  },
+  // iPhone 16 Pro
+  {
+    name: 'iphone-16-pro-portrait',
+    displayName: 'iPhone 16 Pro',
+    orientation: 'portrait',
+    frameWidth: 1350,
+    frameHeight: 2844,
+    screenRect: { x: 72, y: 69, width: 1206, height: 2622 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 16 Pro Portrait_mask.png'
+  },
+  {
+    name: 'iphone-16-pro-landscape',
+    displayName: 'iPhone 16 Pro',
+    orientation: 'landscape',
+    frameWidth: 2844,
+    frameHeight: 1350,
+    screenRect: { x: 69, y: 72, width: 2622, height: 1206 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 16 Pro Landscape_mask.png'
+  },
+  // iPhone 16 Plus
+  {
+    name: 'iphone-16-plus-portrait',
+    displayName: 'iPhone 16 Plus',
+    orientation: 'portrait',
+    frameWidth: 1458,
+    frameHeight: 3054,
+    screenRect: { x: 90, y: 87, width: 1284, height: 2778 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 16 Plus Portrait_mask.png'
+  },
+  {
+    name: 'iphone-16-plus-landscape',
+    displayName: 'iPhone 16 Plus',
+    orientation: 'landscape',
+    frameWidth: 3054,
+    frameHeight: 1458,
+    screenRect: { x: 87, y: 90, width: 2778, height: 1284 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 16 Plus Landscape_mask.png'
+  },
+  // iPhone 16
+  {
+    name: 'iphone-16-portrait',
+    displayName: 'iPhone 16',
+    orientation: 'portrait',
+    frameWidth: 1350,
+    frameHeight: 2844,
+    screenRect: { x: 90, y: 90, width: 1170, height: 2532 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 16 Portrait_mask.png'
+  },
+  {
+    name: 'iphone-16-landscape',
+    displayName: 'iPhone 16',
+    orientation: 'landscape',
+    frameWidth: 2844,
+    frameHeight: 1350,
+    screenRect: { x: 90, y: 90, width: 2532, height: 1170 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 16 Landscape_mask.png'
+  },
+  // iPhone 15 frames
   {
     name: 'iphone-15-pro-max-portrait',
     displayName: 'iPhone 15 Pro Max',
@@ -57,15 +142,180 @@ export let frameRegistry: DeviceFrame[] = [
     displayName: 'iPhone SE',
     orientation: 'portrait',
     frameWidth: 950,
-    frameHeight: 1634,
-    screenRect: { x: 100, y: 150, width: 750, height: 1334 },
+    frameHeight: 1700,
+    screenRect: { x: 125, y: 334, width: 750, height: 1334 },
+    deviceType: 'iphone'
+  },
+  // iPhone 12-13 Pro Max
+  {
+    name: 'iphone-12-13-pro-max-portrait',
+    displayName: 'iPhone 12-13 Pro Max',
+    orientation: 'portrait',
+    frameWidth: 1392,
+    frameHeight: 2940,
+    screenRect: { x: 108, y: 111, width: 1284, height: 2778 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 12-13 Pro Max Portrait_mask.png'
+  },
+  {
+    name: 'iphone-12-13-pro-max-landscape',
+    displayName: 'iPhone 12-13 Pro Max',
+    orientation: 'landscape',
+    frameWidth: 2940,
+    frameHeight: 1392,
+    screenRect: { x: 111, y: 108, width: 2778, height: 1284 },
+    deviceType: 'iphone',
+    maskPath: 'frames/iPhone 12-13 Pro Max Landscape_mask.png'
+  },
+  // iPhone 12-13 Pro
+  {
+    name: 'iphone-12-13-pro-portrait',
+    displayName: 'iPhone 12-13 Pro',
+    orientation: 'portrait',
+    frameWidth: 1286,
+    frameHeight: 2726,
+    screenRect: { x: 115, y: 84, width: 1170, height: 2532 },
+    deviceType: 'iphone'
+  },
+  {
+    name: 'iphone-12-13-pro-landscape',
+    displayName: 'iPhone 12-13 Pro',
+    orientation: 'landscape',
+    frameWidth: 2726,
+    frameHeight: 1286,
+    screenRect: { x: 84, y: 115, width: 2532, height: 1170 },
+    deviceType: 'iphone'
+  },
+  // iPhone 12-13 mini
+  {
+    name: 'iphone-12-13-mini-portrait',
+    displayName: 'iPhone 12-13 mini',
+    orientation: 'portrait',
+    frameWidth: 1220,
+    frameHeight: 2520,
+    screenRect: { x: 80, y: 80, width: 1080, height: 2340 },
+    deviceType: 'iphone'
+  },
+  {
+    name: 'iphone-12-13-mini-landscape',
+    displayName: 'iPhone 12-13 mini',
+    orientation: 'landscape',
+    frameWidth: 2520,
+    frameHeight: 1220,
+    screenRect: { x: 80, y: 80, width: 2340, height: 1080 },
+    deviceType: 'iphone'
+  },
+  // iPhone 11 Pro Max
+  {
+    name: 'iphone-11-pro-max-portrait',
+    displayName: 'iPhone 11 Pro Max',
+    orientation: 'portrait',
+    frameWidth: 1392,
+    frameHeight: 2940,
+    screenRect: { x: 108, y: 108, width: 1242, height: 2688 },
+    deviceType: 'iphone'
+  },
+  {
+    name: 'iphone-11-pro-max-landscape',
+    displayName: 'iPhone 11 Pro Max',
+    orientation: 'landscape',
+    frameWidth: 2940,
+    frameHeight: 1392,
+    screenRect: { x: 108, y: 108, width: 2688, height: 1242 },
+    deviceType: 'iphone'
+  },
+  // iPhone 11 Pro
+  {
+    name: 'iphone-11-pro-portrait',
+    displayName: 'iPhone 11 Pro',
+    orientation: 'portrait',
+    frameWidth: 1255,
+    frameHeight: 2616,
+    screenRect: { x: 100, y: 100, width: 1125, height: 2436 },
+    deviceType: 'iphone'
+  },
+  // iPhone 11
+  {
+    name: 'iphone-11-portrait',
+    displayName: 'iPhone 11',
+    orientation: 'portrait',
+    frameWidth: 1025,
+    frameHeight: 2102,
+    screenRect: { x: 125, y: 110, width: 828, height: 1792 },
+    deviceType: 'iphone'
+  },
+  {
+    name: 'iphone-11-landscape',
+    displayName: 'iPhone 11',
+    orientation: 'landscape',
+    frameWidth: 2102,
+    frameHeight: 1025,
+    screenRect: { x: 110, y: 125, width: 1792, height: 828 },
+    deviceType: 'iphone'
+  },
+  // iPhone 8 Plus
+  {
+    name: 'iphone-8-plus-portrait',
+    displayName: 'iPhone 8 Plus',
+    orientation: 'portrait',
+    frameWidth: 1392,
+    frameHeight: 2510,
+    screenRect: { x: 120, y: 300, width: 1242, height: 2208 },
+    deviceType: 'iphone'
+  },
+  {
+    name: 'iphone-8-plus-landscape',
+    displayName: 'iPhone 8 Plus',
+    orientation: 'landscape',
+    frameWidth: 2510,
+    frameHeight: 1392,
+    screenRect: { x: 300, y: 120, width: 2208, height: 1242 },
     deviceType: 'iphone'
   },
 
   // iPad frames
+  // iPad Pro 2024 13"
+  {
+    name: 'ipad-pro-2024-13-portrait',
+    displayName: 'iPad Pro 2024 13"',
+    orientation: 'portrait',
+    frameWidth: 2264,
+    frameHeight: 3144,
+    screenRect: { x: 108, y: 132, width: 2064, height: 2752 },
+    deviceType: 'ipad'
+  },
+  {
+    name: 'ipad-pro-2024-13-landscape',
+    displayName: 'iPad Pro 2024 13"',
+    orientation: 'landscape',
+    frameWidth: 3144,
+    frameHeight: 2264,
+    screenRect: { x: 132, y: 108, width: 2752, height: 2064 },
+    deviceType: 'ipad'
+  },
+  // iPad Pro 2024 11"
+  {
+    name: 'ipad-pro-2024-11-portrait',
+    displayName: 'iPad Pro 2024 11"',
+    orientation: 'portrait',
+    frameWidth: 1858,
+    frameHeight: 2678,
+    screenRect: { x: 95, y: 95, width: 1668, height: 2388 },
+    deviceType: 'ipad'
+  },
+  {
+    name: 'ipad-pro-2024-11-landscape',
+    displayName: 'iPad Pro 2024 11"',
+    orientation: 'landscape',
+    frameWidth: 2678,
+    frameHeight: 1858,
+    screenRect: { x: 110, y: 106, width: 2388, height: 1668 },
+    deviceType: 'ipad'
+  },
+  // iPad Pro 2018-2021 12.9"
   {
     name: 'ipad-pro-12-portrait',
-    displayName: 'iPad Pro 12.9"',
+    displayName: 'iPad Pro 12.9" (2018-2021)',
     orientation: 'portrait',
     frameWidth: 2248,
     frameHeight: 3032,
@@ -74,16 +324,17 @@ export let frameRegistry: DeviceFrame[] = [
   },
   {
     name: 'ipad-pro-12-landscape',
-    displayName: 'iPad Pro 12.9"',
+    displayName: 'iPad Pro 12.9" (2018-2021)',
     orientation: 'landscape',
     frameWidth: 3032,
     frameHeight: 2248,
     screenRect: { x: 150, y: 100, width: 2732, height: 2048 },
     deviceType: 'ipad'
   },
+  // iPad Pro 2018-2021 11"
   {
     name: 'ipad-pro-11-portrait',
-    displayName: 'iPad Pro 11"',
+    displayName: 'iPad Pro 11" (2018-2021)',
     orientation: 'portrait',
     frameWidth: 1868,
     frameHeight: 2688,
@@ -92,60 +343,191 @@ export let frameRegistry: DeviceFrame[] = [
   },
   {
     name: 'ipad-pro-11-landscape',
-    displayName: 'iPad Pro 11"',
+    displayName: 'iPad Pro 11" (2018-2021)',
     orientation: 'landscape',
     frameWidth: 2688,
     frameHeight: 1868,
     screenRect: { x: 150, y: 100, width: 2388, height: 1668 },
     deviceType: 'ipad'
   },
+  // iPad Air 2020
+  {
+    name: 'ipad-air-2020-portrait',
+    displayName: 'iPad Air 2020',
+    orientation: 'portrait',
+    frameWidth: 1880,
+    frameHeight: 2660,
+    screenRect: { x: 106, y: 106, width: 1668, height: 2224 },
+    deviceType: 'ipad'
+  },
+  {
+    name: 'ipad-air-2020-landscape',
+    displayName: 'iPad Air 2020',
+    orientation: 'landscape',
+    frameWidth: 2660,
+    frameHeight: 1880,
+    screenRect: { x: 106, y: 106, width: 2224, height: 1668 },
+    deviceType: 'ipad'
+  },
+  // iPad 2021
+  {
+    name: 'ipad-2021-portrait',
+    displayName: 'iPad 2021',
+    orientation: 'portrait',
+    frameWidth: 1960,
+    frameHeight: 2620,
+    screenRect: { x: 106, y: 116, width: 1640, height: 2160 },
+    deviceType: 'ipad'
+  },
+  {
+    name: 'ipad-2021-landscape',
+    displayName: 'iPad 2021',
+    orientation: 'landscape',
+    frameWidth: 2620,
+    frameHeight: 1960,
+    screenRect: { x: 116, y: 106, width: 2160, height: 1640 },
+    deviceType: 'ipad'
+  },
+  // iPad mini 2021
+  {
+    name: 'ipad-mini-2021-portrait',
+    displayName: 'iPad mini 2021',
+    orientation: 'portrait',
+    frameWidth: 1700,
+    frameHeight: 2380,
+    screenRect: { x: 106, y: 106, width: 1488, height: 2266 },
+    deviceType: 'ipad'
+  },
+  {
+    name: 'ipad-mini-2021-landscape',
+    displayName: 'iPad mini 2021',
+    orientation: 'landscape',
+    frameWidth: 2380,
+    frameHeight: 1700,
+    screenRect: { x: 106, y: 106, width: 2266, height: 1488 },
+    deviceType: 'ipad'
+  },
 
   // Mac frames (always landscape)
   {
-    name: 'macbook-pro-16',
-    displayName: 'MacBook Pro 16"',
+    name: 'macbook-pro-2021-16',
+    displayName: 'MacBook Pro 2021 16"',
     orientation: 'landscape',
-    frameWidth: 3856,
-    frameHeight: 2434,
-    screenRect: { x: 200, y: 100, width: 3456, height: 2234 },
+    frameWidth: 3910,
+    frameHeight: 2419,
+    screenRect: { x: 442, y: 313, width: 3024, height: 1890 },
     deviceType: 'mac'
   },
   {
-    name: 'macbook-air-15',
-    displayName: 'MacBook Air 15"',
+    name: 'macbook-pro-2021-14',
+    displayName: 'MacBook Pro 2021 14"',
     orientation: 'landscape',
-    frameWidth: 3280,
-    frameHeight: 2064,
-    screenRect: { x: 200, y: 100, width: 2880, height: 1864 },
+    frameWidth: 3624,
+    frameHeight: 2234,
+    screenRect: { x: 460, y: 300, width: 2704, height: 1734 },
     deviceType: 'mac'
   },
   {
-    name: 'imac-24',
-    displayName: 'iMac 24"',
+    name: 'macbook-air-2022',
+    displayName: 'MacBook Air 2022',
     orientation: 'landscape',
-    frameWidth: 4880,
-    frameHeight: 2920,
-    screenRect: { x: 200, y: 200, width: 4480, height: 2520 },
+    frameWidth: 3000,
+    frameHeight: 1892,
+    screenRect: { x: 330, y: 218, width: 2340, height: 1456 },
+    deviceType: 'mac'
+  },
+  {
+    name: 'macbook-air-2020',
+    displayName: 'MacBook Air 2020',
+    orientation: 'landscape',
+    frameWidth: 3180,
+    frameHeight: 2052,
+    screenRect: { x: 620, y: 652, width: 1940, height: 1400 },
+    deviceType: 'mac'
+  },
+  {
+    name: 'macbook-pro-13',
+    displayName: 'MacBook Pro 13"',
+    orientation: 'landscape',
+    frameWidth: 3180,
+    frameHeight: 1821,
+    screenRect: { x: 620, y: 261, width: 1940, height: 1300 },
+    deviceType: 'mac'
+  },
+  {
+    name: 'imac-2021',
+    displayName: 'iMac 2021',
+    orientation: 'landscape',
+    frameWidth: 4621,
+    frameHeight: 3361,
+    screenRect: { x: 141, y: 161, width: 4480, height: 2520 },
     deviceType: 'mac'
   },
 
   // Watch frames (always portrait)
   {
-    name: 'watch-ultra-2',
-    displayName: 'Apple Watch Ultra 2',
+    name: 'watch-ultra-2024',
+    displayName: 'Watch Ultra 2024',
     orientation: 'portrait',
-    frameWidth: 610,
-    frameHeight: 702,
-    screenRect: { x: 100, y: 100, width: 410, height: 502 },
+    frameWidth: 605,
+    frameHeight: 819,
+    screenRect: { x: 95, y: 219, width: 410, height: 502 },
     deviceType: 'watch'
   },
   {
-    name: 'watch-series-9-45mm',
-    displayName: 'Apple Watch Series 9 (45mm)',
+    name: 'watch-series-10-46',
+    displayName: 'Watch Series 10 (46mm)',
     orientation: 'portrait',
-    frameWidth: 596,
-    frameHeight: 684,
-    screenRect: { x: 100, y: 100, width: 396, height: 484 },
+    frameWidth: 570,
+    frameHeight: 784,
+    screenRect: { x: 72, y: 192, width: 416, height: 496 },
+    deviceType: 'watch',
+    maskPath: 'frames/Watch Series 10 46_mask.png'
+  },
+  {
+    name: 'watch-series-10-42',
+    displayName: 'Watch Series 10 (42mm)',
+    orientation: 'portrait',
+    frameWidth: 513,
+    frameHeight: 711,
+    screenRect: { x: 63, y: 167, width: 374, height: 446 },
+    deviceType: 'watch',
+    maskPath: 'frames/Watch Series 10 42_mask.png'
+  },
+  {
+    name: 'watch-series-7-45',
+    displayName: 'Watch Series 7 (45mm)',
+    orientation: 'portrait',
+    frameWidth: 560,
+    frameHeight: 764,
+    screenRect: { x: 72, y: 188, width: 396, height: 484 },
+    deviceType: 'watch'
+  },
+  {
+    name: 'watch-series-7-41',
+    displayName: 'Watch Series 7 (41mm)',
+    orientation: 'portrait',
+    frameWidth: 516,
+    frameHeight: 701,
+    screenRect: { x: 64, y: 165, width: 352, height: 430 },
+    deviceType: 'watch'
+  },
+  {
+    name: 'watch-series-4-44',
+    displayName: 'Watch Series 4 (44mm)',
+    orientation: 'portrait',
+    frameWidth: 500,
+    frameHeight: 790,
+    screenRect: { x: 66, y: 222, width: 368, height: 448 },
+    deviceType: 'watch'
+  },
+  {
+    name: 'watch-series-4-40',
+    displayName: 'Watch Series 4 (40mm)',
+    orientation: 'portrait',
+    frameWidth: 538,
+    frameHeight: 732,
+    screenRect: { x: 114, y: 308, width: 324, height: 394 },
     deviceType: 'watch'
   }
 ];

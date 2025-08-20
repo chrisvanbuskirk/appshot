@@ -86,7 +86,6 @@ describe('watch-compose', () => {
         captionConfig,
         caption: 'Track your workouts',
         captionPosition: 'above',
-        deviceConfig: {},
         deviceConfig: {}
       });
 
