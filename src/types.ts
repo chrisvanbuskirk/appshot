@@ -42,3 +42,23 @@ export interface CaptionEntry {
 export interface CaptionsFile {
   [filename: string]: string | CaptionEntry;
 }
+
+export interface CaptionSuggestions {
+  global: string[];
+  iphone?: string[];
+  ipad?: string[];
+  mac?: string[];
+  watch?: string[];
+  [device: string]: string[] | undefined;
+}
+
+export interface CaptionFrequency {
+  [caption: string]: number;
+}
+
+export interface CaptionHistory {
+  suggestions: CaptionSuggestions;
+  frequency: CaptionFrequency;
+  patterns: string[];
+  lastUpdated: string;
+}

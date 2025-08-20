@@ -1,9 +1,18 @@
 import { Command } from 'commander';
-import inquirer from 'inquirer';
+import autocomplete from 'inquirer-autocomplete-standalone';
+import fuzzy from 'fuzzy';
 import { promises as fs } from 'fs';
 import path from 'path';
 import pc from 'picocolors';
 import type { CaptionsFile, CaptionEntry } from '../types.js';
+import {
+  loadCaptionHistory,
+  saveCaptionHistory,
+  updateFrequency,
+  addToSuggestions,
+  getSuggestions,
+  learnFromExistingCaptions
+} from '../utils/caption-history.js';
 
 export default function captionCmd() {
   const cmd = new Command('caption')
@@ -44,8 +53,13 @@ export default function captionCmd() {
           // File doesn't exist or is invalid, start fresh
         }
 
+        // Load caption history for autocomplete
+        const history = await loadCaptionHistory();
+        await learnFromExistingCaptions(history);
+
         console.log(pc.bold(`\nAdding captions for ${device} (${lang}):`));
-        console.log(pc.dim('Press Enter to keep existing caption, or type a new one\n'));
+        console.log(pc.dim('Type to search suggestions, use arrow keys to navigate'));
+        console.log(pc.dim('Press Tab to autocomplete, Enter to confirm\n'));
 
         // Process each file
         for (const file of files) {
@@ -58,12 +72,50 @@ export default function captionCmd() {
             currentCaption = existing[lang] || '';
           }
 
-          const { text } = await inquirer.prompt([{
-            type: 'input',
-            name: 'text',
+          // Get suggestions for this device
+          const suggestions = getSuggestions(history, device);
+
+          // Use autocomplete prompt
+          const text = await autocomplete({
             message: `${file}:`,
-            default: currentCaption
-          }]);
+            default: currentCaption,
+            source: async (input) => {
+              if (!input) {
+                // Show all suggestions when no input
+                return suggestions.map(s => ({
+                  value: s,
+                  description: history.frequency[s] ?
+                    pc.dim(` (used ${history.frequency[s]} times)`) : ''
+                }));
+              }
+
+              // Use fuzzy search to filter suggestions
+              const results = fuzzy.filter(input, suggestions);
+
+              // Also allow typing a new caption not in suggestions
+              const matches = results.map(r => ({
+                value: r.string,
+                description: history.frequency[r.string] ?
+                  pc.dim(` (used ${history.frequency[r.string]} times)`) : ''
+              }));
+
+              // Add the current input as an option if it's not in suggestions
+              if (!suggestions.includes(input)) {
+                matches.unshift({
+                  value: input,
+                  description: pc.cyan(' (new caption)')
+                });
+              }
+
+              return matches;
+            }
+          });
+
+          // Update history with the new caption
+          if (text && text !== currentCaption) {
+            updateFrequency(history, text);
+            addToSuggestions(history, text, device);
+          }
 
           // Store caption in structured format
           if (!captions[file] || typeof captions[file] === 'string') {
@@ -74,6 +126,9 @@ export default function captionCmd() {
 
         // Save updated captions
         await fs.writeFile(captionsFile, JSON.stringify(captions, null, 2), 'utf8');
+
+        // Save updated history
+        await saveCaptionHistory(history);
 
         console.log('\n' + pc.green('✓'), `Updated ${path.relative(process.cwd(), captionsFile)}`);
         console.log(pc.dim('Run'), pc.cyan('appshot build'), pc.dim('to generate screenshots with these captions'));
