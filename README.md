@@ -732,6 +732,64 @@ To reset a device to default settings:
 appshot style --device iphone --reset
 ```
 
+## Agent-First Design 🤖
+
+Appshot is designed to work seamlessly with LLM agents and automation tools. The CLI interface is structured for predictable, scriptable operations that agents can easily control.
+
+### Working with AI Agents
+
+- **Structured Commands** - All commands have consistent, predictable outputs
+- **JSON Support** - Most commands support `--json` output for agent parsing
+- **Error Codes** - Consistent exit codes for automation workflows
+- **File-Based Config** - Agents can modify `.appshot/config.json` directly
+- **Batch Operations** - Process multiple devices/languages in single commands
+
+### MCP (Model Context Protocol) Integration
+
+Appshot works perfectly with MCP screenshot tools:
+
+```bash
+# Agent takes screenshot via MCP
+mcp-screenshot capture --app "MyApp" --output ./screenshots/iphone/home.png
+
+# Agent processes with appshot
+appshot build --devices iphone
+```
+
+### Agent Workflow Example
+
+```python
+# Example: Agent automating screenshot generation
+def generate_app_store_screenshots():
+    # 1. Agent captures screenshots from simulator/device
+    run_command("xcrun simctl io booted screenshot screen1.png")
+    
+    # 2. Agent initializes appshot project
+    run_command("appshot init")
+    
+    # 3. Agent configures styling
+    modify_json(".appshot/config.json", {
+        "gradient": {"colors": ["#FF5733", "#FFC300"]},
+        "devices": {"iphone": {"frameScale": 0.85}}
+    })
+    
+    # 4. Agent adds captions programmatically
+    modify_json(".appshot/captions/iphone.json", {
+        "screen1.png": "Your perfect companion"
+    })
+    
+    # 5. Agent builds final screenshots
+    run_command("appshot build --devices iphone")
+```
+
+### Why CLI-Only?
+
+- **Predictable** - Agents need consistent, scriptable interfaces
+- **Composable** - Integrates with any automation pipeline
+- **Version Control** - All config is text files, perfect for Git
+- **Fast** - No UI overhead, pure processing power
+- **Universal** - Works on any system with Node.js
+
 ## Roadmap
 
 - [x] Official App Store specifications support
@@ -739,12 +797,18 @@ appshot style --device iphone --reset
 - [x] Partial frame support
 - [x] Intelligent caption autocomplete
 - [x] Apple Watch optimizations
-- [ ] AI-powered translations
-- [ ] Cloud rendering service
-- [ ] Android device support
-- [ ] Custom frame designer
-- [ ] Figma plugin
-- [ ] Web dashboard
+- [x] Gradient presets system (24+ gradients)
+- [ ] **AI-Powered Translations** - Translate captions using OpenAI/Anthropic/local LLMs
+- [ ] **MCP Integration Guide** - Documentation for screenshot tool integration
+- [ ] **Agent API Mode** - Structured JSON input/output for all commands
+- [ ] **Android Device Support** - Google Play Store specifications
+- [ ] **Batch Config Files** - Process multiple configurations in one run
+- [ ] **Screenshot Validation API** - Programmatic validation for CI/CD
+- [ ] **Auto-Caption Generation** - Use AI to generate marketing captions from screenshots
+- [ ] **Smart Frame Detection** - AI-powered frame selection based on screenshot content
+- [ ] **Pipeline Mode** - Stream processing for large batches
+- [ ] **WebP/AVIF Support** - Modern image formats for smaller files
+- [ ] **Differential Builds** - Only rebuild changed screenshots
 
 ## Support
 

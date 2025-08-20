@@ -11,9 +11,12 @@ export default function validateCmd() {
     .description('Validate screenshots against App Store requirements')
     .option('--strict', 'validate against required presets only')
     .option('--fix', 'suggest fixes for invalid screenshots')
+    .option('--json', 'output as JSON for agent/automation use')
     .action(async (opts) => {
       try {
-        console.log(pc.bold('🔍 Validating App Store Screenshots...\n'));
+        if (!opts.json) {
+          console.log(pc.bold('🔍 Validating App Store Screenshots...\n'));
+        }
 
         const config = await loadConfig();
         const results: ValidationResult[] = [];
@@ -75,13 +78,34 @@ export default function validateCmd() {
           }
         }
 
-        // Display results
-        displayResults(results);
+        // Handle JSON output for agents
+        if (opts.json) {
+          const requiredCheck = opts.strict ? checkRequiredPresetsJson(config) : null;
+          const output = {
+            results,
+            summary: {
+              valid: results.filter(r => r.status === 'valid').length,
+              invalid: results.filter(r => r.status === 'invalid').length,
+              warnings: results.filter(r => r.status === 'warning').length,
+              errors: results.filter(r => r.status === 'error').length
+            },
+            requiredPresets: requiredCheck
+          };
+          console.log(JSON.stringify(output, null, 2));
 
-        // Check for required presets if strict mode
-        if (opts.strict) {
-          console.log(pc.bold('\n📋 Required Presets Check:\n'));
-          checkRequiredPresets(config);
+          // Exit with error code if invalid
+          if (output.summary.invalid > 0 || output.summary.errors > 0) {
+            process.exit(1);
+          }
+        } else {
+          // Display results normally
+          displayResults(results);
+
+          // Check for required presets if strict mode
+          if (opts.strict) {
+            console.log(pc.bold('\n📋 Required Presets Check:\n'));
+            checkRequiredPresets(config);
+          }
         }
 
       } catch (error) {
@@ -217,4 +241,42 @@ function checkRequiredPresets(config: any) {
       }
     }
   }
+}
+
+function checkRequiredPresetsJson(config: any) {
+  const required = getRequiredPresets();
+  const configured = new Set<string>();
+  const result: any = {};
+
+  // Extract device types from config
+  for (const deviceKey of Object.keys(config.devices)) {
+    const deviceType = deviceKey.split('-')[0].split('_')[0];
+    const resolution = config.devices[deviceKey].resolution;
+    configured.add(`${deviceType}-${resolution}`);
+  }
+
+  // Check each required preset
+  for (const [category, presets] of Object.entries(required)) {
+    if (presets.length === 0) continue;
+
+    result[category] = presets.map(preset => {
+      const hasPortrait = preset.resolutions.portrait &&
+        configured.has(`${category}-${preset.resolutions.portrait}`);
+      const hasLandscape = preset.resolutions.landscape &&
+        configured.has(`${category}-${preset.resolutions.landscape}`);
+
+      return {
+        id: preset.id,
+        name: preset.name,
+        displaySize: preset.displaySize,
+        satisfied: hasPortrait || hasLandscape,
+        missing: {
+          portrait: !hasPortrait && preset.resolutions.portrait ? preset.resolutions.portrait : null,
+          landscape: !hasLandscape && preset.resolutions.landscape ? preset.resolutions.landscape : null
+        }
+      };
+    });
+  }
+
+  return result;
 }
