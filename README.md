@@ -1,11 +1,11 @@
 # Appshot 📸
 
-> ⚠️ **This project is under active construction** - APIs and features may change. Please star/watch for updates!
+> 🎉 **Now available on NPM!** Install with `npm install -g appshot-cli`
 
 Generate beautiful, App Store-ready screenshots with device frames, gradients, and captions.
 
 [![CI](https://github.com/chrisvanbuskirk/appshot/actions/workflows/ci.yml/badge.svg)](https://github.com/chrisvanbuskirk/appshot/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/appshot.svg)](https://www.npmjs.com/package/appshot)
+[![npm version](https://badge.fury.io/js/appshot-cli.svg)](https://www.npmjs.com/package/appshot-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
@@ -26,8 +26,10 @@ Generate beautiful, App Store-ready screenshots with device frames, gradients, a
 ### Installation
 
 ```bash
-npm install -g appshot
+npm install -g appshot-cli
 ```
+
+> **Note**: The package is called `appshot-cli` on NPM, but the command is still `appshot`
 
 ### Initialize a new project
 
@@ -361,8 +363,10 @@ Place captions above the device frame (recommended) or as an overlay:
 ## Roadmap
 
 - [x] Official App Store specifications support
-- [x] Caption positioning (above/overlay)
+- [x] Caption positioning (above/overlay)  
 - [x] Partial frame support
+- [x] Intelligent caption autocomplete
+- [x] Apple Watch optimizations
 - [ ] AI-powered translations
 - [ ] Cloud rendering service
 - [ ] Android device support
