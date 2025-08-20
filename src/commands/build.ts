@@ -144,7 +144,10 @@ export default function buildCmd() {
                   let frameMetadata = null;
                   let frameUsed = false;
 
-                  if (opts.frame !== false && (deviceConfig.autoFrame !== false)) {
+                  // Load frame if not disabled via CLI
+                  if (opts.frame !== false) {
+                    // If autoFrame is disabled but preferredFrame is set, use the preferred frame
+                    // Otherwise, auto-select a frame
                     const result = await autoSelectFrame(
                       inputPath,
                       path.resolve(config.frames),

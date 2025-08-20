@@ -3,6 +3,14 @@ export interface GradientConfig {
   direction: 'top-bottom' | 'bottom-top' | 'left-right' | 'right-left' | 'diagonal';
 }
 
+export interface CaptionBoxConfig {
+  autoSize?: boolean;         // Auto-size based on content (default: true)
+  maxLines?: number;          // Max lines before truncation (default: 3)
+  lineHeight?: number;        // Line height multiplier (default: 1.4)
+  minHeight?: number;         // Minimum caption area height
+  maxHeight?: number;         // Maximum caption area height
+}
+
 export interface CaptionConfig {
   font: string;
   fontsize: number;
@@ -13,9 +21,18 @@ export interface CaptionConfig {
   paddingLeft?: number;
   paddingRight?: number;
   position?: 'overlay' | 'above';  // Default: 'above'
+  box?: CaptionBoxConfig;          // Caption box configuration
 }
 
-export interface DeviceConfig {
+export interface DeviceStyleConfig {
+  framePosition?: 'top' | 'center' | 'bottom' | number;  // Vertical position (0-100)
+  frameScale?: number;        // Scale multiplier (0.5-2.0)
+  captionSize?: number;       // Device-specific caption size override
+  captionPosition?: 'above' | 'overlay';  // Device-specific position
+  captionBox?: CaptionBoxConfig;  // Device-specific caption box settings
+}
+
+export interface DeviceConfig extends DeviceStyleConfig {
   input: string;
   resolution: string;
   frame?: string;

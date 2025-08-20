@@ -10,19 +10,33 @@
     "fontsize": 64,
     "color": "#FFFFFF",
     "align": "center",
-    "paddingTop": 100
+    "paddingTop": 100,
+    "position": "above"
   },
   "devices": {
     "iphone": {
       "input": "./screenshots/iphone",
       "resolution": "1290x2796",
       "autoFrame": true,
-      "partialFrame": true
+      "partialFrame": true,
+      "frameOffset": 25
     },
     "ipad": {
       "input": "./screenshots/ipad",
       "resolution": "2048x2732",
       "autoFrame": true
+    },
+    "mac": {
+      "input": "./screenshots/mac",
+      "resolution": "2880x1800",
+      "autoFrame": true
+    },
+    "watch": {
+      "input": "./screenshots/watch",
+      "resolution": "396x484",
+      "autoFrame": true,
+      "partialFrame": true,
+      "frameOffset": 30
     }
   }
 }
