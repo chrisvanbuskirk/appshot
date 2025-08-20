@@ -12,9 +12,17 @@ export default function presetsCmd() {
     .option('--generate <ids>', 'generate config for specific preset IDs (comma-separated)')
     .option('--category <type>', 'filter by category (iphone, ipad, mac, appletv, visionpro, watch)')
     .option('--output <file>', 'output file for generated config', 'appshot-presets.json')
+    .option('--json', 'output as JSON for agent/automation use')
     .action(async (opts) => {
       try {
-        if (opts.list || opts.required) {
+        if (opts.json) {
+          // JSON output for agents
+          const presets = opts.required ? getRequiredPresets() : ALL_PRESETS;
+          const filtered = opts.category
+            ? { [opts.category]: presets[opts.category as keyof typeof presets] || [] }
+            : presets;
+          console.log(JSON.stringify(filtered, null, 2));
+        } else if (opts.list || opts.required) {
           listPresets(opts);
         } else if (opts.generate) {
           await generateConfig(opts.generate, opts.output);
