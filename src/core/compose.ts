@@ -170,8 +170,8 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     // Different scaling for different device types
     let scale;
     if (frameMetadata.deviceType === 'watch') {
-      // For watch, make it larger but keep it within bounds
-      scale = Math.min(scaleX * 1.3, scaleY * 1.3); // Use 130% scale for watch
+      // For watch, make it larger since bottom will be cut off
+      scale = Math.min(scaleX, scaleY) * 1.3; // Use 130% scale for watch
     } else if (frameMetadata.deviceType === 'mac') {
       // For Mac, make it larger to be more visible
       scale = Math.min(scaleX, scaleY) * 0.95; // Use 95% scale for Mac
@@ -340,9 +340,14 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     }
 
     // Calculate position for centered device
-    // For watch, reduce padding to move it up
-    const extraPadding = frameMetadata.deviceType === 'watch' ? -20 : 0;
-    const deviceTop = captionHeight + extraPadding;
+    // For watch, position lower to cut off bottom band
+    let deviceTop;
+    if (frameMetadata.deviceType === 'watch') {
+      // Position watch so bottom 1/4 is cut off, raised 25px total
+      deviceTop = canvasHeight - Math.floor(targetDeviceHeight * 0.75) - 25;
+    } else {
+      deviceTop = captionHeight;
+    }
     const deviceLeft = Math.floor((canvasWidth - targetDeviceWidth) / 2);
 
     // Add the complete device to composites

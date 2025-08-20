@@ -21,7 +21,7 @@ npm run clean:all   # Remove final/, dist/, and .appshot/ directories
 
 # CLI Commands (after build/link)
 appshot init        # Scaffold new project
-appshot caption --device iphone  # Interactive caption editor
+appshot caption --device iphone  # Interactive caption editor with autocomplete
 appshot build       # Generate final screenshots
 appshot build --preset iphone-6-9,ipad-13  # Build with specific App Store presets
 appshot specs       # Show device specifications
@@ -33,6 +33,8 @@ appshot validate    # Validate screenshots against App Store requirements
 appshot validate --strict  # Check against required presets only
 appshot clean       # Remove generated screenshots from final/
 appshot clean --all # Remove all generated files including .appshot/
+appshot clean --history  # Clear caption autocomplete history
+appshot clean --all --keep-history  # Clean all but preserve caption history
 
 # Custom Commands for Claude Code
 /commit <branch> "<message>" "<title>" "<body>"  # Create PR with lint & test checks
@@ -84,6 +86,23 @@ Tests use Vitest with temporary directories for file operations. Key test areas:
 - `files.test.ts`: Configuration loading and validation
 
 ## Important Implementation Details
+
+### Caption Autocomplete System
+The caption command now includes intelligent autocomplete:
+1. **History Storage** - Caption history stored in `.appshot/caption-history.json`
+2. **Learning** - System learns from all existing captions in `.appshot/captions/*.json`
+3. **Fuzzy Search** - Uses the `fuzzy` library for typo-tolerant matching
+4. **Frequency Tracking** - Tracks usage count to prioritize common captions
+5. **Device-Specific** - Maintains separate suggestions per device type
+6. **Pattern Recognition** - Detects patterns like "Track your *", "Manage your *"
+
+### Watch Display Optimizations
+Special handling for Apple Watch screenshots:
+1. **Caption Positioning** - Uses top 1/3 of screen (vs normal padding)
+2. **Text Wrapping** - Automatically wraps to 2 lines for watch
+3. **Font Sizing** - Uses 36px font (vs configured size)
+4. **Device Positioning** - Watch positioned with bottom 25% cut off
+5. **Scaling** - 130% scale for better visibility
 
 ### Frame Selection Algorithm
 When processing a screenshot, the system:
