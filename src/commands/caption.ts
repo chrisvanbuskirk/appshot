@@ -1,10 +1,13 @@
 import { Command } from 'commander';
 import autocomplete from 'inquirer-autocomplete-standalone';
+import { select } from '@inquirer/prompts';
 import fuzzy from 'fuzzy';
 import { promises as fs } from 'fs';
 import path from 'path';
 import pc from 'picocolors';
 import type { CaptionsFile, CaptionEntry } from '../types.js';
+import type { OpenAIModel } from '../types/ai.js';
+import { translationService } from '../services/translation.js';
 import {
   loadCaptionHistory,
   saveCaptionHistory,
@@ -18,8 +21,11 @@ export default function captionCmd() {
   const cmd = new Command('caption')
     .description('Interactively add/edit captions in a device folder')
     .requiredOption('--device <name>', 'device name (iphone|ipad|mac|watch)')
-    .option('--lang <code>', 'language code', 'en')
-    .action(async ({ device, lang }) => {
+    .option('--lang <code>', 'primary language code', 'en')
+    .option('--translate', 'enable AI-powered translation')
+    .option('--langs <codes>', 'target languages for translation (comma-separated)')
+    .option('--model <name>', 'OpenAI model to use', 'gpt-4o-mini')
+    .action(async ({ device, lang, translate, langs, model }) => {
       try {
         const dir = path.join(process.cwd(), 'screenshots', device);
         const captionsFile = path.join(process.cwd(), '.appshot', 'captions', `${device}.json`);
@@ -56,6 +62,53 @@ export default function captionCmd() {
         // Load caption history for autocomplete
         const history = await loadCaptionHistory();
         await learnFromExistingCaptions(history);
+
+        // Check translation setup
+        let targetLanguages: string[] = [];
+        let selectedModel = model as OpenAIModel;
+
+        if (translate) {
+          if (!translationService.hasApiKey()) {
+            console.error(pc.red('Error:'), 'OpenAI API key not found');
+            console.log(pc.dim('Set the OPENAI_API_KEY environment variable to enable translations'));
+            process.exit(1);
+          }
+
+          // Parse target languages
+          if (langs) {
+            targetLanguages = langs.split(',').map((l: string) => l.trim());
+          } else {
+            // Ask for target languages if not provided
+            console.log(pc.cyan('\nSelect target languages for translation:'));
+            console.log(pc.dim('Common options: es, fr, de, it, pt, ja, ko, zh-CN'));
+            const langsInput = await autocomplete({
+              message: 'Target languages (comma-separated):',
+              default: 'es,fr,de',
+              source: async () => []
+            });
+            targetLanguages = (langsInput as string).split(',').map((l: string) => l.trim());
+          }
+
+          // Validate model selection
+          const availableModels = translationService.getAvailableModels();
+          if (!availableModels.includes(selectedModel)) {
+            console.log(pc.yellow('\nSelect AI model for translation:'));
+            selectedModel = await select({
+              message: 'Choose model:',
+              choices: availableModels.map(m => {
+                const info = translationService.getModelInfo(m);
+                return {
+                  value: m,
+                  description: info ? `Context: ${info.contextWindow}, Max output: ${info.maxTokens}` : ''
+                };
+              })
+            }) as OpenAIModel;
+          }
+
+          await translationService.loadConfig();
+          console.log(pc.green('✓'), `Translation enabled: ${lang} → ${targetLanguages.join(', ')}`);
+          console.log(pc.dim(`Using model: ${selectedModel}\n`));
+        }
 
         console.log(pc.bold(`\nAdding captions for ${device} (${lang}):`));
         console.log(pc.dim('Type to search suggestions, use arrow keys to navigate'));
@@ -122,6 +175,33 @@ export default function captionCmd() {
             captions[file] = {} as CaptionEntry;
           }
           (captions[file] as CaptionEntry)[lang] = text;
+
+          // Translate if enabled
+          if (translate && text && targetLanguages.length > 0) {
+            process.stdout.write(pc.dim('  Translating...'));
+
+            try {
+              const translations = await translationService.translate({
+                text,
+                targetLanguages,
+                model: selectedModel
+              });
+
+              // Clear the "Translating..." message
+              process.stdout.write('\r\x1b[K');
+
+              // Store translations
+              for (const [langCode, translation] of Object.entries(translations)) {
+                (captions[file] as CaptionEntry)[langCode] = translation;
+                console.log(pc.dim(`  ${langCode}: ${translation}`));
+              }
+            } catch (error) {
+              // Clear the "Translating..." message
+              process.stdout.write('\r\x1b[K');
+              console.error(pc.yellow('  Translation failed:'), error instanceof Error ? error.message : String(error));
+              // Continue without translations
+            }
+          }
         }
 
         // Save updated captions

@@ -13,13 +13,14 @@ Generate beautiful, App Store-ready screenshots with device frames, gradients, a
 - 🖼️ **Smart Frames** - Automatically detects portrait/landscape and selects appropriate device frame
 - 🎨 **Gradients** - Beautiful gradient backgrounds with customizable colors
 - ✏️ **Captions** - Add marketing text with full typography control (above or overlay)
-- 🌍 **Localization** - Multi-language support for international app stores
+- 🌍 **Localization** - Multi-language support with AI-powered translations for international app stores
 - 📱 **Multi-Device** - Support for iPhone, iPad, Mac, Apple TV, Vision Pro, and Apple Watch
 - 📏 **App Store Specs** - Built-in support for all official App Store screenshot resolutions
 - ✅ **Validation** - Verify screenshots meet App Store requirements
 - 🔄 **Orientation Detection** - Intelligently handles both portrait and landscape screenshots
 - ⚡ **Fast** - Parallel processing with configurable concurrency
-- 🛠️ **CLI** - Simple command-line interface
+- 🤖 **AI Translation** - Real-time and batch translation using OpenAI models (GPT-4o, GPT-5, o1, o3)
+- 🛠️ **CLI** - Simple command-line interface designed for agents and automation
 
 ## Quick Start
 
@@ -200,7 +201,7 @@ Options:
 - `--force` - Overwrite existing files
 
 ### `appshot caption`
-Interactively add or edit captions for screenshots with intelligent autocomplete.
+Interactively add or edit captions for screenshots with intelligent autocomplete and AI-powered translation.
 
 Features:
 - **Autocomplete suggestions** - Shows previous captions as you type
@@ -208,10 +209,23 @@ Features:
 - **Usage tracking** - Frequently used captions appear first
 - **Learning system** - Improves suggestions over time
 - **Device-specific** - Prioritizes captions used for the same device
+- **Real-time translation** - Instantly translate captions as you type (requires OpenAI API key)
 
 Options:
 - `--device <name>` - Device name (required)
-- `--lang <code>` - Language code (default: en)
+- `--lang <code>` - Primary language code (default: en)
+- `--translate` - Enable AI-powered real-time translation
+- `--langs <codes>` - Target languages for translation (comma-separated)
+- `--model <name>` - OpenAI model to use (default: gpt-4o-mini)
+
+Example with translation:
+```bash
+# Add captions with instant translation to Spanish and French
+appshot caption --device iphone --translate --langs es,fr
+
+# Use a specific model for translation
+appshot caption --device iphone --translate --langs zh-CN,ja --model gpt-5
+```
 
 Keyboard shortcuts:
 - **Tab** - Autocomplete the top suggestion
@@ -369,24 +383,206 @@ Options:
 - `--strict` - Validate against required presets only
 - `--fix` - Suggest fixes for invalid screenshots
 
-### `appshot localize` (Coming Soon)
-Generate translations for captions using AI providers.
+### `appshot localize`
+Generate translations for all existing captions using OpenAI's powerful language models.
 
 Options:
-- `--langs <codes>` - Target languages
-- `--device <name>` - Specific device or all
-- `--provider <name>` - Translation provider
+- `--langs <codes>` - Target languages (comma-separated, required)
+- `--device <name>` - Specific device or all devices
+- `--model <name>` - OpenAI model to use (default: gpt-4o-mini)
+- `--source <lang>` - Source language (default: en)
+- `--review` - Review translations before saving
+- `--overwrite` - Overwrite existing translations
+
+Supported models:
+- **GPT-4o models**: gpt-4o, gpt-4o-mini (using max_tokens)
+- **GPT-5 models**: gpt-5, gpt-5-mini, gpt-5-nano (using max_completion_tokens)
+- **o1 models**: o1, o1-mini (reasoning models)
+- **o3 models**: o3, o3-mini (latest reasoning models)
+
+Example usage:
+```bash
+# Translate all captions to Spanish, French, and German
+appshot localize --langs es,fr,de
+
+# Translate iPhone captions only, with review
+appshot localize --device iphone --langs ja,ko --review
+
+# Use GPT-5 for higher quality translations
+appshot localize --langs zh-CN,zh-TW --model gpt-5
+
+# Overwrite existing translations with new ones
+appshot localize --langs es,fr --overwrite
+```
+
+Setup:
+```bash
+# Set your OpenAI API key
+export OPENAI_API_KEY="your-api-key-here"
+```
+
+## AI-Powered Translation 🤖
+
+Appshot includes powerful AI translation capabilities using OpenAI's latest models, including GPT-4o, GPT-5, and reasoning models (o1, o3).
+
+### Setup
+
+First, set your OpenAI API key:
+```bash
+export OPENAI_API_KEY="your-api-key-here"
+```
+
+### Real-Time Translation
+
+Translate captions instantly as you type them:
+
+```bash
+# Add captions with automatic translation to Spanish and French
+appshot caption --device iphone --translate --langs es,fr
+
+# Use a specific model for higher quality
+appshot caption --device iphone --translate --langs zh-CN,ja --model gpt-5
+```
+
+When you enter a caption, translations appear immediately below:
+```
+? home.png: Welcome to the future
+  es: Bienvenido al futuro
+  fr: Bienvenue dans le futur
+```
+
+### Batch Translation
+
+Translate all existing captions at once:
+
+```bash
+# Translate all captions to multiple languages
+appshot localize --langs es,fr,de,ja,zh-CN
+
+# Translate specific device only
+appshot localize --device iphone --langs es,fr
+
+# Review translations before saving
+appshot localize --langs es,fr --review
+
+# Use GPT-5 for best quality
+appshot localize --langs ja,ko --model gpt-5
+```
+
+### Supported Models
+
+Appshot intelligently handles different OpenAI models and their specific requirements:
+
+#### GPT-4o Series (General Purpose)
+- **Models**: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`
+- **Best for**: Fast, cost-effective translations
+- **Parameter**: Uses `max_tokens`
+- **Temperature**: Configurable (default 0.3)
+
+#### GPT-5 Series (Advanced)
+- **Models**: `gpt-5`, `gpt-5-mini`, `gpt-5-nano`
+- **Best for**: High-quality, nuanced translations
+- **Parameter**: Uses `max_completion_tokens`
+- **Temperature**: Fixed at 1.0 (reasoning model requirement)
+
+#### o1 Series (Deep Reasoning)
+- **Models**: `o1`, `o1-mini`
+- **Best for**: Complex marketing copy with cultural adaptation
+- **Parameter**: Uses `max_completion_tokens`
+- **Temperature**: Fixed at 1.0
+
+#### o3 Series (Latest Reasoning)
+- **Models**: `o3`, `o3-mini`
+- **Best for**: State-of-the-art translation quality
+- **Parameter**: Uses `max_completion_tokens`
+- **Temperature**: Fixed at 1.0
+
+### Language Support
+
+Built-in support for 25+ languages:
+- **European**: Spanish (es), French (fr), German (de), Italian (it), Portuguese (pt), Dutch (nl), Swedish (sv), Norwegian (no), Danish (da), Finnish (fi), Polish (pl), Russian (ru)
+- **Asian**: Japanese (ja), Korean (ko), Simplified Chinese (zh-CN), Traditional Chinese (zh-TW), Hindi (hi), Thai (th), Vietnamese (vi), Indonesian (id), Malay (ms)
+- **Middle Eastern**: Arabic (ar), Hebrew (he), Turkish (tr)
+- **Portuguese Variants**: Brazilian Portuguese (pt-BR)
+
+### Translation Features
+
+#### Smart Caching
+Translations are cached to avoid duplicate API calls. If you translate the same caption again, it returns instantly without using API credits.
+
+#### Marketing-Optimized Prompts
+The system uses specialized prompts designed for app marketing text:
+- Maintains marketing tone and impact
+- Keeps translations concise
+- Ensures cultural appropriateness
+- Preserves call-to-action strength
+
+#### Error Handling
+- Graceful fallback if API is unavailable
+- Clear error messages for rate limits
+- Automatic retry with delays for batch operations
+- Continues with other translations if one fails
+
+### Advanced Configuration
+
+Create `.appshot/ai-config.json` for custom settings:
+
+```json
+{
+  "defaultModel": "gpt-5",
+  "temperature": 0.3,
+  "cache": true,
+  "systemPrompt": "You are translating premium app marketing text. Keep it impactful and concise."
+}
+```
+
+### Cost Optimization Tips
+
+1. **Use `gpt-4o-mini`** for draft translations (very cost-effective)
+2. **Enable caching** to avoid retranslating identical text
+3. **Batch operations** are more efficient than real-time for large projects
+4. **Review mode** lets you verify before committing translations
+
+### Example Workflow
+
+```bash
+# 1. Initialize project
+appshot init
+
+# 2. Add screenshots
+cp ~/Desktop/screenshots/*.png screenshots/iphone/
+
+# 3. Add captions with instant translation
+appshot caption --device iphone --translate --langs es,fr,de
+
+# 4. Build localized screenshots
+appshot build --langs en,es,fr,de
+
+# Output structure:
+# final/
+#   iphone/
+#     en/
+#       home.png
+#     es/
+#       home.png
+#     fr/
+#       home.png
+#     de/
+#       home.png
+```
 
 ## Multi-Language Support
 
-Captions support multiple languages:
+Captions are stored with all translations in JSON format:
 
 ```json
 {
   "home.png": {
     "en": "Organize your life",
     "fr": "Organisez votre vie",
-    "es": "Organiza tu vida"
+    "es": "Organiza tu vida",
+    "de": "Organisieren Sie Ihr Leben",
+    "ja": "人生を整理する"
   }
 }
 ```
@@ -798,7 +994,7 @@ def generate_app_store_screenshots():
 - [x] Intelligent caption autocomplete
 - [x] Apple Watch optimizations
 - [x] Gradient presets system (24+ gradients)
-- [ ] **AI-Powered Translations** - Translate captions using OpenAI/Anthropic/local LLMs
+- [x] **AI-Powered Translations** - Translate captions using OpenAI models (GPT-4o, GPT-5, o1, o3)
 - [ ] **MCP Integration Guide** - Documentation for screenshot tool integration
 - [ ] **Agent API Mode** - Structured JSON input/output for all commands
 - [ ] **Android Device Support** - Google Play Store specifications
