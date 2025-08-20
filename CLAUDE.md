@@ -115,6 +115,88 @@ Tests use Vitest with temporary directories for file operations. Key test areas:
 
 ## Important Implementation Details
 
+### AI-Powered Translation System
+The translation feature enables automatic localization of captions using OpenAI's models:
+
+1. **Core Architecture** (`src/services/translation.ts`)
+   - `TranslationService` class manages all translation operations
+   - Handles API key detection from `OPENAI_API_KEY` environment variable
+   - Implements caching to avoid duplicate API calls
+   - Supports both single and batch translation operations
+   - Automatically selects correct parameter (`max_tokens` vs `max_completion_tokens`)
+
+2. **Model Configuration** (`src/types/ai.ts`)
+   - Defines `OpenAIModel` type for all supported models
+   - `MODEL_CONFIGS` contains configuration for each model:
+     - GPT-4o series: Uses `max_tokens` parameter, temperature 0.3
+     - GPT-5 series: Uses `max_completion_tokens`, temperature fixed at 1.0
+     - o1/o3 reasoning models: Uses `max_completion_tokens`, temperature 1.0
+   - Context windows range from 64K to 200K tokens
+
+3. **Real-Time Translation** (`src/commands/caption.ts`)
+   - Integrated into caption entry workflow
+   - Triggered with `--translate` flag
+   - Accepts `--langs` for target languages (comma-separated)
+   - `--model` parameter to select specific OpenAI model
+   - Translations displayed immediately after caption entry
+   - Automatically stored in caption JSON with language keys
+
+4. **Batch Translation** (`src/commands/localize.ts`)
+   - Complete rewrite from placeholder to full implementation
+   - Processes all existing captions across devices
+   - Progress tracking with current/total counter
+   - `--review` flag for translation approval before saving
+   - `--overwrite` flag to replace existing translations
+   - `--device` to limit to specific device
+   - Efficient batch processing with shared cache
+
+5. **Language Support**
+   - 25+ built-in language mappings in `LANGUAGE_NAMES`
+   - Supports standard ISO language codes (es, fr, de, ja, zh-CN, etc.)
+   - Marketing-optimized translation prompts
+   - Maintains tone and impact for app store descriptions
+
+6. **Error Handling & Optimization**
+   - Graceful fallback when API unavailable
+   - Clear error messages for missing API key
+   - Rate limit handling with automatic delays
+   - Translation caching to reduce API costs
+   - Continues batch operations even if individual translations fail
+
+7. **OpenAI API Integration Details**
+   - Uses official `openai` npm package (v5.13.1)
+   - API client initialization on first use (lazy loading)
+   - Dynamic parameter selection based on model type:
+     ```typescript
+     if (modelConfig.maxTokensParam === 'max_completion_tokens') {
+       params.max_completion_tokens = Math.min(modelConfig.maxTokens, 2000);
+     } else {
+       params.max_tokens = Math.min(modelConfig.maxTokens, 2000);
+     }
+     ```
+   - System prompt optimized for marketing copy translation
+   - User prompt includes all target languages in single request for efficiency
+
+8. **Cache Implementation**
+   - In-memory cache using Map with composite keys
+   - Cache key format: `${text}-${sortedLangs}-${model}`
+   - Languages sorted alphabetically for consistent keys
+   - Cache persists for entire CLI session
+   - `clearCache()` method for manual cache clearing
+
+9. **Translation Workflow**
+   - **Single Translation**: `translate()` method
+     - Checks cache first
+     - Makes API call if not cached
+     - Parses JSON response
+     - Stores in cache
+     - Returns language→translation map
+   - **Batch Translation**: `translateBatch()` method
+     - Deduplicates texts before processing
+     - Shows progress callback
+     - Handles errors per text without stopping batch
+     - Returns map of text→translations
+
 ### Caption Autocomplete System
 The caption command now includes intelligent autocomplete:
 1. **History Storage** - Caption history stored in `.appshot/caption-history.json`
