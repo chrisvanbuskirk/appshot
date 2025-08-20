@@ -140,6 +140,9 @@ jobs:
     needs: [lint-and-typecheck, test, example-build]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write  # Required for creating releases
+      packages: write  # Required for publishing packages
     
     steps:
       - uses: actions/checkout@v4
@@ -172,3 +175,5 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: Release v${{ steps.version.outputs.version }}
           generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
