@@ -8,6 +8,26 @@ import { gradientPresets, getGradientCategories, getGradientsByCategory, getGrad
 import { loadConfig } from '../core/files.js';
 import { renderGradient } from '../core/render.js';
 
+/**
+ * Convert hex color to ANSI color block for terminal display
+ */
+function getColorBlock(color: string): string {
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  
+  // Use bright colors for better visibility
+  if (r > 200 && g < 100 && b < 100) return pc.red('█');
+  if (r > 200 && g > 200 && b < 100) return pc.yellow('█');
+  if (r < 100 && g > 200 && b < 100) return pc.green('█');
+  if (r < 100 && g < 100 && b > 200) return pc.blue('█');
+  if (r > 200 && g < 100 && b > 200) return pc.magenta('█');
+  if (r < 100 && g > 200 && b > 200) return pc.cyan('█');
+  if (r > 200 && g > 200 && b > 200) return pc.white('█');
+  if (r < 100 && g < 100 && b < 100) return pc.gray('█');
+  return pc.dim('█');
+}
+
 export default function gradientsCmd() {
   const cmd = new Command('gradients')
     .description('Browse and preview gradient presets')
@@ -35,22 +55,7 @@ export default function gradientsCmd() {
 
             for (const gradient of categoryGradients) {
               // Display gradient with color blocks
-              const colorBlocks = gradient.colors.map(color => {
-                // Create a colored block using ANSI color approximation
-                const r = parseInt(color.slice(1, 3), 16);
-                const g = parseInt(color.slice(3, 5), 16);
-                const b = parseInt(color.slice(5, 7), 16);
-                // Use bright colors for better visibility
-                if (r > 200 && g < 100 && b < 100) return pc.red('█');
-                if (r > 200 && g > 200 && b < 100) return pc.yellow('█');
-                if (r < 100 && g > 200 && b < 100) return pc.green('█');
-                if (r < 100 && g < 100 && b > 200) return pc.blue('█');
-                if (r > 200 && g < 100 && b > 200) return pc.magenta('█');
-                if (r < 100 && g > 200 && b > 200) return pc.cyan('█');
-                if (r > 200 && g > 200 && b > 200) return pc.white('█');
-                if (r < 100 && g < 100 && b < 100) return pc.gray('█');
-                return pc.dim('█');
-              }).join('');
+              const colorBlocks = gradient.colors.map(getColorBlock).join('');
 
               const directionIcon = getDirectionIcon(gradient.direction);
 
@@ -108,20 +113,7 @@ export default function gradientsCmd() {
             const filePath = path.join(samplesDir, `${gradient.id}.png`);
             await sharp(buffer).toFile(filePath);
 
-            const colorBlocks = gradient.colors.map(color => {
-              const r = parseInt(color.slice(1, 3), 16);
-              const g = parseInt(color.slice(3, 5), 16);
-              const b = parseInt(color.slice(5, 7), 16);
-              if (r > 200 && g < 100 && b < 100) return pc.red('█');
-              if (r > 200 && g > 200 && b < 100) return pc.yellow('█');
-              if (r < 100 && g > 200 && b < 100) return pc.green('█');
-              if (r < 100 && g < 100 && b > 200) return pc.blue('█');
-              if (r > 200 && g < 100 && b > 200) return pc.magenta('█');
-              if (r < 100 && g > 200 && b > 200) return pc.cyan('█');
-              if (r > 200 && g > 200 && b > 200) return pc.white('█');
-              if (r < 100 && g < 100 && b < 100) return pc.gray('█');
-              return pc.dim('█');
-            }).join('');
+            const colorBlocks = gradient.colors.map(getColorBlock).join('');
 
             console.log(pc.green('✓'), `${gradient.id.padEnd(12)} ${colorBlocks}`);
           }
@@ -198,20 +190,7 @@ export default function gradientsCmd() {
 
         // Gradient selection with colored preview
         const gradientChoices = gradients.map(g => {
-          const colorPreview = g.colors.map(color => {
-            const r = parseInt(color.slice(1, 3), 16);
-            const g = parseInt(color.slice(3, 5), 16);
-            const b = parseInt(color.slice(5, 7), 16);
-            if (r > 200 && g < 100 && b < 100) return pc.red('█');
-            if (r > 200 && g > 200 && b < 100) return pc.yellow('█');
-            if (r < 100 && g > 200 && b < 100) return pc.green('█');
-            if (r < 100 && g < 100 && b > 200) return pc.blue('█');
-            if (r > 200 && g < 100 && b > 200) return pc.magenta('█');
-            if (r < 100 && g > 200 && b > 200) return pc.cyan('█');
-            if (r > 200 && g > 200 && b > 200) return pc.white('█');
-            if (r < 100 && g < 100 && b < 100) return pc.gray('█');
-            return pc.dim('█');
-          }).join('');
+          const colorPreview = g.colors.map(getColorBlock).join('');
           return {
             name: `${colorPreview} ${g.name} - ${g.description}`,
             value: g.id

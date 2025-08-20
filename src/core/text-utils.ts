@@ -2,26 +2,39 @@
  * Text utilities for caption rendering
  */
 
+// Character width factors for text estimation
+const CHAR_WIDTH_FACTOR_NORMAL = 0.65;  // Average character width relative to font size
+const CHAR_WIDTH_FACTOR_NARROW = 0.5;   // Character width for narrow displays (watch)
+
+// Width thresholds
+const NARROW_WIDTH_THRESHOLD = 500;     // Width below which to use narrow character factor
+
+// Padding values
+const PADDING_NARROW = 30;              // Padding for narrow displays
+const PADDING_DEFAULT = 40;             // Default padding
+
 /**
  * Estimate text width in pixels for SVG rendering
  * This is an approximation based on average character widths
  */
 export function estimateTextWidth(text: string, fontSize: number): number {
-  // Average character width is roughly 0.6 of font size for most fonts
+  // Average character width is roughly 0.65 of font size for most fonts
   // Adjust for bold text (slightly wider)
-  const avgCharWidth = fontSize * 0.65;
+  const avgCharWidth = fontSize * CHAR_WIDTH_FACTOR_NORMAL;
   return text.length * avgCharWidth;
 }
 
 /**
  * Calculate how many characters fit in a given width
  */
-export function calculateCharsPerLine(width: number, fontSize: number, padding: number = 40): number {
+export function calculateCharsPerLine(width: number, fontSize: number, padding: number = PADDING_DEFAULT): number {
   // For very narrow widths (watch), use moderate padding
-  const actualPadding = width < 500 ? 30 : padding;
+  const actualPadding = width < NARROW_WIDTH_THRESHOLD ? PADDING_NARROW : padding;
   const availableWidth = width - (actualPadding * 2);
   // For watch (narrow width), use smaller character width factor since font is smaller
-  const avgCharWidth = width < 500 ? fontSize * 0.5 : fontSize * 0.65;
+  const avgCharWidth = width < NARROW_WIDTH_THRESHOLD 
+    ? fontSize * CHAR_WIDTH_FACTOR_NARROW 
+    : fontSize * CHAR_WIDTH_FACTOR_NORMAL;
   return Math.floor(availableWidth / avgCharWidth);
 }
 

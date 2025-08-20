@@ -5,6 +5,18 @@ import { renderGradient } from './render.js';
 import { applyRoundedCorners } from './mask-generator.js';
 import { calculateAdaptiveCaptionHeight, wrapText } from './text-utils.js';
 
+/**
+ * Escape special XML/HTML characters in text
+ */
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 export interface ComposeOptions {
   screenshot: Buffer;
   frame?: Buffer | null;
@@ -566,15 +578,6 @@ function _createCaptionSvg(
       font-weight="600"
     >${escapeXml(text)}</text>
   </svg>`;
-}
-
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 /**
