@@ -1,10 +1,18 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) and other LLM agents when working with code in this repository.
 
 ## Project Overview
 
-Appshot is a CLI tool for generating App Store-ready screenshots with device frames, gradients, and captions. It automatically detects screenshot orientation (portrait/landscape) and selects appropriate device frames.
+Appshot is an **agent-first CLI tool** for generating App Store-ready screenshots with device frames, gradients, and captions. It's designed to be controlled by LLM agents and automation tools, providing predictable, scriptable operations. The tool automatically detects screenshot orientation (portrait/landscape) and selects appropriate device frames.
+
+## Agent-Friendly Design Principles
+
+1. **No GUI/Web Interface** - Pure CLI for maximum agent compatibility
+2. **Structured Output** - Consistent, parseable responses
+3. **File-Based Config** - Agents can directly modify JSON configs
+4. **Predictable Commands** - No interactive prompts in automation mode
+5. **Exit Codes** - Clear success/failure signals for scripts
 
 ## Key Commands
 
@@ -277,6 +285,83 @@ When processing captions, settings are merged in this order:
 4. Watch devices have special 2-line wrapping (preserve this)
 5. Reset should remove ALL device-specific settings
 
+## Integration with AI Agents & MCP
+
+### MCP (Model Context Protocol) Workflow
+Appshot is designed to work with MCP screenshot tools:
+
+```bash
+# Agent captures screenshot via MCP
+mcp-tool screenshot --device iphone --output ./screenshots/iphone/screen.png
+
+# Agent processes with appshot
+appshot build --devices iphone --no-interactive
+```
+
+### Agent Automation Examples
+
+```javascript
+// Example: Node.js agent script
+import { exec } from 'child_process';
+import { writeFileSync } from 'fs';
+
+// 1. Initialize project
+exec('appshot init --force');
+
+// 2. Configure via JSON (no CLI interaction needed)
+const config = {
+  gradient: { colors: ['#FF5733', '#FFC300'] },
+  devices: {
+    iphone: {
+      frameScale: 0.85,
+      captionBox: { autoSize: false, minHeight: 320 }
+    }
+  }
+};
+writeFileSync('.appshot/config.json', JSON.stringify(config));
+
+// 3. Add captions programmatically
+const captions = {
+  'home.png': 'Welcome to the future',
+  'dashboard.png': 'Your control center'
+};
+writeFileSync('.appshot/captions/iphone.json', JSON.stringify(captions));
+
+// 4. Build
+exec('appshot build --devices iphone');
+```
+
+### Key Agent-Friendly Commands
+
+```bash
+# Non-interactive initialization
+appshot init --force
+
+# JSON output for parsing
+appshot specs --json
+appshot presets --json
+appshot validate --json
+
+# Batch operations
+appshot build --devices iphone,ipad --langs en,fr,es
+
+# Direct config application
+appshot gradients --apply ocean  # No prompts
+appshot style --device iphone --reset  # Predictable reset
+```
+
+### Future Agent Features (Roadmap)
+
+1. **Structured Input Mode**: Accept full config via stdin
+2. **Stream Processing**: Handle screenshots as they're generated
+3. **Validation API**: Return structured validation results
+4. **Auto-Caption**: Use local LLMs to generate captions
+5. **Batch Config**: Process multiple configurations in one run
+
+## Important Guidelines
+
 - Don't create PR's without my direction.
 - Never install libraries without asking.
-- NEVER INSTALL librsvg.  It's not necessary.
+- NEVER INSTALL librsvg. It's not necessary.
+- Keep the tool CLI-only - no web dashboards or GUIs.
+- Optimize for agent/automation use cases.
