@@ -44,21 +44,21 @@ export const MODEL_CONFIGS: Record<OpenAIModel, ModelConfig> = {
     model: 'gpt-5',
     maxTokensParam: 'max_completion_tokens',
     maxTokens: 16384,
-    temperature: 0.3,
+    temperature: 1, // GPT-5 models have fixed temperature
     contextWindow: 200000
   },
   'gpt-5-mini': {
     model: 'gpt-5-mini',
     maxTokensParam: 'max_completion_tokens',
     maxTokens: 8192,
-    temperature: 0.3,
+    temperature: 1, // GPT-5 models have fixed temperature
     contextWindow: 128000
   },
   'gpt-5-nano': {
     model: 'gpt-5-nano',
     maxTokensParam: 'max_completion_tokens',
     maxTokens: 4096,
-    temperature: 0.3,
+    temperature: 1, // GPT-5 models have fixed temperature
     contextWindow: 64000
   },
   'o1': {
