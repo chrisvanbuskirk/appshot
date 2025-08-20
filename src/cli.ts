@@ -17,7 +17,7 @@ const program = new Command();
 program
   .name('appshot')
   .description('Generate App Store–ready screenshots with frames, gradients, and captions.')
-  .version('0.1.0');
+  .version('0.3.0');
 
 program.addCommand(initCmd());
 program.addCommand(captionCmd());

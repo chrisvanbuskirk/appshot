@@ -30,10 +30,14 @@ npm run clean:all   # Remove final/, dist/, and .appshot/ directories
 # CLI Commands (after build/link)
 appshot init        # Scaffold new project
 appshot caption --device iphone  # Interactive caption editor with autocomplete
+appshot caption --device iphone --translate --langs es,fr  # Real-time AI translation
 appshot style --device iphone    # Configure device positioning and styling
 appshot style --device iphone --reset  # Reset device to default styling
+appshot localize --langs es,fr,de  # Batch translate all captions
+appshot localize --langs ja --model gpt-5  # Use specific AI model
 appshot build       # Generate final screenshots
 appshot build --preset iphone-6-9,ipad-13  # Build with specific App Store presets
+appshot build --langs en,es,fr  # Build for multiple languages
 appshot specs       # Show device specifications
 appshot check       # Validate configuration
 appshot presets     # List all App Store presets
@@ -106,6 +110,8 @@ Tests use Vitest with temporary directories for file operations. Key test areas:
 - `caption-box.test.ts`: Text wrapping and caption height calculations
 - `caption-history.test.ts`: Autocomplete and suggestion system
 - `watch-compose.test.ts`: Watch-specific rendering optimizations
+- `translation.test.ts`: AI translation service and API key detection
+- `ai-types.test.ts`: OpenAI model configurations and parameter handling
 
 ## Important Implementation Details
 
