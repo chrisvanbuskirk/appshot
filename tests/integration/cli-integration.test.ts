@@ -7,9 +7,20 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 describe('CLI Integration Tests', { timeout: 60000 }, () => {
   let testDir: string;
   const originalCwd = process.cwd();
+  const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli.js');
+  
+  // Helper function to run appshot commands
+  const runAppshot = async (args: string) => {
+    return execAsync(`node ${cliPath} ${args}`);
+  };
 
   beforeAll(async () => {
     // Create unique test directory
@@ -26,7 +37,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
 
   describe('Core Commands', () => {
     it('should initialize a new project', async () => {
-      const { stdout } = await execAsync('appshot init --force');
+      const { stdout } = await runAppshot('init --force');
       
       // Verify files created
       const configExists = await fs.access('.appshot/config.json').then(() => true).catch(() => false);
@@ -38,7 +49,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should list specs in JSON format', async () => {
-      const { stdout } = await execAsync('appshot specs --json');
+      const { stdout } = await runAppshot('specs --json');
       const specs = JSON.parse(stdout);
       
       expect(specs).toHaveProperty('iphone');
@@ -48,7 +59,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should list presets', async () => {
-      const { stdout } = await execAsync('appshot presets --json');
+      const { stdout } = await runAppshot('presets --json');
       
       // The output might have other text, extract JSON
       const jsonMatch = stdout.match(/\[[\s\S]*\]/);
@@ -64,7 +75,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should list fonts', async () => {
-      const { stdout } = await execAsync('appshot fonts --json');
+      const { stdout } = await runAppshot('fonts --json');
       const fonts = JSON.parse(stdout);
       
       expect(Array.isArray(fonts)).toBe(true);
@@ -73,7 +84,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should validate fonts', async () => {
-      const { stdout } = await execAsync('appshot fonts --validate "Arial"');
+      const { stdout } = await runAppshot('fonts --validate "Arial"');
       
       // Arial should be available on all systems
       expect(stdout.toLowerCase()).toContain('arial');
@@ -122,7 +133,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should build screenshots without frames', async () => {
-      const { stdout } = await execAsync('appshot build --devices iphone,ipad --no-frame');
+      const { stdout } = await runAppshot('build --devices iphone,ipad --no-frame');
       
       // Check output files exist
       const iphoneOutput = await fs.readdir('final/iphone').catch(() => []);
@@ -134,14 +145,14 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should clean generated screenshots', async () => {
-      await execAsync('appshot clean');
+      await runAppshot('clean');
       
       const finalExists = await fs.access('final').then(() => true).catch(() => false);
       expect(finalExists).toBe(false);
     });
 
     it('should build with frames', async () => {
-      const { stdout } = await execAsync('appshot build --devices iphone');
+      const { stdout } = await runAppshot('build --devices iphone');
       
       const outputFiles = await fs.readdir('final/iphone').catch(() => []);
       expect(outputFiles.length).toBeGreaterThan(0);
@@ -149,7 +160,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
 
     it('should validate generated screenshots', async () => {
       try {
-        const { stdout } = await execAsync('appshot validate');
+        const { stdout } = await runAppshot('validate');
         // Validation might fail if dimensions don't match App Store specs
         // but the command should run
         expect(stdout).toBeDefined();
@@ -176,8 +187,8 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should build with multiple languages', async () => {
-      await execAsync('appshot clean');
-      const { stdout } = await execAsync('appshot build --devices iphone --langs en,es,fr --no-frame');
+      await runAppshot('clean');
+      const { stdout } = await runAppshot('build --devices iphone --langs en,es,fr --no-frame');
       
       // Check language directories created
       const enExists = await fs.access('final/iphone/en').then(() => true).catch(() => false);
@@ -192,7 +203,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
 
   describe('Gradient Presets', () => {
     it('should list gradient presets', async () => {
-      const { stdout } = await execAsync('appshot gradients --list');
+      const { stdout } = await runAppshot('gradients --list');
       
       expect(stdout).toContain('ocean');
       expect(stdout).toContain('sunset');
@@ -201,7 +212,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should apply gradient preset', async () => {
-      await execAsync('appshot gradients --apply sunset');
+      await runAppshot('gradients --apply sunset');
       
       const config = JSON.parse(await fs.readFile('.appshot/config.json', 'utf-8'));
       // Check that gradient was modified
@@ -212,14 +223,14 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
 
   describe('Font Configuration', () => {
     it('should set global font', async () => {
-      await execAsync('appshot fonts --set "Georgia"');
+      await runAppshot('fonts --set "Georgia"');
       
       const config = JSON.parse(await fs.readFile('.appshot/config.json', 'utf-8'));
       expect(config.caption.font).toBe('Georgia');
     });
 
     it('should set device-specific font', async () => {
-      await execAsync('appshot fonts --set "Arial" --device iphone');
+      await runAppshot('fonts --set "Arial" --device iphone');
       
       const config = JSON.parse(await fs.readFile('.appshot/config.json', 'utf-8'));
       expect(config.devices.iphone.captionFont).toBe('Arial');
@@ -228,7 +239,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
 
   describe('Check Command', () => {
     it('should check project configuration', async () => {
-      const { stdout } = await execAsync('appshot check');
+      const { stdout } = await runAppshot('check');
       
       // Check command output varies but should mention config or devices
       expect(stdout).toMatch(/Configuration|Devices|screenshots found/);
@@ -240,7 +251,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
       await fs.rm('screenshots', { recursive: true, force: true });
       
       try {
-        await execAsync('appshot build --devices iphone');
+        await runAppshot('build --devices iphone');
       } catch (error: any) {
         expect(error.stderr || error.stdout).toContain('screenshots');
       }
@@ -251,7 +262,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
 
     it('should handle invalid device names', async () => {
       try {
-        await execAsync('appshot build --devices invalid-device');
+        await runAppshot('build --devices invalid-device');
       } catch (error: any) {
         expect(error.stderr || error.stdout).toBeDefined();
       }
@@ -281,8 +292,8 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should handle watch screenshots with special formatting', async () => {
-      await execAsync('appshot clean');
-      const { stdout } = await execAsync('appshot build --devices watch --no-frame');
+      await runAppshot('clean');
+      const { stdout } = await runAppshot('build --devices watch --no-frame');
       
       const outputFiles = await fs.readdir('final/watch').catch(() => []);
       expect(outputFiles.length).toBeGreaterThan(0);
@@ -298,7 +309,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
       await fs.mkdir('final/iphone', { recursive: true });
       await fs.writeFile('final/iphone/test.png', Buffer.from('fake-image'));
       
-      const { stdout } = await execAsync('appshot migrate');
+      const { stdout } = await runAppshot('migrate');
       
       // Check for language subdirectory
       const files = await fs.readdir('final/iphone');
@@ -311,12 +322,12 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
 
 describe('CLI Help and Version', () => {
   it('should show version', async () => {
-    const { stdout } = await execAsync('appshot --version');
+    const { stdout } = await runAppshot('--version');
     expect(stdout).toMatch(/\d+\.\d+\.\d+/);
   });
 
   it('should show help', async () => {
-    const { stdout } = await execAsync('appshot --help');
+    const { stdout } = await runAppshot('--help');
     expect(stdout).toContain('Commands:');
     expect(stdout).toContain('init');
     expect(stdout).toContain('build');
@@ -324,7 +335,7 @@ describe('CLI Help and Version', () => {
   });
 
   it('should show command-specific help', async () => {
-    const { stdout } = await execAsync('appshot build --help');
+    const { stdout } = await runAppshot('build --help');
     expect(stdout).toContain('--devices');
     expect(stdout).toContain('--langs');
     expect(stdout).toContain('--no-frame');

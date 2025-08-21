@@ -10,7 +10,8 @@ describe('getFontStack function', () => {
   let composeSrc: string;
   
   beforeAll(async () => {
-    const composePath = path.join(process.cwd(), 'src/core/compose.ts');
+    // Use __dirname to get the test file location and navigate to src
+    const composePath = path.join(__dirname, '..', 'src', 'core', 'compose.ts');
     composeSrc = await fs.readFile(composePath, 'utf-8');
   });
 
@@ -114,7 +115,7 @@ describe('getFontStack function', () => {
 
 describe('Font rendering in compose', () => {
   it('should use getFontStack for caption rendering', async () => {
-    const composePath = path.join(process.cwd(), 'src/core/compose.ts');
+    const composePath = path.join(__dirname, '..', 'src', 'core', 'compose.ts');
     const composeSrc = await fs.readFile(composePath, 'utf-8');
     
     // Check that caption rendering uses getFontStack
@@ -125,7 +126,7 @@ describe('Font rendering in compose', () => {
   });
 
   it('should apply font to multi-line captions', async () => {
-    const composePath = path.join(process.cwd(), 'src/core/compose.ts');
+    const composePath = path.join(__dirname, '..', 'src', 'core', 'compose.ts');
     const composeSrc = await fs.readFile(composePath, 'utf-8');
     
     // Check that multi-line text also uses the font stack

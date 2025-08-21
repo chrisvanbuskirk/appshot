@@ -16,8 +16,9 @@ describe('Build Language Directory Structure', () => {
     // Change to test directory
     process.chdir(testDir);
     
-    // Initialize project
-    execSync('appshot init --force', { stdio: 'ignore' });
+    // Initialize project using the built CLI directly
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} init --force`, { stdio: 'ignore' });
     
     // Reset environment
     process.env = { ...originalEnv };
@@ -58,7 +59,8 @@ describe('Build Language Directory Structure', () => {
     );
     
     // Build with single language explicitly
-    execSync('appshot build --devices iphone --langs en --no-frame', { stdio: 'ignore' });
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} build --devices iphone --langs en --no-frame`, { stdio: 'ignore' });
     
     // Check that language subdirectory was created
     const enDirExists = await fs.access('final/iphone/en').then(() => true).catch(() => false);
@@ -99,7 +101,8 @@ describe('Build Language Directory Structure', () => {
     process.env.LANG = 'fr_FR.UTF-8';
     
     // Build without specifying language
-    execSync('appshot build --devices iphone --no-frame', { stdio: 'ignore' });
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} build --devices iphone --no-frame`, { stdio: 'ignore' });
     
     // Should create fr/ directory based on system locale
     const frDirExists = await fs.access('final/iphone/fr').then(() => true).catch(() => false);
@@ -137,7 +140,8 @@ describe('Build Language Directory Structure', () => {
     );
     
     // Build without specifying languages
-    execSync('appshot build --devices iphone --no-frame', { stdio: 'ignore' });
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} build --devices iphone --no-frame`, { stdio: 'ignore' });
     
     // Should create directories for all detected languages
     const enExists = await fs.access('final/iphone/en/feature.png').then(() => true).catch(() => false);
@@ -178,7 +182,8 @@ describe('Build Language Directory Structure', () => {
     await fs.writeFile('.appshot/config.json', JSON.stringify(config, null, 2));
     
     // Build without specifying language
-    execSync('appshot build --devices iphone --no-frame', { stdio: 'ignore' });
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} build --devices iphone --no-frame`, { stdio: 'ignore' });
     
     // Should use Japanese from config
     const jaDirExists = await fs.access('final/iphone/ja').then(() => true).catch(() => false);
@@ -223,7 +228,8 @@ describe('Build Language Directory Structure', () => {
     );
     
     // Build multiple devices with single language
-    execSync('appshot build --devices iphone,ipad --langs en --no-frame', { stdio: 'ignore' });
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} build --devices iphone,ipad --langs en --no-frame`, { stdio: 'ignore' });
     
     // Both should have language subdirectories
     const iphoneEnExists = await fs.access('final/iphone/en/app.png').then(() => true).catch(() => false);

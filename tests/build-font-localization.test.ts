@@ -15,8 +15,9 @@ describe('Build Command Font Localization', () => {
     // Change to test directory
     process.chdir(testDir);
     
-    // Initialize project
-    execSync('appshot init --force', { stdio: 'ignore' });
+    // Initialize project using the built CLI directly
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} init --force`, { stdio: 'ignore' });
   });
 
   afterEach(async () => {
@@ -67,7 +68,8 @@ describe('Build Command Font Localization', () => {
     await fs.writeFile('.appshot/config.json', JSON.stringify(config, null, 2));
     
     // Build with multiple languages
-    execSync('appshot build --langs en,es,fr,de --no-frame', { stdio: 'ignore' });
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} build --langs en,es,fr,de --no-frame`, { stdio: 'ignore' });
     
     // Check that all language versions were created
     const enExists = await fs.access('final/iphone/en/test.png').then(() => true).catch(() => false);
@@ -120,7 +122,8 @@ describe('Build Command Font Localization', () => {
     await fs.writeFile('.appshot/config.json', JSON.stringify(config, null, 2));
     
     // Build
-    execSync('appshot build --devices ipad --langs en,es --no-frame', { stdio: 'ignore' });
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} build --devices ipad --langs en,es --no-frame`, { stdio: 'ignore' });
     
     // Check that screenshots were created
     const enExists = await fs.access('final/ipad/en/test.png').then(() => true).catch(() => false);
@@ -159,11 +162,12 @@ describe('Build Command Font Localization', () => {
     );
     
     // Use the fonts command to set fonts
-    execSync('appshot fonts --set "Georgia"', { stdio: 'ignore' });
-    execSync('appshot fonts --set "Arial" --device iphone', { stdio: 'ignore' });
+    const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
+    execSync(`node ${cliPath} fonts --set "Georgia"`, { stdio: 'ignore' });
+    execSync(`node ${cliPath} fonts --set "Arial" --device iphone`, { stdio: 'ignore' });
     
     // Build
-    execSync('appshot build --langs en,fr --no-frame', { stdio: 'ignore' });
+    execSync(`node ${cliPath} build --langs en,fr --no-frame`, { stdio: 'ignore' });
     
     // Verify screenshots were created with the fonts set via commands
     const enExists = await fs.access('final/iphone/en/home.png').then(() => true).catch(() => false);
