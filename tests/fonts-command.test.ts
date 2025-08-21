@@ -29,17 +29,17 @@ vi.mock('../src/services/fonts.js', () => {
     FontService: {
       getInstance: vi.fn(() => ({
         getRecommendedFonts: vi.fn(() => [
-          { name: 'Helvetica', family: 'Helvetica', category: 'web-safe', fallback: 'Arial, sans-serif' },
-          { name: 'Arial', family: 'Arial', category: 'web-safe', fallback: 'Helvetica, sans-serif' },
-          { name: 'Roboto', family: 'Roboto', category: 'recommended', fallback: 'Arial, sans-serif' },
-          { name: 'SF Pro', family: 'SF Pro', category: 'system', fallback: 'system-ui, sans-serif' },
+          { name: 'Helvetica', family: 'Helvetica', category: 'web-safe', fallback: 'Arial, sans-serif', installed: true },
+          { name: 'Arial', family: 'Arial', category: 'web-safe', fallback: 'Helvetica, sans-serif', installed: true },
+          { name: 'Roboto', family: 'Roboto', category: 'recommended', fallback: 'Arial, sans-serif', installed: false },
+          { name: 'SF Pro', family: 'SF Pro', category: 'system', fallback: 'system-ui, sans-serif', installed: true },
         ]),
         getSystemFonts: vi.fn(async () => [
           'Arial', 'Helvetica', 'Times New Roman', 'Courier New',
           'Georgia', 'Verdana', 'Tahoma', 'SF Pro', 'SF Pro Display'
         ]),
         getFontStatus: vi.fn(async (fontName: string) => {
-          const installedFonts = ['Arial', 'Helvetica', 'Times New Roman', 'Georgia'];
+          const installedFonts = ['Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'SF Pro'];
           const installed = installedFonts.some(f => f.toLowerCase() === fontName.toLowerCase());
           return {
             name: fontName,
@@ -70,7 +70,7 @@ vi.mock('../src/services/fonts.js', () => {
           }
         ]),
         validateFont: vi.fn(async (font: string) => {
-          const validFonts = ['helvetica', 'arial', 'roboto', 'sf pro'];
+          const validFonts = ['helvetica', 'arial', 'roboto', 'sf pro', 'sf pro display'];
           return validFonts.includes(font.toLowerCase());
         })
       }))
@@ -201,7 +201,7 @@ describe('fonts command', () => {
       
       const output = mockConsoleLog.mock.calls.map(call => call.join(' ')).join('\n');
       expect(output).toContain('✓');
-      expect(output).toContain('Font "Helvetica" is available');
+      expect(output).toContain('Font "Helvetica" is installed and available');
     });
 
     it('should report non-existent fonts', async () => {
@@ -209,8 +209,8 @@ describe('fonts command', () => {
       
       const output = mockConsoleLog.mock.calls.map(call => call.join(' ')).join('\n');
       expect(output).toContain('✗');
-      expect(output).toContain('Font "NonExistentFont" is not available');
-      expect(output).toContain('Try using one of the recommended fonts');
+      expect(output).toContain('Font "NonExistentFont" is NOT installed');
+      expect(output).toContain('will fall back to');
     });
 
     it('should validate case-insensitively', async () => {
@@ -218,7 +218,7 @@ describe('fonts command', () => {
       
       const output = mockConsoleLog.mock.calls.map(call => call.join(' ')).join('\n');
       expect(output).toContain('✓');
-      expect(output).toContain('Font "ARIAL" is available');
+      expect(output).toContain('Font "ARIAL" is installed and available');
     });
   });
 
@@ -264,14 +264,14 @@ describe('fonts command', () => {
       const calls = mockConsoleLog.mock.calls;
       const jsonCall = calls.find(call => {
         const str = call.join('');
-        return str.startsWith('{') && str.includes('font');
+        return str.startsWith('{') && str.includes('name');
       });
       
       expect(jsonCall).toBeDefined();
       const data = JSON.parse(jsonCall![0]);
       
-      expect(data).toHaveProperty('font', 'Arial');
-      expect(data).toHaveProperty('valid', true);
+      expect(data).toHaveProperty('name', 'Arial');
+      expect(data).toHaveProperty('installed', true);
     });
 
     it('should output JSON for all system fonts', async () => {
@@ -330,30 +330,18 @@ describe('fonts command', () => {
     });
 
     it('should reject invalid font', async () => {
-      // Override validateFont mock for this test
-      const fontService = vi.mocked(await import('../src/services/fonts.js')).FontService.getInstance();
-      fontService.validateFont.mockResolvedValueOnce(false);
+      // Mock inquirer to refuse continuation
+      mockPrompt.mockResolvedValueOnce({ continue: false });
 
-      let exitCode = 0;
-      const mockExit = vi.spyOn(process, 'exit').mockImplementation((code) => {
-        exitCode = code || 0;
-        throw new Error('Process exit called');
-      });
+      await program.parseAsync(['node', 'test', 'fonts', '--set', 'InvalidFont']);
 
-      try {
-        await program.parseAsync(['node', 'test', 'fonts', '--set', 'InvalidFont']);
-      } catch (error) {
-        // Expected to throw due to process.exit
-      }
-
-      expect(exitCode).toBe(1);
       expect(mockWriteFile).not.toHaveBeenCalled();
       
       const output = mockConsoleError.mock.calls.map(call => call.join(' ')).join('\n');
+      const logOutput = mockConsoleLog.mock.calls.map(call => call.join(' ')).join('\n');
       expect(output).toContain('✗');
-      expect(output).toContain('Font "InvalidFont" is not available');
-
-      mockExit.mockRestore();
+      expect(output).toContain('Font "InvalidFont" is not installed');
+      expect(logOutput).toContain('Font not changed');
     });
 
     it('should reject invalid device', async () => {

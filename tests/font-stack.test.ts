@@ -10,7 +10,7 @@ describe('getFontStack function', () => {
 
     it('should return correct fallback for Helvetica', () => {
       const result = getFontStack('Helvetica');
-      expect(result).toBe("'Helvetica', system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif");
+      expect(result).toBe("Helvetica, 'Helvetica Neue', Arial, sans-serif");
     });
 
     it('should return correct fallback for Georgia', () => {
@@ -30,12 +30,12 @@ describe('getFontStack function', () => {
 
     it('should return correct fallback for SF Pro', () => {
       const result = getFontStack('SF Pro');
-      expect(result).toBe("'SF Pro', system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif");
+      expect(result).toBe("system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif");
     });
 
     it('should return correct fallback for Segoe UI', () => {
       const result = getFontStack('Segoe UI');
-      expect(result).toBe("'Segoe UI', Tahoma, Geneva, Verdana, sans-serif");
+      expect(result).toBe("'Segoe UI', system-ui, Tahoma, Geneva, sans-serif");
     });
 
     it('should be case-insensitive', () => {

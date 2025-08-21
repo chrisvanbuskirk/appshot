@@ -62,15 +62,18 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
       const { stdout } = await runAppshot('presets --json');
       
       // The output might have other text, extract JSON
-      const jsonMatch = stdout.match(/\[[\s\S]*\]/);
+      const jsonMatch = stdout.match(/\{[\s\S]*\}/);
       expect(jsonMatch).toBeTruthy();
       
       if (jsonMatch) {
         const presets = JSON.parse(jsonMatch[0]);
-        expect(Array.isArray(presets)).toBe(true);
-        expect(presets.length).toBeGreaterThan(0);
-        expect(presets[0]).toHaveProperty('id');
-        expect(presets[0]).toHaveProperty('name');
+        expect(typeof presets).toBe('object');
+        expect(presets).toHaveProperty('iphone');
+        expect(presets).toHaveProperty('ipad');
+        expect(Array.isArray(presets.iphone)).toBe(true);
+        expect(presets.iphone.length).toBeGreaterThan(0);
+        expect(presets.iphone[0]).toHaveProperty('id');
+        expect(presets.iphone[0]).toHaveProperty('name');
       }
     });
 
@@ -305,18 +308,21 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
 
   describe('Migration Command', () => {
     it('should migrate project structure', async () => {
+      // Initialize project first
+      await runAppshot('init --force');
+      
       // Create old structure
       await fs.mkdir('final/iphone', { recursive: true });
       await fs.writeFile('final/iphone/test.png', Buffer.from('fake-image'));
       
-      const { stdout } = await runAppshot('migrate');
+      const { stdout } = await runAppshot('migrate --output-structure --lang en');
       
       // Check for language subdirectory
       const files = await fs.readdir('final/iphone');
       const hasLanguageDir = files.some(f => ['en', 'es', 'fr', 'de', 'ja', 'zh'].includes(f));
       
       expect(hasLanguageDir || files.length === 0).toBe(true);
-    });
+    }, 10000); // 10 second timeout
   });
 
   describe('CLI Help and Version', () => {
