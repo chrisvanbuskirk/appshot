@@ -59,6 +59,12 @@ jobs:
       
       - name: Run frames validation test
         run: npm test -- frames.test.ts
+      
+      - name: Run CLI integration tests
+        if: matrix.os != 'windows-latest'  # Skip on Windows for now
+        run: |
+          npm link
+          npm test -- tests/integration/cli-integration.test.ts
 
   example-build:
     name: Example Project Build

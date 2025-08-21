@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import pc from 'picocolors';
 import { loadConfig } from '../core/files.js';
+import { FontService } from '../services/fonts.js';
 import type { AppshotConfig } from '../types.js';
 
 export default function styleCmd() {
@@ -55,6 +56,7 @@ export default function styleCmd() {
         console.log(`  Frame position: ${formatFramePosition(currentDevice.framePosition)}`);
         console.log(`  Frame scale: ${currentDevice.frameScale ? `${currentDevice.frameScale * 100}%` : 'Auto'}`);
         console.log(`  Partial frame: ${currentDevice.partialFrame ? `Yes (${currentDevice.frameOffset || 25}% cut)` : 'No'}`);
+        console.log(`  Caption font: ${config.caption.font}`);
         console.log(`  Caption size: ${currentDevice.captionSize || 'Default'}`);
         console.log(`  Caption position: ${currentDevice.captionPosition || 'Default'}\n`);
 
@@ -204,6 +206,7 @@ export default function styleCmd() {
         }]);
 
         let captionSize: number | undefined;
+        let captionFont: string | undefined;
         let captionPosition: 'above' | 'overlay' | undefined;
         let captionBox: any = undefined;
 
@@ -236,6 +239,95 @@ export default function styleCmd() {
             captionSize = customSizeAnswer.size;
           } else if (sizeChoice !== null) {
             captionSize = sizeChoice;
+          }
+
+          // Caption font
+          const fontService = FontService.getInstance();
+          const categories = await fontService.getFontCategories();
+
+          // Create font choices
+          const fontChoices: any[] = [];
+
+          // Add current font
+          fontChoices.push({
+            name: `Current (${config.caption.font})`,
+            value: config.caption.font
+          });
+
+          // Add separator
+          fontChoices.push(new inquirer.Separator('── Recommended Fonts ──'));
+
+          // Add recommended fonts
+          for (const category of categories) {
+            if (category.name === 'Recommended (Web-Safe)') {
+              for (const font of category.fonts.slice(0, 8)) {
+                fontChoices.push({
+                  name: `${font.name} ${pc.green('●')}`,
+                  value: font.name
+                });
+              }
+              break;
+            }
+          }
+
+          // Add separator
+          fontChoices.push(new inquirer.Separator('── More Options ──'));
+
+          // Add custom option
+          fontChoices.push({
+            name: 'Custom font...',
+            value: 'custom'
+          });
+
+          // Add browse all fonts option
+          fontChoices.push({
+            name: 'Browse all fonts...',
+            value: 'browse'
+          });
+
+          const fontAnswer = await inquirer.prompt([{
+            type: 'list',
+            name: 'captionFont',
+            message: 'Caption font:',
+            choices: fontChoices,
+            default: config.caption.font
+          }]);
+
+          if (fontAnswer.captionFont === 'custom') {
+            const customFontAnswer = await inquirer.prompt([{
+              type: 'input',
+              name: 'font',
+              message: 'Enter font name:',
+              default: config.caption.font
+            }]);
+            captionFont = customFontAnswer.font;
+
+            // Validate the font
+            if (captionFont) {
+              const isValid = await fontService.validateFont(captionFont);
+              if (!isValid) {
+                console.log(pc.yellow('⚠'), `Font "${captionFont}" may not be available on this system`);
+                console.log(pc.dim('The font will be used but may fall back to a default font'));
+              }
+            }
+          } else if (fontAnswer.captionFont === 'browse') {
+            // Show all system fonts
+            const systemFonts = await fontService.getSystemFonts();
+            if (systemFonts.length > 0) {
+              const browseFontAnswer = await inquirer.prompt([{
+                type: 'list',
+                name: 'font',
+                message: 'Select from system fonts:',
+                choices: systemFonts.slice(0, 30).map(f => ({ name: f, value: f })),
+                pageSize: 15
+              }]);
+              captionFont = browseFontAnswer.font;
+            } else {
+              console.log(pc.yellow('Could not detect system fonts'));
+              captionFont = config.caption.font;
+            }
+          } else if (fontAnswer.captionFont !== config.caption.font) {
+            captionFont = fontAnswer.captionFont;
           }
 
           // Caption position
@@ -349,6 +441,11 @@ export default function styleCmd() {
           delete currentDevice.captionBox;
         }
 
+        // Save font to global config (fonts apply globally, not per-device)
+        if (captionFont && captionFont !== config.caption.font) {
+          config.caption.font = captionFont;
+        }
+
         // Save configuration
         await saveConfig(config);
 
@@ -357,7 +454,7 @@ export default function styleCmd() {
         console.log(pc.dim('Run "appshot build" to generate screenshots with new styling'));
 
         // Show what changed
-        if (!autoFrameAnswer.autoFrame || framePosition !== 'center' || frameScale || captionSize || captionPosition || currentDevice.partialFrame) {
+        if (!autoFrameAnswer.autoFrame || framePosition !== 'center' || frameScale || captionSize || captionFont || captionPosition || currentDevice.partialFrame) {
           console.log('\n' + pc.cyan('Applied settings:'));
           if (!autoFrameAnswer.autoFrame) {
             console.log(`  • Auto frame: Disabled (using ${preferredFrame})`);
@@ -373,6 +470,9 @@ export default function styleCmd() {
           }
           if (captionSize) {
             console.log(`  • Caption size: ${captionSize}px`);
+          }
+          if (captionFont) {
+            console.log(`  • Caption font: ${captionFont}`);
           }
           if (captionPosition) {
             console.log(`  • Caption position: ${captionPosition}`);

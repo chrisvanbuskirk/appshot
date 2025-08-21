@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { loadConfig, loadCaptions } from '../core/files.js';
 import { autoSelectFrame, getImageDimensions, initializeFrameRegistry } from '../core/devices.js';
 import { composeAppStoreScreenshot } from '../core/compose.js';
+import { resolveLanguages, normalizeLanguageCode } from '../utils/language.js';
 
 export default function buildCmd() {
   const cmd = new Command('build')
@@ -13,7 +14,7 @@ export default function buildCmd() {
     .option('--devices <list>', 'comma-separated device list (e.g., iphone,ipad)', 'iphone,ipad,mac,watch')
     .option('--preset <ids>', 'use specific App Store presets (e.g., iphone-6-9,ipad-13)')
     .option('--config <file>', 'use specific config file', 'appshot.json')
-    .option('--langs <list>', 'comma-separated language codes (e.g., en,fr,de)', 'en')
+    .option('--langs <list>', 'comma-separated language codes (e.g., en,fr,de)')
     .option('--preview', 'generate low-res preview images')
     .option('--concurrency <n>', 'number of parallel renders', '4')
     .option('--no-frame', 'skip device frames')
@@ -26,7 +27,6 @@ export default function buildCmd() {
         // Load configuration
         const config = await loadConfig();
         const devices = opts.devices.split(',').map((d: string) => d.trim());
-        const langs = opts.langs.split(',').map((l: string) => l.trim());
         const concurrency = parseInt(opts.concurrency, 10);
 
         // Initialize frame registry from Frames.json if available
@@ -74,11 +74,19 @@ export default function buildCmd() {
           const captionsPath = path.join(process.cwd(), '.appshot', 'captions', `${device}.json`);
           const captions = await loadCaptions(captionsPath);
 
+          // Resolve languages for this device
+          const cliLangs = opts.langs ? opts.langs.split(',').map((l: string) => normalizeLanguageCode(l.trim())) : undefined;
+          const { languages, source } = resolveLanguages(cliLangs, captions, config);
+
           console.log(pc.cyan(`\n${device}:`), `Processing ${screenshots.length} screenshots`);
+          if (!cliLangs) {
+            console.log(pc.dim(`  Using language: ${languages.join(', ')} (from ${source})`));
+          }
 
           // Process each language
-          for (const lang of langs) {
-            const langDir = langs.length > 1 ? path.join(outputDir, lang) : outputDir;
+          for (const lang of languages) {
+            // Always use language subdirectory
+            const langDir = path.join(outputDir, lang);
             await fs.mkdir(langDir, { recursive: true });
 
             // Process screenshots in batches

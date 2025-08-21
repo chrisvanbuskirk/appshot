@@ -30,6 +30,7 @@ export interface DeviceStyleConfig {
   captionSize?: number;       // Device-specific caption size override
   captionPosition?: 'above' | 'overlay';  // Device-specific position
   captionBox?: CaptionBoxConfig;  // Device-specific caption box settings
+  captionFont?: string;       // Device-specific caption font override
 }
 
 export interface DeviceConfig extends DeviceStyleConfig {
@@ -50,6 +51,7 @@ export interface AppshotConfig {
   devices: {
     [key: string]: DeviceConfig;
   };
+  defaultLanguage?: string;  // Optional override for system language
 }
 
 export interface CaptionEntry {

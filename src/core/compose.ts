@@ -179,10 +179,12 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       const startY = (captionHeight - totalTextHeight) / 2 + fontSize;
 
       // Create SVG with multiple text lines
+      // Use device-specific font if available, otherwise use global caption font
+      const fontToUse = deviceConfig.captionFont || captionConfig.font;
       const textElements = captionLines.map((line, index) => {
         const y = startY + (index * fontSize * lineHeight);
         return `<text x="${canvasWidth/2}" y="${y}" 
-                font-family="Arial, sans-serif" 
+                font-family="${getFontStack(fontToUse)}" 
                 font-size="${fontSize}" 
                 fill="${captionConfig.color}" 
                 text-anchor="middle"
@@ -584,16 +586,91 @@ function _createCaptionSvg(
  * Get a safe font stack that Sharp's SVG renderer can use
  */
 function getFontStack(requestedFont: string): string {
-  // Map common macOS fonts to web-safe alternatives
+  // Map common fonts to web-safe alternatives with appropriate fallbacks
   // Note: Using single quotes inside to avoid XML attribute quote conflicts
   const fontMap: Record<string, string> = {
+    // Apple System Fonts
     'SF Pro': "system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif",
     'SF Pro Display': "system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif",
     'SF Pro Text': "system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif",
     'San Francisco': "system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif",
-    'New York': "Georgia, 'Times New Roman', Times, serif"
+    'New York': "Georgia, 'Times New Roman', Times, serif",
+
+    // Popular Sans-Serif Fonts
+    'Helvetica': "Helvetica, 'Helvetica Neue', Arial, sans-serif",
+    'Helvetica Neue': "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    'Arial': 'Arial, Helvetica, sans-serif',
+    'Roboto': "Roboto, 'Helvetica Neue', Arial, sans-serif",
+    'Open Sans': "'Open Sans', 'Helvetica Neue', Arial, sans-serif",
+    'Montserrat': "Montserrat, 'Helvetica Neue', Arial, sans-serif",
+    'Lato': "Lato, 'Helvetica Neue', Arial, sans-serif",
+    'Poppins': "Poppins, 'Helvetica Neue', Arial, sans-serif",
+    'Inter': "Inter, system-ui, 'Helvetica Neue', Arial, sans-serif",
+    'Segoe UI': "'Segoe UI', system-ui, Tahoma, Geneva, sans-serif",
+    'Ubuntu': "Ubuntu, system-ui, 'Helvetica Neue', Arial, sans-serif",
+    'Fira Sans': "'Fira Sans', 'Helvetica Neue', Arial, sans-serif",
+    'Source Sans Pro': "'Source Sans Pro', 'Helvetica Neue', Arial, sans-serif",
+
+    // Serif Fonts
+    'Georgia': "Georgia, 'Times New Roman', Times, serif",
+    'Times New Roman': "'Times New Roman', Times, serif",
+    'Times': "Times, 'Times New Roman', serif",
+    'Playfair Display': "'Playfair Display', Georgia, serif",
+    'Merriweather': 'Merriweather, Georgia, serif',
+    'Lora': 'Lora, Georgia, serif',
+    'PT Serif': "'PT Serif', Georgia, serif",
+    'Baskerville': "Baskerville, 'Times New Roman', serif",
+    'Garamond': "Garamond, 'Times New Roman', serif",
+
+    // Monospace Fonts
+    'Courier': "Courier, 'Courier New', monospace",
+    'Courier New': "'Courier New', Courier, monospace",
+    'Monaco': "Monaco, 'Courier New', monospace",
+    'Consolas': "Consolas, Monaco, 'Courier New', monospace",
+    'Menlo': "Menlo, Monaco, Consolas, 'Courier New', monospace",
+    'Fira Code': "'Fira Code', Consolas, Monaco, monospace",
+    'Source Code Pro': "'Source Code Pro', Consolas, Monaco, monospace",
+    'JetBrains Mono': "'JetBrains Mono', Consolas, Monaco, monospace",
+
+    // Display & Decorative Fonts
+    'Impact': "Impact, 'Arial Black', sans-serif",
+    'Arial Black': "'Arial Black', Impact, sans-serif",
+    'Comic Sans MS': "'Comic Sans MS', cursive, sans-serif",
+    'Bebas Neue': "'Bebas Neue', Impact, sans-serif",
+    'Oswald': "Oswald, 'Arial Narrow', sans-serif",
+    'Raleway': "Raleway, 'Helvetica Neue', Arial, sans-serif",
+
+    // Windows Fonts
+    'Calibri': "Calibri, 'Helvetica Neue', Arial, sans-serif",
+    'Cambria': 'Cambria, Georgia, serif',
+    'Verdana': 'Verdana, Geneva, sans-serif',
+    'Tahoma': 'Tahoma, Geneva, Verdana, sans-serif',
+    'Trebuchet MS': "'Trebuchet MS', 'Helvetica Neue', Arial, sans-serif"
   };
 
-  // Return the mapped font stack or use the requested font with fallbacks
-  return fontMap[requestedFont] || `'${requestedFont}', system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif`;
+  // Check if font name needs normalization (case-insensitive lookup)
+  const normalizedFont = Object.keys(fontMap).find(
+    key => key.toLowerCase() === requestedFont.toLowerCase()
+  );
+
+  if (normalizedFont) {
+    return fontMap[normalizedFont];
+  }
+
+  // Determine fallback based on font characteristics
+  const lowerFont = requestedFont.toLowerCase();
+
+  if (lowerFont.includes('serif') && !lowerFont.includes('sans')) {
+    // Serif font
+    return `'${requestedFont}', Georgia, 'Times New Roman', Times, serif`;
+  } else if (lowerFont.includes('mono') || lowerFont.includes('code') || lowerFont.includes('console')) {
+    // Monospace font
+    return `'${requestedFont}', Monaco, Consolas, 'Courier New', monospace`;
+  } else if (lowerFont.includes('display') || lowerFont.includes('headline')) {
+    // Display font
+    return `'${requestedFont}', Impact, 'Arial Black', sans-serif`;
+  } else {
+    // Default to sans-serif
+    return `'${requestedFont}', system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif`;
+  }
 }
