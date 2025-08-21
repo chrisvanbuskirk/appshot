@@ -1,145 +1,94 @@
-import { describe, it, expect } from 'vitest';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-// We need to import the compose module and test the getFontStack function
-// Since it's not exported, we'll test it through the compose function behavior
+import { describe, it, expect, vi } from 'vitest';
+import { getFontStack } from '../src/core/compose.js';
 
 describe('getFontStack function', () => {
-  // Read the compose.ts file to extract and test the getFontStack logic
-  let composeSrc: string;
-  
-  beforeAll(async () => {
-    // Use __dirname to get the test file location and navigate to src
-    const composePath = path.join(__dirname, '..', 'src', 'core', 'compose.ts');
-    composeSrc = await fs.readFile(composePath, 'utf-8');
-  });
-
   describe('font mapping verification', () => {
-    it('should have getFontStack function defined', () => {
-      expect(composeSrc).toContain('function getFontStack');
+    it('should return correct fallback for Arial', () => {
+      const result = getFontStack('Arial');
+      expect(result).toBe('Arial, Helvetica, sans-serif');
     });
 
-    it('should map Apple system fonts correctly', () => {
-      expect(composeSrc).toContain(`'SF Pro': "system-ui, -apple-system`);
-      expect(composeSrc).toContain(`'SF Pro Display': "system-ui, -apple-system`);
-      expect(composeSrc).toContain(`'SF Pro Text': "system-ui, -apple-system`);
-      expect(composeSrc).toContain(`'San Francisco': "system-ui, -apple-system`);
-      expect(composeSrc).toContain(`'New York': "Georgia`);
+    it('should return correct fallback for Helvetica', () => {
+      const result = getFontStack('Helvetica');
+      expect(result).toBe("'Helvetica Neue', Helvetica, Arial, sans-serif");
     });
 
-    it('should map popular sans-serif fonts', () => {
-      expect(composeSrc).toContain(`'Helvetica': "'Helvetica Neue', Helvetica, Arial`);
-      expect(composeSrc).toContain(`'Arial': "Arial, Helvetica`);
-      expect(composeSrc).toContain(`'Roboto': "Roboto`);
-      expect(composeSrc).toContain(`'Open Sans': "'Open Sans'`);
-      expect(composeSrc).toContain(`'Montserrat': "Montserrat`);
-      expect(composeSrc).toContain(`'Inter': "Inter`);
+    it('should return correct fallback for Georgia', () => {
+      const result = getFontStack('Georgia');
+      expect(result).toBe("Georgia, 'Times New Roman', serif");
     });
 
-    it('should map serif fonts', () => {
-      expect(composeSrc).toContain(`'Georgia': "Georgia, 'Times New Roman'`);
-      expect(composeSrc).toContain(`'Times New Roman': "'Times New Roman', Times`);
-      expect(composeSrc).toContain(`'Playfair Display': "'Playfair Display', Georgia`);
-      expect(composeSrc).toContain(`'Merriweather': "Merriweather, Georgia`);
+    it('should return correct fallback for Times New Roman', () => {
+      const result = getFontStack('Times New Roman');
+      expect(result).toBe("'Times New Roman', Georgia, serif");
     });
 
-    it('should map monospace fonts', () => {
-      expect(composeSrc).toContain(`'Courier': "Courier, 'Courier New'`);
-      expect(composeSrc).toContain(`'Courier New': "'Courier New', Courier`);
-      expect(composeSrc).toContain(`'Monaco': "Monaco, 'Courier New'`);
-      expect(composeSrc).toContain(`'Consolas': "Consolas, Monaco`);
-      expect(composeSrc).toContain(`'Menlo': "Menlo, Monaco`);
+    it('should return correct fallback for Courier New', () => {
+      const result = getFontStack('Courier New');
+      expect(result).toBe("'Courier New', Courier, monospace");
     });
 
-    it('should map display fonts', () => {
-      expect(composeSrc).toContain(`'Impact': "Impact, 'Arial Black'`);
-      expect(composeSrc).toContain(`'Arial Black': "'Arial Black', Impact`);
-      expect(composeSrc).toContain(`'Bebas Neue': "'Bebas Neue', Impact`);
+    it('should return correct fallback for SF Pro', () => {
+      const result = getFontStack('SF Pro');
+      expect(result).toBe("'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, sans-serif");
     });
 
-    it('should map Windows fonts', () => {
-      expect(composeSrc).toContain(`'Calibri': "Calibri`);
-      expect(composeSrc).toContain(`'Verdana': "Verdana`);
-      expect(composeSrc).toContain(`'Tahoma': "Tahoma`);
-      expect(composeSrc).toContain(`'Segoe UI': "'Segoe UI'`);
+    it('should return correct fallback for Segoe UI', () => {
+      const result = getFontStack('Segoe UI');
+      expect(result).toBe("'Segoe UI', Tahoma, Geneva, Verdana, sans-serif");
+    });
+
+    it('should be case-insensitive', () => {
+      expect(getFontStack('arial')).toBe('Arial, Helvetica, sans-serif');
+      expect(getFontStack('ARIAL')).toBe('Arial, Helvetica, sans-serif');
+      expect(getFontStack('ArIaL')).toBe('Arial, Helvetica, sans-serif');
     });
   });
 
-  describe('font fallback logic', () => {
-    it('should have case-insensitive font matching', () => {
-      expect(composeSrc).toContain('toLowerCase()');
-      expect(composeSrc).toContain('const normalizedFont = Object.keys(fontMap).find');
+  describe('fallback patterns', () => {
+    it('should provide serif fallback for serif fonts', () => {
+      const result = getFontStack('MySerifFont');
+      expect(result).toContain('serif');
+      expect(result).not.toContain('sans-serif');
     });
 
-    it('should detect serif fonts', () => {
-      expect(composeSrc).toContain(`lowerFont.includes('serif') && !lowerFont.includes('sans')`);
-      expect(composeSrc).toContain(`Georgia, 'Times New Roman', Times, serif`);
+    it('should provide monospace fallback for monospace fonts', () => {
+      const result = getFontStack('MyCodeFont');
+      expect(result).toContain('monospace');
     });
 
-    it('should detect monospace fonts', () => {
-      expect(composeSrc).toContain(`lowerFont.includes('mono') || lowerFont.includes('code')`);
-      expect(composeSrc).toContain(`Monaco, Consolas, 'Courier New', monospace`);
+    it('should provide monospace fallback for fonts with "mono" in name', () => {
+      const result = getFontStack('CustomMono');
+      expect(result).toContain('monospace');
     });
 
-    it('should detect display fonts', () => {
-      expect(composeSrc).toContain(`lowerFont.includes('display') || lowerFont.includes('headline')`);
-      expect(composeSrc).toContain(`Impact, 'Arial Black', sans-serif`);
+    it('should provide display fallback for display fonts', () => {
+      const result = getFontStack('MyDisplayFont');
+      expect(result).toContain('Impact');
     });
 
-    it('should have default sans-serif fallback', () => {
-      expect(composeSrc).toContain(`system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif`);
-    });
-  });
-
-  describe('font stack structure', () => {
-    it('should use proper quote escaping for XML', () => {
-      // Check that internal quotes use single quotes to avoid XML conflicts
-      expect(composeSrc).toMatch(/"[^"]*'[^']*'/); // Contains single quotes inside double quotes
+    it('should provide display fallback for headline fonts', () => {
+      const result = getFontStack('HeadlineFont');
+      expect(result).toContain('Impact');
     });
 
-    it('should include multiple fallback fonts', () => {
-      // Check that font stacks have multiple fallbacks
-      const fontStackPattern = /: "[^"]*,\s*[^"]*,\s*[^"]*"/;
-      expect(composeSrc).toMatch(fontStackPattern);
-    });
-
-    it('should end with generic font families', () => {
-      // Check that font stacks end with generic families
-      expect(composeSrc).toContain('sans-serif"');
-      expect(composeSrc).toContain('serif"');
-      expect(composeSrc).toContain('monospace"');
+    it('should provide system fallback for unknown fonts', () => {
+      const result = getFontStack('RandomUnknownFont');
+      expect(result).toContain('system-ui');
+      expect(result).toContain('sans-serif');
     });
   });
-});
 
-describe('Font rendering in compose', () => {
-  it('should use getFontStack for caption rendering', async () => {
-    const composePath = path.join(__dirname, '..', 'src', 'core', 'compose.ts');
-    const composeSrc = await fs.readFile(composePath, 'utf-8');
-    
-    // Check that caption rendering uses getFontStack
-    expect(composeSrc).toContain('getFontStack(captionConfig.font)');
-    
-    // Verify it's used in the SVG text element
-    expect(composeSrc).toContain('font-family="${getFontStack(captionConfig.font)}"');
-  });
+  describe('quote handling', () => {
+    it('should properly quote multi-word font names', () => {
+      const result = getFontStack('Times New Roman');
+      expect(result).toContain("'Times New Roman'");
+    });
 
-  it('should apply font to multi-line captions', async () => {
-    const composePath = path.join(__dirname, '..', 'src', 'core', 'compose.ts');
-    const composeSrc = await fs.readFile(composePath, 'utf-8');
-    
-    // Check that multi-line text also uses the font stack
-    // Look for the pattern where textElements uses getFontStack
-    const hasGetFontStackInMultiline = composeSrc.includes('font-family="${getFontStack(captionConfig.font)}"');
-    expect(hasGetFontStackInMultiline).toBe(true);
-    
-    // Verify the function is used at least once (we fixed the hardcoded Arial issue)
-    const getFontStackMatches = composeSrc.match(/getFontStack\(captionConfig\.font\)/g);
-    expect(getFontStackMatches).toBeTruthy();
-    expect(getFontStackMatches!.length).toBeGreaterThanOrEqual(1);
-    
-    // Verify that there's no hardcoded Arial in the multi-line section
-    expect(composeSrc).not.toContain('font-family="Arial, sans-serif"');
+    it('should not double-quote single-word fonts', () => {
+      const result = getFontStack('Arial');
+      expect(result).toBe('Arial, Helvetica, sans-serif');
+      expect(result).not.toContain("'Arial'");
+    });
   });
 });

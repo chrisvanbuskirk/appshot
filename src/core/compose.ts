@@ -613,7 +613,7 @@ function _createCaptionSvg(
 /**
  * Get a safe font stack that Sharp's SVG renderer can use
  */
-function getFontStack(requestedFont: string): string {
+export function getFontStack(requestedFont: string): string {
   // Map common fonts to web-safe alternatives with appropriate fallbacks
   // Note: Using single quotes inside to avoid XML attribute quote conflicts
   const fontMap: Record<string, string> = {
