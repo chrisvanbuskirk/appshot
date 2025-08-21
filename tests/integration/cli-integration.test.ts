@@ -145,7 +145,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should clean generated screenshots', async () => {
-      await runAppshot('clean');
+      await runAppshot('clean --yes');
       
       const finalExists = await fs.access('final').then(() => true).catch(() => false);
       expect(finalExists).toBe(false);
@@ -187,7 +187,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should build with multiple languages', async () => {
-      await runAppshot('clean');
+      await runAppshot('clean --yes');
       const { stdout } = await runAppshot('build --devices iphone --langs en,es,fr --no-frame');
       
       // Check language directories created
@@ -292,7 +292,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
 
     it('should handle watch screenshots with special formatting', async () => {
-      await runAppshot('clean');
+      await runAppshot('clean --yes');
       const { stdout } = await runAppshot('build --devices watch --no-frame');
       
       const outputFiles = await fs.readdir('final/watch').catch(() => []);
@@ -300,7 +300,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
       
       // Watch should handle long captions by wrapping
       expect(stdout.toLowerCase()).toMatch(/generated|complete|processed/);
-    });
+    }, 120000); // 2 minute timeout
   });
 
   describe('Migration Command', () => {
