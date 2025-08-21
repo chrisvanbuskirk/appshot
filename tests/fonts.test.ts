@@ -345,11 +345,13 @@ describe('FontService', () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({}),
+        stdout: process.platform === 'darwin' ? JSON.stringify({}) : '',
         stderr: ''
       });
 
       const fonts = await fontService.getSystemFonts();
+      
+      // All platforms should return empty array for empty response
       expect(fonts).toEqual([]);
     });
 
