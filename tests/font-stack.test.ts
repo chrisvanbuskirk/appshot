@@ -10,17 +10,17 @@ describe('getFontStack function', () => {
 
     it('should return correct fallback for Helvetica', () => {
       const result = getFontStack('Helvetica');
-      expect(result).toBe("'Helvetica Neue', Helvetica, Arial, sans-serif");
+      expect(result).toBe("'Helvetica', system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif");
     });
 
     it('should return correct fallback for Georgia', () => {
       const result = getFontStack('Georgia');
-      expect(result).toBe("Georgia, 'Times New Roman', serif");
+      expect(result).toBe("Georgia, 'Times New Roman', Times, serif");
     });
 
     it('should return correct fallback for Times New Roman', () => {
       const result = getFontStack('Times New Roman');
-      expect(result).toBe("'Times New Roman', Georgia, serif");
+      expect(result).toBe("'Times New Roman', Times, serif");
     });
 
     it('should return correct fallback for Courier New', () => {
@@ -30,7 +30,7 @@ describe('getFontStack function', () => {
 
     it('should return correct fallback for SF Pro', () => {
       const result = getFontStack('SF Pro');
-      expect(result).toBe("'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, sans-serif");
+      expect(result).toBe("'SF Pro', system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif");
     });
 
     it('should return correct fallback for Segoe UI', () => {
