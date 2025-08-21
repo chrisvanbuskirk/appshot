@@ -309,13 +309,21 @@ describe('FontService', () => {
       expect(mockExecAsync).toHaveBeenCalledTimes(1);
     });
 
-    it('should return empty array on error', async () => {
+    it('should return fallback fonts on error for Windows/Linux', async () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockRejectedValue(new Error('Command failed'));
 
       const fonts = await fontService.getSystemFonts();
-      expect(fonts).toEqual([]);
+      
+      // Platform-specific behavior
+      if (process.platform === 'darwin') {
+        expect(fonts).toEqual([]);
+      } else {
+        // Windows and Linux fall back to recommended fonts
+        expect(fonts.length).toBeGreaterThan(0);
+        expect(fonts).toContain('Arial');
+      }
     });
 
     it('should handle malformed JSON gracefully', async () => {
@@ -327,7 +335,14 @@ describe('FontService', () => {
       });
 
       const fonts = await fontService.getSystemFonts();
-      expect(fonts).toEqual([]);
+      
+      // Platform-specific parsing
+      if (process.platform === 'darwin') {
+        expect(fonts).toEqual([]);
+      } else {
+        // Windows/Linux treat each line as a font
+        expect(fonts).toEqual(['not json']);
+      }
     });
   });
 
@@ -338,7 +353,15 @@ describe('FontService', () => {
       mockExecAsync.mockRejectedValue(new Error('Command failed'));
 
       const fonts = await fontService.getSystemFonts();
-      expect(fonts).toEqual([]);
+      
+      // Platform-specific fallback behavior
+      if (process.platform === 'darwin') {
+        expect(fonts).toEqual([]);
+      } else {
+        // Windows and Linux fall back to recommended fonts
+        expect(fonts.length).toBeGreaterThan(0);
+        expect(fonts).toContain('Arial');
+      }
     });
 
     it('should handle missing SPFontsDataType field', async () => {
