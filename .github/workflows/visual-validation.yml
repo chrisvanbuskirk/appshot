@@ -211,34 +211,8 @@ jobs:
             /tmp/visual-test/visual-test-report.md
           retention-days: 7
       
-      - name: Create PR comment with screenshots
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('/tmp/visual-test/visual-test-report.md', 'utf8');
-            
-            const comment = `## 🎨 Visual Validation Results
-            
-            ${report}
-            
-            ### Next Steps
-            - Review the uploaded artifacts for visual quality
-            - Check gradient rendering and text clarity
-            - Verify device frame alignment
-            
-            You can download the screenshots from the [Actions artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).
-            
-            To run Claude visual analysis, comment: \`@claude analyze the screenshots from this PR\`
-            `;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+      # Note: PR comment creation removed due to permission limitations
+      # The visual validation report is still available in the artifacts
 
   validate-with-imagemagick:
     name: Technical Image Validation

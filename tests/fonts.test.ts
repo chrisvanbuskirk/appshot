@@ -1,40 +1,40 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, MockedFunction } from 'vitest';
+import { exec } from 'child_process';
 import { FontService } from '../src/services/fonts.js';
 
-// Mock child_process.exec
-vi.mock('child_process', () => {
-  const mockExec = vi.fn((cmd: string, options: any, callback?: any) => {
-    const cb = callback || options;
-    if (typeof cb === 'function') {
-      // Default response
-      cb(null, JSON.stringify({ SPFontsDataType: [] }), '');
-    }
-  });
-  
-  return { exec: mockExec };
-});
+// Mock child_process
+vi.mock('child_process');
 
 describe('FontService', () => {
   let fontService: FontService;
-  let mockExec: any;
+  let mockExec: MockedFunction<typeof exec>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset the singleton instance
     (FontService as any).instance = null;
-    fontService = FontService.getInstance();
     
-    // Get the mocked exec function
-    const childProcess = require('child_process');
-    mockExec = childProcess.exec;
+    // Get the mocked exec
+    mockExec = vi.mocked(exec);
+    
+    // Set up default mock behavior
+    mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+      const cb = typeof options === 'function' ? options : callback;
+      if (cb) {
+        cb(null, JSON.stringify({ SPFontsDataType: [] }), '');
+      }
+      return null as any;
+    });
+    
+    fontService = FontService.getInstance();
   });
 
   describe('isFontInstalled', () => {
     it('should return true for installed fonts', async () => {
       // Mock system fonts
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({
             SPFontsDataType: [
               { _items: [{ _name: 'Family', display_name0: 'Arial' }] },
@@ -42,6 +42,7 @@ describe('FontService', () => {
             ]
           }), '');
         }
+        return null as any;
       });
 
       expect(await fontService.isFontInstalled('Arial')).toBe(true);
@@ -49,15 +50,16 @@ describe('FontService', () => {
     });
 
     it('should return false for non-installed fonts', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({
             SPFontsDataType: [
               { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
             ]
           }), '');
         }
+        return null as any;
       });
 
       expect(await fontService.isFontInstalled('NonExistentFont')).toBe(false);
@@ -65,15 +67,16 @@ describe('FontService', () => {
     });
 
     it('should be case-insensitive', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({
             SPFontsDataType: [
               { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
             ]
           }), '');
         }
+        return null as any;
       });
 
       expect(await fontService.isFontInstalled('arial')).toBe(true);
@@ -84,15 +87,16 @@ describe('FontService', () => {
 
   describe('validateFont', () => {
     it('should only return true for actually installed fonts', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({
             SPFontsDataType: [
               { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
             ]
           }), '');
         }
+        return null as any;
       });
 
       expect(await fontService.validateFont('Arial')).toBe(true);
@@ -101,11 +105,12 @@ describe('FontService', () => {
     });
 
     it('should not return true for recommended fonts that are not installed', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({ SPFontsDataType: [] }), '');
         }
+        return null as any;
       });
 
       // Even recommended fonts should return false if not installed
@@ -117,15 +122,16 @@ describe('FontService', () => {
 
   describe('getFontStatus', () => {
     it('should return correct status for installed fonts', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({
             SPFontsDataType: [
               { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
             ]
           }), '');
         }
+        return null as any;
       });
 
       const status = await fontService.getFontStatus('Arial');
@@ -138,11 +144,12 @@ describe('FontService', () => {
     });
 
     it('should return correct status with warning for non-installed fonts', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({ SPFontsDataType: [] }), '');
         }
+        return null as any;
       });
 
       const status = await fontService.getFontStatus('Roboto');
@@ -152,11 +159,12 @@ describe('FontService', () => {
     });
 
     it('should handle unknown fonts correctly', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({ SPFontsDataType: [] }), '');
         }
+        return null as any;
       });
 
       const status = await fontService.getFontStatus('CompletelyUnknownFont');
@@ -166,11 +174,12 @@ describe('FontService', () => {
     });
 
     it('should provide appropriate warnings for different font categories', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({ SPFontsDataType: [] }), '');
         }
+        return null as any;
       });
 
       // Web-safe font
@@ -189,9 +198,9 @@ describe('FontService', () => {
 
   describe('getRecommendedFonts', () => {
     it('should mark installation status for all fonts', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({
             SPFontsDataType: [
               { _items: [{ _name: 'Family', display_name0: 'Arial' }] },
@@ -199,6 +208,7 @@ describe('FontService', () => {
             ]
           }), '');
         }
+        return null as any;
       });
 
       const fonts = await fontService.getRecommendedFonts();
@@ -231,15 +241,16 @@ describe('FontService', () => {
 
   describe('getFontCategories', () => {
     it('should separate installed and not installed fonts', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({
             SPFontsDataType: [
               { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
             ]
           }), '');
         }
+        return null as any;
       });
 
       const categories = await fontService.getFontCategories();
@@ -292,15 +303,16 @@ describe('FontService', () => {
 
   describe('getSystemFonts', () => {
     it('should cache system fonts after first call', async () => {
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(null, JSON.stringify({
             SPFontsDataType: [
               { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
             ]
           }), '');
         }
+        return null as any;
       });
 
       const fonts1 = await fontService.getSystemFonts();
@@ -312,11 +324,12 @@ describe('FontService', () => {
 
     it('should handle errors gracefully', async () => {
       // Mock an error by setting response that triggers error path
-      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
-        const cb = callback || options;
-        if (typeof cb === 'function') {
+      mockExec.mockImplementation((cmd: any, options: any, callback?: any) => {
+        const cb = typeof options === 'function' ? options : callback;
+        if (cb) {
           cb(new Error('Command failed'), '', '');
         }
+        return null as any;
       });
 
       const fonts = await fontService.getSystemFonts();
