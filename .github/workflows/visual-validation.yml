@@ -48,6 +48,18 @@ jobs:
           # Initialize project
           node $GITHUB_WORKSPACE/dist/cli.js init --force
           
+          # Install sharp locally
+          cat > package.json << 'EOF'
+          {
+            "name": "visual-test",
+            "type": "module",
+            "dependencies": {
+              "sharp": "^0.33.0"
+            }
+          }
+          EOF
+          npm install
+          
           # Create test screenshots with known patterns
           cat > create-test-patterns.js << 'EOF'
           import sharp from 'sharp';

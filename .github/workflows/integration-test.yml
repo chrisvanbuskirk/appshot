@@ -75,6 +75,18 @@ jobs:
       - name: Create test screenshots
         run: |
           cd /tmp/test-init-${{ github.run_id }}
+          # Copy package.json and install sharp locally
+          cat > package.json << 'EOF'
+          {
+            "name": "test-project",
+            "type": "module",
+            "dependencies": {
+              "sharp": "^0.33.0"
+            }
+          }
+          EOF
+          npm install
+          
           cat > create-screenshots.js << 'EOF'
           import sharp from 'sharp';
           import fs from 'fs/promises';
