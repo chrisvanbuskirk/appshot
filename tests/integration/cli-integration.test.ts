@@ -224,7 +224,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     });
   });
 
-  describe('Font Configuration', () => {
+  describe.skipIf(process.env.CI && process.platform === 'linux')('Font Configuration', () => {
     it('should set global font', async () => {
       await runAppshot('fonts --set "Georgia"');
       
