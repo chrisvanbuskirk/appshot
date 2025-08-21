@@ -318,11 +318,10 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
       expect(hasLanguageDir || files.length === 0).toBe(true);
     });
   });
-});
 
-describe('CLI Help and Version', () => {
-  it('should show version', async () => {
-    const { stdout } = await runAppshot('--version');
+  describe('CLI Help and Version', () => {
+    it('should show version', async () => {
+      const { stdout } = await runAppshot('--version');
     expect(stdout).toMatch(/\d+\.\d+\.\d+/);
   });
 
@@ -339,5 +338,6 @@ describe('CLI Help and Version', () => {
     expect(stdout).toContain('--devices');
     expect(stdout).toContain('--langs');
     expect(stdout).toContain('--no-frame');
+  });
   });
 });
