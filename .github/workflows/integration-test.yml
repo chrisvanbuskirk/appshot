@@ -169,7 +169,7 @@ jobs:
       - name: Test clean command
         run: |
           cd /tmp/test-init-${{ github.run_id }}
-          appshot clean
+          appshot clean --yes
           test ! -d final || echo "Final directory cleaned"
       
       - name: Test build with frames

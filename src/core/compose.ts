@@ -460,19 +460,19 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     const screenshotMeta = await sharp(screenshot).metadata();
     const screenshotWidth = screenshotMeta.width || outputWidth;
     const screenshotHeight = screenshotMeta.height || outputHeight;
-    
+
     // Calculate available space for the screenshot
     const availableWidth = outputWidth;
     const availableHeight = outputHeight - captionHeight;
-    
+
     // Calculate scale to fit within available space while maintaining aspect ratio
     const scaleX = availableWidth / screenshotWidth;
     const scaleY = availableHeight / screenshotHeight;
     const scale = Math.min(scaleX, scaleY, 1); // Don't upscale, only downscale if needed
-    
+
     const targetWidth = Math.floor(screenshotWidth * scale);
     const targetHeight = Math.floor(screenshotHeight * scale);
-    
+
     // Resize screenshot if needed
     let resizedScreenshot = screenshot;
     if (scale < 1) {
@@ -483,7 +483,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         })
         .toBuffer();
     }
-    
+
     // Center the screenshot horizontally
     const deviceTop = Math.floor(captionHeight);
     const deviceLeft = Math.floor((canvasWidth - targetWidth) / 2);
