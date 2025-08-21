@@ -23,6 +23,29 @@ vi.mock('util', () => {
   };
 });
 
+// Helper to create platform-appropriate mock response
+function createMockFontResponse(fonts: string[]) {
+  const platform = process.platform;
+  
+  if (platform === 'darwin') {
+    // macOS format
+    const typefaces: any = {};
+    fonts.forEach(font => {
+      typefaces[font] = { family: font };
+      typefaces[`${font} Bold`] = { family: font };
+    });
+    return JSON.stringify({
+      SPFontsDataType: [{ typefaces }]
+    });
+  } else if (platform === 'win32') {
+    // Windows format - one font per line
+    return fonts.join('\n');
+  } else {
+    // Linux format - one font per line
+    return fonts.join('\n');
+  }
+}
+
 // Helper to import the FontService fresh each test
 async function importFontService() {
   vi.resetModules();
@@ -43,16 +66,7 @@ describe('FontService', () => {
     it('should return true for installed fonts', async () => {
       // Set up mock BEFORE importing service
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              "Arial": { family: "Arial" },
-              "Arial Bold": { family: "Arial" },
-              "Helvetica": { family: "Helvetica" },
-              "Helvetica Bold": { family: "Helvetica" }
-            }
-          }]
-        }),
+        stdout: createMockFontResponse(['Arial', 'Helvetica']),
         stderr: ''
       });
       
@@ -64,14 +78,7 @@ describe('FontService', () => {
 
     it('should return false for non-installed fonts', async () => {
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              "Arial": { family: "Arial" },
-              "Arial Bold": { family: "Arial" }
-            }
-          }]
-        }),
+        stdout: createMockFontResponse(['Arial']),
         stderr: ''
       });
       
@@ -83,14 +90,7 @@ describe('FontService', () => {
 
     it('should be case-insensitive', async () => {
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              "Arial": { family: "Arial" },
-              "Arial Bold": { family: "Arial" }
-            }
-          }]
-        }),
+        stdout: createMockFontResponse(['Arial']),
         stderr: ''
       });
       
@@ -105,14 +105,7 @@ describe('FontService', () => {
   describe('validateFont', () => {
     it('should only return true for actually installed fonts', async () => {
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              "Arial": { family: "Arial" },
-              "Arial Bold": { family: "Arial" }
-            }
-          }]
-        }),
+        stdout: createMockFontResponse(['Arial']),
         stderr: ''
       });
       
@@ -127,7 +120,7 @@ describe('FontService', () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({ SPFontsDataType: [] }),
+        stdout: createMockFontResponse([]),
         stderr: ''
       });
 
@@ -141,14 +134,7 @@ describe('FontService', () => {
   describe('getFontStatus', () => {
     it('should return correct status for installed fonts', async () => {
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              "Arial": { family: "Arial" },
-              "Arial Bold": { family: "Arial" }
-            }
-          }]
-        }),
+        stdout: createMockFontResponse(['Arial']),
         stderr: ''
       });
       
@@ -168,7 +154,7 @@ describe('FontService', () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({ SPFontsDataType: [] }),
+        stdout: createMockFontResponse([]),
         stderr: ''
       });
 
@@ -182,7 +168,7 @@ describe('FontService', () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({ SPFontsDataType: [] }),
+        stdout: createMockFontResponse([]),
         stderr: ''
       });
 
@@ -196,7 +182,7 @@ describe('FontService', () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({ SPFontsDataType: [] }),
+        stdout: createMockFontResponse([]),
         stderr: ''
       });
 
@@ -213,16 +199,7 @@ describe('FontService', () => {
   describe('getRecommendedFonts', () => {
     it('should mark installation status for all fonts', async () => {
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              "Arial": { family: "Arial" },
-              "Arial Bold": { family: "Arial" },
-              "Georgia": { family: "Georgia" },
-              "Georgia Bold": { family: "Georgia" }
-            }
-          }]
-        }),
+        stdout: createMockFontResponse(['Arial', 'Georgia']),
         stderr: ''
       });
       
@@ -242,7 +219,7 @@ describe('FontService', () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({ SPFontsDataType: [] }),
+        stdout: createMockFontResponse([]),
         stderr: ''
       });
       
@@ -261,7 +238,7 @@ describe('FontService', () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({ SPFontsDataType: [] }),
+        stdout: createMockFontResponse([]),
         stderr: ''
       });
       
@@ -283,14 +260,7 @@ describe('FontService', () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              "Arial": { family: "Arial" },
-              "Arial Bold": { family: "Arial" }
-            }
-          }]
-        }),
+        stdout: createMockFontResponse(['Arial']),
         stderr: ''
       });
 
@@ -306,14 +276,7 @@ describe('FontService', () => {
 
     it('should return system fonts in a category', async () => {
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              "Arial": { family: "Arial" },
-              "Arial Bold": { family: "Arial" }
-            }
-          }]
-        }),
+        stdout: createMockFontResponse(['Arial']),
         stderr: ''
       });
       
@@ -335,14 +298,7 @@ describe('FontService', () => {
       const fontService = await importFontService();
       
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              "Arial": { family: "Arial" },
-              "Arial Bold": { family: "Arial" }
-            }
-          }]
-        }),
+        stdout: createMockFontResponse(['Arial']),
         stderr: ''
       });
 
@@ -417,20 +373,30 @@ describe('FontService', () => {
       expect(utilMod.promisify).toHaveBeenCalledWith(mockExec);
     });
 
-    it('execAsync should be called with correct command for macOS', async () => {
-      const fontService = await importFontService();
-      
+    it('execAsync should be called with correct command for platform', async () => {
       mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({ SPFontsDataType: [] }),
+        stdout: createMockFontResponse([]),
         stderr: ''
       });
+      
+      const fontService = await importFontService();
 
       await fontService.getSystemFonts();
       
-      expect(mockExecAsync).toHaveBeenCalledWith(
-        'system_profiler SPFontsDataType -json',
-        { maxBuffer: 10 * 1024 * 1024 }
-      );
+      // Check platform-specific command
+      const platform = process.platform;
+      if (platform === 'darwin') {
+        expect(mockExecAsync).toHaveBeenCalledWith(
+          'system_profiler SPFontsDataType -json',
+          { maxBuffer: 10 * 1024 * 1024 }
+        );
+      } else if (platform === 'win32') {
+        expect(mockExecAsync).toHaveBeenCalledWith(
+          expect.stringContaining('InstalledFontCollection')
+        );
+      } else {
+        expect(mockExecAsync).toHaveBeenCalledWith('fc-list : family');
+      }
     });
   });
 });

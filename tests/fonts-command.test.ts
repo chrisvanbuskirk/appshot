@@ -305,7 +305,8 @@ describe('fonts command', () => {
       
       expect(mockWriteFile).toHaveBeenCalledOnce();
       const [configPath, configContent] = mockWriteFile.mock.calls[0];
-      expect(configPath).toContain('.appshot/config.json');
+      // Handle platform-specific path separators
+      expect(configPath).toMatch(/\.appshot[/\\]config\.json/);
       
       const savedConfig = JSON.parse(configContent);
       expect(savedConfig.caption.font).toBe('Helvetica');
