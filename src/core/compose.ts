@@ -456,12 +456,40 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       left: Math.max(0, deviceLeft)
     });
   } else {
-    // No frame, just use the screenshot
+    // No frame, resize screenshot to fit within the canvas
+    const screenshotMeta = await sharp(screenshot).metadata();
+    const screenshotWidth = screenshotMeta.width || outputWidth;
+    const screenshotHeight = screenshotMeta.height || outputHeight;
+    
+    // Calculate available space for the screenshot
+    const availableWidth = outputWidth;
+    const availableHeight = outputHeight - captionHeight;
+    
+    // Calculate scale to fit within available space while maintaining aspect ratio
+    const scaleX = availableWidth / screenshotWidth;
+    const scaleY = availableHeight / screenshotHeight;
+    const scale = Math.min(scaleX, scaleY, 1); // Don't upscale, only downscale if needed
+    
+    const targetWidth = Math.floor(screenshotWidth * scale);
+    const targetHeight = Math.floor(screenshotHeight * scale);
+    
+    // Resize screenshot if needed
+    let resizedScreenshot = screenshot;
+    if (scale < 1) {
+      resizedScreenshot = await sharp(screenshot)
+        .resize(targetWidth, targetHeight, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .toBuffer();
+    }
+    
+    // Center the screenshot horizontally
     const deviceTop = Math.floor(captionHeight);
-    const deviceLeft = Math.floor((canvasWidth - outputWidth) / 2);
+    const deviceLeft = Math.floor((canvasWidth - targetWidth) / 2);
 
     composites.push({
-      input: screenshot,
+      input: resizedScreenshot,
       top: deviceTop,
       left: Math.max(0, deviceLeft)
     });
