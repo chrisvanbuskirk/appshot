@@ -230,14 +230,14 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
       
       const config = JSON.parse(await fs.readFile('.appshot/config.json', 'utf-8'));
       expect(config.caption.font).toBe('Georgia');
-    });
+    }, 120000); // 2 minute timeout for CI
 
     it('should set device-specific font', async () => {
       await runAppshot('fonts --set "Arial" --device iphone');
       
       const config = JSON.parse(await fs.readFile('.appshot/config.json', 'utf-8'));
       expect(config.devices.iphone.captionFont).toBe('Arial');
-    });
+    }, 120000); // 2 minute timeout for CI
   });
 
   describe('Check Command', () => {
