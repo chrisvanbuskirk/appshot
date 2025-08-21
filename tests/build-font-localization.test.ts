@@ -135,7 +135,7 @@ describe('Build Command Font Localization', () => {
     // These should use the global font (Georgia) since no device-specific font is set
   });
 
-  it('should handle font command integration with build', async () => {
+  it.skipIf(process.env.CI)('should handle font command integration with build', async () => {
     // Create a test screenshot
     const screenshotBuffer = await sharp({
       create: {

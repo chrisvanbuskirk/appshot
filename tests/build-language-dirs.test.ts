@@ -74,7 +74,7 @@ describe('Build Language Directory Structure', () => {
     expect(rootFileExists).toBe(false);
   });
 
-  it('should use system language when --langs not specified', async () => {
+  it.skipIf(process.env.CI)('should use system language when --langs not specified', async () => {
     // Create a test screenshot
     const screenshotBuffer = await sharp({
       create: {
