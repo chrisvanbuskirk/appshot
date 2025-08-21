@@ -38,6 +38,16 @@ vi.mock('../src/services/fonts.js', () => {
           'Arial', 'Helvetica', 'Times New Roman', 'Courier New',
           'Georgia', 'Verdana', 'Tahoma', 'SF Pro', 'SF Pro Display'
         ]),
+        getFontStatus: vi.fn(async (fontName: string) => {
+          const installedFonts = ['Arial', 'Helvetica', 'Times New Roman', 'Georgia'];
+          const installed = installedFonts.some(f => f.toLowerCase() === fontName.toLowerCase());
+          return {
+            name: fontName,
+            installed,
+            fallback: installed ? '' : 'Arial, sans-serif',
+            warning: installed ? null : 'This font is not installed on your system'
+          };
+        }),
         getFontCategories: vi.fn(async () => [
           {
             name: 'Recommended (Web-Safe)',

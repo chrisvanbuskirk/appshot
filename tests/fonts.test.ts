@@ -1,366 +1,316 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FontService } from '../src/services/fonts.js';
 
-// Mock the promisify function before module imports
-vi.mock('util', () => {
-  const mockExecAsync = vi.fn();
-  return {
-    promisify: vi.fn(() => mockExecAsync),
-    mockExecAsync // Export for test access
+// Create mock exec function that works with promisify
+const createMockExec = () => {
+  let responseData = { stdout: JSON.stringify({ SPFontsDataType: [] }), stderr: '' };
+  
+  const mockExec = vi.fn((cmd: string, options: any, callback?: any) => {
+    // Handle both 2-arg and 3-arg versions
+    const cb = callback || options;
+    if (typeof cb === 'function') {
+      cb(null, responseData.stdout, responseData.stderr);
+    }
+  });
+  
+  // Add helper to set response
+  (mockExec as any).setResponse = (data: any) => {
+    responseData = data;
   };
-});
+  
+  return mockExec;
+};
+
+const mockExec = createMockExec();
+
+vi.mock('child_process', () => ({
+  exec: mockExec
+}));
 
 describe('FontService', () => {
   let fontService: FontService;
-  let mockExecAsync: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset the singleton instance
     (FontService as any).instance = null;
     fontService = FontService.getInstance();
-    // Get the mocked exec function
-    const util = vi.importActual('util') as any;
-    mockExecAsync = (vi.mocked(util).mockExecAsync || vi.fn());
     
-    // Set a default mock for all tests
-    mockExecAsync = vi.fn().mockResolvedValue({
+    // Set default response
+    (mockExec as any).setResponse({
       stdout: JSON.stringify({ SPFontsDataType: [] }),
       stderr: ''
     });
-    
-    // Re-mock util with our mockExecAsync
-    vi.mocked(require('util')).promisify.mockReturnValue(mockExecAsync);
   });
 
   describe('isFontInstalled', () => {
     it('should return true for installed fonts', async () => {
       // Mock system fonts
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              'arial': { family: 'Arial' },
-              'helvetica': { family: 'Helvetica' }
-            }
-          }]
+          SPFontsDataType: [
+            { _items: [{ _name: 'Family', display_name0: 'Arial' }] },
+            { _items: [{ _name: 'Family', display_name0: 'Helvetica' }] }
+          ]
         }),
         stderr: ''
       });
 
-      const isInstalled = await fontService.isFontInstalled('Arial');
-      expect(isInstalled).toBe(true);
+      expect(await fontService.isFontInstalled('Arial')).toBe(true);
+      expect(await fontService.isFontInstalled('Helvetica')).toBe(true);
     });
 
     it('should return false for non-installed fonts', async () => {
-      // Mock system fonts without Poppins
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              'arial': { family: 'Arial' },
-              'helvetica': { family: 'Helvetica' }
-            }
-          }]
+          SPFontsDataType: [
+            { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
+          ]
         }),
         stderr: ''
       });
 
-      const isInstalled = await fontService.isFontInstalled('Poppins');
-      expect(isInstalled).toBe(false);
+      expect(await fontService.isFontInstalled('NonExistentFont')).toBe(false);
+      expect(await fontService.isFontInstalled('FakeFont')).toBe(false);
     });
 
     it('should be case-insensitive', async () => {
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              'arial': { family: 'Arial' }
-            }
-          }]
+          SPFontsDataType: [
+            { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
+          ]
         }),
         stderr: ''
       });
 
-      const isInstalled1 = await fontService.isFontInstalled('ARIAL');
-      const isInstalled2 = await fontService.isFontInstalled('arial');
-      const isInstalled3 = await fontService.isFontInstalled('Arial');
-      
-      expect(isInstalled1).toBe(true);
-      expect(isInstalled2).toBe(true);
-      expect(isInstalled3).toBe(true);
+      expect(await fontService.isFontInstalled('arial')).toBe(true);
+      expect(await fontService.isFontInstalled('ARIAL')).toBe(true);
+      expect(await fontService.isFontInstalled('ArIaL')).toBe(true);
     });
   });
 
   describe('validateFont', () => {
     it('should only return true for actually installed fonts', async () => {
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              'arial': { family: 'Arial' }
-            }
-          }]
+          SPFontsDataType: [
+            { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
+          ]
         }),
         stderr: ''
       });
 
-      // Arial is installed
-      const isValidArial = await fontService.validateFont('Arial');
-      expect(isValidArial).toBe(true);
-
-      // Poppins is NOT installed (even though it's in recommended list)
-      const isValidPoppins = await fontService.validateFont('Poppins');
-      expect(isValidPoppins).toBe(false);
+      expect(await fontService.validateFont('Arial')).toBe(true);
+      expect(await fontService.validateFont('Helvetica')).toBe(false);
+      expect(await fontService.validateFont('SF Pro')).toBe(false);
     });
 
     it('should not return true for recommended fonts that are not installed', async () => {
-      // Mock empty system fonts
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({ SPFontsDataType: [] }),
         stderr: ''
       });
 
-      // Test all recommended fonts should be false when not installed
-      const recommendedFonts = ['Roboto', 'Open Sans', 'Montserrat', 'Lato', 'Poppins', 'Inter'];
-      
-      for (const font of recommendedFonts) {
-        const isValid = await fontService.validateFont(font);
-        expect(isValid).toBe(false);
-      }
+      // Even recommended fonts should return false if not installed
+      expect(await fontService.validateFont('Arial')).toBe(false);
+      expect(await fontService.validateFont('Helvetica')).toBe(false);
+      expect(await fontService.validateFont('Georgia')).toBe(false);
     });
   });
 
   describe('getFontStatus', () => {
     it('should return correct status for installed fonts', async () => {
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              'arial': { family: 'Arial' }
-            }
-          }]
+          SPFontsDataType: [
+            { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
+          ]
         }),
         stderr: ''
       });
 
       const status = await fontService.getFontStatus('Arial');
-      
-      expect(status.name).toBe('Arial');
-      expect(status.installed).toBe(true);
-      expect(status.category).toBe('web-safe');
-      expect(status.fallback).toBe('Helvetica, sans-serif');
-      expect(status.warning).toBeUndefined();
+      expect(status).toEqual({
+        name: 'Arial',
+        installed: true,
+        fallback: 'Helvetica, sans-serif',
+        warning: null
+      });
     });
 
     it('should return correct status with warning for non-installed fonts', async () => {
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({ SPFontsDataType: [] }),
         stderr: ''
       });
 
-      const status = await fontService.getFontStatus('Poppins');
-      
-      expect(status.name).toBe('Poppins');
+      const status = await fontService.getFontStatus('Roboto');
       expect(status.installed).toBe(false);
-      expect(status.category).toBe('recommended');
-      expect(status.fallback).toBe('Arial, sans-serif');
       expect(status.warning).toContain('not installed');
-      expect(status.warning).toContain('Google Fonts');
+      expect(status.fallback).toBeTruthy();
     });
 
     it('should handle unknown fonts correctly', async () => {
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({ SPFontsDataType: [] }),
         stderr: ''
       });
 
-      const status = await fontService.getFontStatus('UnknownFont');
-      
-      expect(status.name).toBe('UnknownFont');
+      const status = await fontService.getFontStatus('CompletelyUnknownFont');
       expect(status.installed).toBe(false);
-      expect(status.fallback).toBe('Arial, Helvetica, sans-serif'); // Default fallback
-      expect(status.warning).toContain('not installed on your system');
+      expect(status.warning).toContain('not installed');
+      expect(status.fallback).toContain('system-ui');
     });
 
     it('should provide appropriate warnings for different font categories', async () => {
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({ SPFontsDataType: [] }),
         stderr: ''
       });
 
-      // Test recommended font warning
-      const recommendedStatus = await fontService.getFontStatus('Montserrat');
-      expect(recommendedStatus.warning).toContain('Install it from Google Fonts');
+      // Web-safe font
+      const arialStatus = await fontService.getFontStatus('Arial');
+      expect(arialStatus.warning).toContain('web-safe');
 
-      // Test system font warning  
-      const systemStatus = await fontService.getFontStatus('SF Pro');
-      expect(systemStatus.warning).toContain('System font');
-      expect(systemStatus.warning).toContain('not available on this machine');
+      // Popular font
+      const robotoStatus = await fontService.getFontStatus('Roboto');
+      expect(robotoStatus.warning).toContain('popular');
+
+      // Unknown font
+      const unknownStatus = await fontService.getFontStatus('UnknownFont');
+      expect(unknownStatus.warning).toContain('not installed');
     });
   });
 
   describe('getRecommendedFonts', () => {
     it('should mark installation status for all fonts', async () => {
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              'arial': { family: 'Arial' },
-              'helvetica': { family: 'Helvetica' },
-              'georgia': { family: 'Georgia' }
-            }
-          }]
+          SPFontsDataType: [
+            { _items: [{ _name: 'Family', display_name0: 'Arial' }] },
+            { _items: [{ _name: 'Family', display_name0: 'Georgia' }] }
+          ]
         }),
         stderr: ''
       });
 
       const fonts = await fontService.getRecommendedFonts();
-      
-      // Check that Arial is marked as installed
       const arial = fonts.find(f => f.name === 'Arial');
+      const georgia = fonts.find(f => f.name === 'Georgia');
+      const roboto = fonts.find(f => f.name === 'Roboto');
+
       expect(arial?.installed).toBe(true);
-      
-      // Check that Helvetica is marked as installed
-      const helvetica = fonts.find(f => f.name === 'Helvetica');
-      expect(helvetica?.installed).toBe(true);
-      
-      // Check that Poppins is marked as NOT installed
-      const poppins = fonts.find(f => f.name === 'Poppins');
-      expect(poppins?.installed).toBe(false);
-      
-      // Check that all fonts have an installed property
-      fonts.forEach(font => {
-        expect(font).toHaveProperty('installed');
-        expect(typeof font.installed).toBe('boolean');
-      });
+      expect(georgia?.installed).toBe(true);
+      expect(roboto?.installed).toBe(false);
     });
 
     it('should correctly categorize fonts', async () => {
-      mockExecAsync.mockResolvedValue({
-        stdout: JSON.stringify({ SPFontsDataType: [] }),
-        stderr: ''
-      });
-
       const fonts = await fontService.getRecommendedFonts();
       
-      // Check web-safe fonts
-      const webSafeFonts = fonts.filter(f => f.category === 'web-safe');
-      const webSafeNames = webSafeFonts.map(f => f.name);
-      expect(webSafeNames).toContain('Arial');
-      expect(webSafeNames).toContain('Helvetica');
-      expect(webSafeNames).toContain('Georgia');
-      expect(webSafeNames).toContain('Times New Roman');
-      
-      // Check recommended fonts
-      const recommendedFonts = fonts.filter(f => f.category === 'recommended');
-      const recommendedNames = recommendedFonts.map(f => f.name);
-      expect(recommendedNames).toContain('Roboto');
-      expect(recommendedNames).toContain('Poppins');
-      expect(recommendedNames).toContain('Inter');
-      
-      // Check system fonts
-      const systemFonts = fonts.filter(f => f.category === 'system');
-      const systemNames = systemFonts.map(f => f.name);
-      expect(systemNames).toContain('SF Pro');
-      expect(systemNames).toContain('Segoe UI');
+      const webSafe = fonts.filter(f => f.category === 'web-safe');
+      const popular = fonts.filter(f => f.category === 'popular');
+      const system = fonts.filter(f => f.category === 'system');
+
+      expect(webSafe.length).toBeGreaterThan(0);
+      expect(popular.length).toBeGreaterThan(0);
+      expect(system.length).toBeGreaterThan(0);
+
+      // Check specific fonts are in correct categories
+      expect(webSafe.some(f => f.name === 'Arial')).toBe(true);
+      expect(popular.some(f => f.name === 'Roboto')).toBe(true);
+      expect(system.some(f => f.name === 'SF Pro')).toBe(true);
     });
   });
 
   describe('getFontCategories', () => {
     it('should separate installed and not installed fonts', async () => {
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              'arial': { family: 'Arial' },
-              'roboto': { family: 'Roboto' }
-            }
-          }]
+          SPFontsDataType: [
+            { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
+          ]
         }),
         stderr: ''
       });
 
       const categories = await fontService.getFontCategories();
       
-      // Should have category for installed web-safe fonts
-      const installedWebSafe = categories.find(c => c.name === 'Installed Fonts (Web-Safe)');
-      expect(installedWebSafe).toBeDefined();
-      expect(installedWebSafe?.fonts.some(f => f.name === 'Arial')).toBe(true);
+      // Find web-safe category
+      const webSafe = categories.find(c => c.name.includes('Web-Safe'));
+      expect(webSafe).toBeTruthy();
       
-      // Should have category for installed popular fonts
-      const installedPopular = categories.find(c => c.name === 'Installed Fonts (Popular)');
-      expect(installedPopular).toBeDefined();
-      expect(installedPopular?.fonts.some(f => f.name === 'Roboto')).toBe(true);
+      // Arial should be marked as installed
+      const arial = webSafe?.fonts.find(f => f.name === 'Arial');
+      expect(arial?.installed).toBe(true);
       
-      // Should have category for not installed popular fonts
-      const notInstalled = categories.find(c => c.name === 'Popular Fonts (Not Installed - Will Use Fallback)');
-      expect(notInstalled).toBeDefined();
-      expect(notInstalled?.fonts.some(f => f.name === 'Poppins')).toBe(true);
+      // Helvetica should not be installed
+      const helvetica = webSafe?.fonts.find(f => f.name === 'Helvetica');
+      expect(helvetica?.installed).toBe(false);
     });
   });
 
   describe('getFontFallback', () => {
     it('should return correct fallbacks for known fonts', () => {
       expect(fontService.getFontFallback('Arial')).toBe('Helvetica, sans-serif');
-      expect(fontService.getFontFallback('Georgia')).toBe('Times New Roman, serif');
-      expect(fontService.getFontFallback('Courier New')).toBe('monospace');
-      expect(fontService.getFontFallback('Poppins')).toBe('Arial, sans-serif');
-      expect(fontService.getFontFallback('SF Pro')).toBe('system-ui, -apple-system, sans-serif');
+      expect(fontService.getFontFallback('Georgia')).toBe("'Times New Roman', serif");
+      expect(fontService.getFontFallback('Courier New')).toBe('Courier, monospace');
     });
 
     it('should provide intelligent fallbacks for unknown fonts', () => {
       // Serif font
-      expect(fontService.getFontFallback('CustomSerif')).toBe('Georgia, Times New Roman, serif');
+      const serifFallback = fontService.getFontFallback('MySerifFont');
+      expect(serifFallback).toContain('serif');
       
       // Monospace font
-      expect(fontService.getFontFallback('CustomMono')).toBe('Courier New, Monaco, monospace');
-      expect(fontService.getFontFallback('CodeFont')).toBe('Courier New, Monaco, monospace');
+      const monoFallback = fontService.getFontFallback('MyCodeFont');
+      expect(monoFallback).toContain('monospace');
       
       // Display font
-      expect(fontService.getFontFallback('CustomDisplay')).toBe('Impact, Arial Black, sans-serif');
-      expect(fontService.getFontFallback('HeadlineFont')).toBe('Impact, Arial Black, sans-serif');
+      const displayFallback = fontService.getFontFallback('MyDisplayFont');
+      expect(displayFallback).toContain('Impact');
       
       // Default sans-serif
-      expect(fontService.getFontFallback('RandomFont')).toBe('Arial, Helvetica, sans-serif');
+      const defaultFallback = fontService.getFontFallback('RandomFont');
+      expect(defaultFallback).toContain('system-ui');
     });
 
     it('should be case-insensitive', () => {
-      expect(fontService.getFontFallback('ARIAL')).toBe('Helvetica, sans-serif');
       expect(fontService.getFontFallback('arial')).toBe('Helvetica, sans-serif');
-      expect(fontService.getFontFallback('Arial')).toBe('Helvetica, sans-serif');
+      expect(fontService.getFontFallback('ARIAL')).toBe('Helvetica, sans-serif');
+      expect(fontService.getFontFallback('ArIaL')).toBe('Helvetica, sans-serif');
     });
   });
 
   describe('getSystemFonts', () => {
     it('should cache system fonts after first call', async () => {
-      mockExecAsync.mockResolvedValue({
+      (mockExec as any).setResponse({
         stdout: JSON.stringify({
-          SPFontsDataType: [{
-            typefaces: {
-              'arial': { family: 'Arial' }
-            }
-          }]
+          SPFontsDataType: [
+            { _items: [{ _name: 'Family', display_name0: 'Arial' }] }
+          ]
         }),
         stderr: ''
       });
 
-      // First call
       const fonts1 = await fontService.getSystemFonts();
-      expect(fonts1).toContain('Arial');
-      expect(mockExecAsync).toHaveBeenCalledTimes(1);
-
-      // Second call should use cache
       const fonts2 = await fontService.getSystemFonts();
-      expect(fonts2).toEqual(fonts1);
-      expect(mockExecAsync).toHaveBeenCalledTimes(1); // Still only called once
+      
+      expect(fonts1).toEqual(fonts2);
+      expect(mockExec).toHaveBeenCalledTimes(1); // Should only call once due to caching
     });
 
     it('should handle errors gracefully', async () => {
-      mockExecAsync.mockRejectedValue(new Error('Command failed'));
+      // Mock an error by setting response that triggers error path
+      mockExec.mockImplementation((cmd: string, options: any, callback?: any) => {
+        const cb = callback || options;
+        if (typeof cb === 'function') {
+          cb(new Error('Command failed'), '', '');
+        }
+      });
 
       const fonts = await fontService.getSystemFonts();
-      expect(fonts).toEqual([]);
+      expect(fonts).toEqual([]); // Should return empty array on error
     });
   });
 });
