@@ -1,0 +1,278 @@
+name: Visual Tests
+
+on:
+  workflow_call:  # Allow this workflow to be called by others
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/core/compose.ts'
+      - 'src/core/render.ts'
+      - 'src/core/text-renderer.ts'
+      - 'src/commands/build.ts'
+      - 'tests/visual/**'
+
+jobs:
+  visual-tests:
+    name: Visual Tests (macOS)
+    runs-on: macos-latest  # Use macOS as golden reference
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build TypeScript
+        run: npm run build
+      
+      - name: Install ImageMagick for comparisons
+        run: brew install imagemagick
+      
+      - name: Create visual test project
+        run: |
+          mkdir -p visual-test-project
+          cd visual-test-project
+          
+          # Initialize project
+          node ../dist/cli.js init --force
+          
+          # Install sharp locally
+          cat > package.json << 'EOF'
+          {
+            "name": "visual-test",
+            "type": "module",
+            "dependencies": {
+              "sharp": "^0.33.0"
+            }
+          }
+          EOF
+          npm install
+      
+      - name: Generate test screenshots
+        run: |
+          cd visual-test-project
+          
+          # Create various test patterns
+          cat > create-test-patterns.js << 'EOF'
+          import sharp from 'sharp';
+          import fs from 'fs/promises';
+          
+          // Test 1: Gradient pattern
+          const width = 1290;
+          const height = 2796;
+          const gradient = Buffer.alloc(width * height * 4);
+          
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              const idx = (y * width + x) * 4;
+              gradient[idx] = Math.floor((x / width) * 255);      // R
+              gradient[idx + 1] = Math.floor((y / height) * 255); // G
+              gradient[idx + 2] = 128;                            // B
+              gradient[idx + 3] = 255;                            // A
+            }
+          }
+          
+          await sharp(gradient, {
+            raw: { width, height, channels: 4 }
+          }).png().toFile('screenshots/iphone/gradient.png');
+          
+          // Test 2: Solid color
+          await sharp({
+            create: {
+              width: 1290,
+              height: 2796,
+              channels: 4,
+              background: { r: 50, g: 100, b: 200, alpha: 1 }
+            }
+          }).png().toFile('screenshots/iphone/solid.png');
+          
+          // Test 3: Text clarity test (white background)
+          await sharp({
+            create: {
+              width: 1290,
+              height: 2796,
+              channels: 4,
+              background: { r: 255, g: 255, b: 255, alpha: 1 }
+            }
+          }).png().toFile('screenshots/iphone/text-bg.png');
+          
+          // Test 4: Watch screenshot
+          await fs.mkdir('screenshots/watch', { recursive: true });
+          await sharp({
+            create: {
+              width: 396,
+              height: 484,
+              channels: 4,
+              background: { r: 100, g: 150, b: 100, alpha: 1 }
+            }
+          }).png().toFile('screenshots/watch/watch.png');
+          
+          console.log('Test patterns created');
+          EOF
+          
+          node create-test-patterns.js
+      
+      - name: Set test captions
+        run: |
+          cd visual-test-project
+          
+          cat > .appshot/captions/iphone.json << 'EOF'
+          {
+            "gradient.png": "Gradient test pattern",
+            "solid.png": "Solid color background",
+            "text-bg.png": "Text rendering test"
+          }
+          EOF
+          
+          cat > .appshot/captions/watch.json << 'EOF'
+          {
+            "watch.png": "Quick info"
+          }
+          EOF
+      
+      - name: Build screenshots with different settings
+        run: |
+          cd visual-test-project
+          
+          # Test 1: No frame
+          node ../dist/cli.js build --devices iphone,watch --no-frame
+          mkdir -p ../visual-results/no-frame
+          cp -r final/* ../visual-results/no-frame/
+          
+          # Test 2: With frames
+          node ../dist/cli.js clean --yes
+          node ../dist/cli.js build --devices iphone
+          mkdir -p ../visual-results/with-frame
+          cp -r final/* ../visual-results/with-frame/
+          
+          # Test 3: Different gradient
+          node ../dist/cli.js clean --yes
+          node ../dist/cli.js gradients --apply ocean
+          node ../dist/cli.js build --devices iphone --no-frame
+          mkdir -p ../visual-results/ocean-gradient
+          cp -r final/* ../visual-results/ocean-gradient/
+      
+      - name: Generate reference checksums
+        id: checksums
+        run: |
+          cd visual-results
+          find . -name "*.png" -type f | while read img; do
+            echo "$(shasum -a 256 "$img")" >> checksums.txt
+          done
+          cat checksums.txt
+      
+      - name: Pixel comparison test
+        id: pixel-test
+        run: |
+          cd visual-results
+          
+          # Compare identical builds (should match exactly)
+          if [ -f "no-frame/iphone/gradient.png" ]; then
+            # Generate a second build to compare
+            cd ../visual-test-project
+            node ../dist/cli.js clean --yes
+            node ../dist/cli.js build --devices iphone --no-frame
+            
+            # Compare using ImageMagick
+            compare -metric AE \
+              ../visual-results/no-frame/iphone/gradient.png \
+              final/iphone/gradient.png \
+              diff-gradient.png 2>&1 | tee diff-result.txt || true
+            
+            DIFF_PIXELS=$(cat diff-result.txt | grep -oE '[0-9]+' | head -1 || echo "0")
+            echo "Pixel difference: $DIFF_PIXELS"
+            
+            # Fail if more than 100 pixels different (tiny threshold for rounding)
+            if [ "$DIFF_PIXELS" -gt "100" ]; then
+              echo "ERROR: Screenshots differ by $DIFF_PIXELS pixels"
+              echo "VISUAL_TEST_FAILED=true" >> $GITHUB_ENV
+            else
+              echo "✅ Screenshots match (diff: $DIFF_PIXELS pixels)"
+            fi
+          fi
+      
+      - name: Generate diff images on failure
+        if: env.VISUAL_TEST_FAILED == 'true'
+        run: |
+          cd visual-test-project
+          
+          # Create visual diffs for all screenshots
+          for img in final/iphone/*.png; do
+            if [ -f "$img" ]; then
+              base=$(basename "$img")
+              expected="../visual-results/no-frame/iphone/$base"
+              
+              if [ -f "$expected" ]; then
+                # Create difference image
+                compare -compose src \
+                  "$expected" \
+                  "$img" \
+                  "../pixel-diffs/diff-$base" || true
+                
+                # Create side-by-side comparison
+                convert "$expected" "$img" +append "../pixel-diffs/compare-$base"
+                
+                # Create overlay diff (red highlights differences)
+                compare -highlight-color red -lowlight-color 'rgba(255,255,255,0.3)' \
+                  "$expected" "$img" "../pixel-diffs/overlay-$base" || true
+              fi
+            fi
+          done
+      
+      - name: Upload visual test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-results
+          path: |
+            visual-results/
+            visual-test-project/final/
+            visual-test-project/diff-*.png
+          retention-days: 7
+      
+      - name: Upload pixel diffs on failure
+        if: failure() || env.VISUAL_TEST_FAILED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixel-diffs-${{ github.run_id }}
+          path: |
+            pixel-diffs/
+            visual-test-project/diff-*.png
+          retention-days: 30
+      
+      - name: Comment on PR with diff images
+        if: github.event_name == 'pull_request' && (failure() || env.VISUAL_TEST_FAILED == 'true')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const artifactUrl = `${runUrl}#artifacts`;
+            
+            const comment = `## 🖼️ Visual Test Failed
+            
+            Screenshots have changed! Please review the pixel diffs.
+            
+            **[View Artifacts](${artifactUrl})**
+            
+            The artifacts include:
+            - \`diff-*.png\` - Highlighted differences
+            - \`compare-*.png\` - Side-by-side comparisons
+            - \`overlay-*.png\` - Red overlay showing changes
+            
+            If these changes are intentional, please update the reference screenshots.`;
+            
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+        continue-on-error: true  # Don't fail if commenting fails

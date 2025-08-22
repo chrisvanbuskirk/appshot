@@ -13,6 +13,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:unit": "vitest run --exclude '**/integration/**' --exclude '**/visual/**'",
+    "test:integration": "vitest run tests/integration",
+    "test:visual": "vitest run tests/visual",
     "prepare": "npm run build",
     "clean": "rm -rf final/",
     "clean:all": "rm -rf final/ dist/ .appshot/"

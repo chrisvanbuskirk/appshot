@@ -1,0 +1,111 @@
+name: Integration Tests
+
+on:
+  workflow_call:  # Allow this workflow to be called by others
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  integration-tests:
+    name: Integration Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        # Skip Windows for now due to path issues
+        os: [ubuntu-latest, macos-latest]
+    
+    env:
+      # Disable font scanning on Linux for speed
+      APPSHOT_DISABLE_FONT_SCAN: ${{ startsWith(matrix.os, 'ubuntu') && '1' || '' }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build TypeScript
+        run: npm run build
+      
+      - name: Link CLI globally
+        run: npm link
+      
+      - name: Verify appshot installation
+        run: |
+          which appshot || echo "appshot path: $(which appshot)"
+          appshot --version
+      
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          CI: true
+        timeout-minutes: 10
+      
+      - name: Create test project and run E2E test
+        run: |
+          # Create a test project
+          TEST_DIR="/tmp/appshot-e2e-${{ github.run_id }}"
+          mkdir -p "$TEST_DIR"
+          cd "$TEST_DIR"
+          
+          # Initialize project
+          appshot init --force
+          
+          # Create package.json for sharp
+          cat > package.json << 'EOF'
+          {
+            "name": "test-project",
+            "type": "module",
+            "dependencies": {
+              "sharp": "^0.33.0"
+            }
+          }
+          EOF
+          npm install
+          
+          # Create test screenshot
+          cat > create-screenshot.js << 'EOF'
+          import sharp from 'sharp';
+          await sharp({
+            create: {
+              width: 1290,
+              height: 2796,
+              channels: 4,
+              background: { r: 100, g: 150, b: 200, alpha: 1 }
+            }
+          })
+          .png()
+          .toFile('screenshots/iphone/home.png');
+          console.log('Screenshot created');
+          EOF
+          node create-screenshot.js
+          
+          # Add caption
+          echo '{"home.png": "Test Caption"}' > .appshot/captions/iphone.json
+          
+          # Build screenshots
+          appshot build --devices iphone --no-frame
+          
+          # Verify output
+          test -f final/iphone/home.png || test -f final/iphone/*/home.png
+          echo "✅ E2E test passed"
+      
+      - name: Upload integration test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-artifacts-${{ matrix.os }}
+          path: |
+            /tmp/appshot-e2e-*/final/
+            /tmp/appshot-e2e-*/.appshot/
+          retention-days: 7

@@ -41,6 +41,11 @@ export class FontService {
    * Get list of system fonts based on platform
    */
   async getSystemFonts(): Promise<string[]> {
+    // Quick bypass for CI environments to avoid slow font scanning
+    if (process.env.APPSHOT_DISABLE_FONT_SCAN === '1' || process.env.APPSHOT_DISABLE_FONT_SCAN === 'true') {
+      return this.getRecommendedFontsSync().map(f => f.name);
+    }
+
     if (this.systemFontsCache) {
       return this.systemFontsCache;
     }
