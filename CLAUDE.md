@@ -31,8 +31,12 @@ npm run clean:all   # Remove final/, dist/, and .appshot/ directories
 appshot init        # Scaffold new project
 appshot caption --device iphone  # Interactive caption editor with autocomplete
 appshot caption --device iphone --translate --langs es,fr  # Real-time AI translation
-appshot style --device iphone    # Configure device positioning and styling
+appshot style --device iphone    # Configure device positioning, styling, and fonts
 appshot style --device iphone --reset  # Reset device to default styling
+appshot fonts       # Browse recommended fonts with categories
+appshot fonts --all # List all system fonts
+appshot fonts --validate "SF Pro"  # Check if font is available
+appshot fonts --json  # Output font data as JSON
 appshot localize --langs es,fr,de  # Batch translate all captions
 appshot localize --langs ja --model gpt-5  # Use specific AI model
 appshot build       # Generate final screenshots
@@ -102,7 +106,11 @@ Each command in `src/commands/` returns a Commander command object. The build co
   - `captionBox`: Device-specific box configuration
 
 ### Testing Strategy
-Tests use Vitest with temporary directories for file operations. Key test areas:
+
+#### Comprehensive Test Coverage
+Appshot has extensive test coverage with 50+ test files using Vitest:
+
+**Unit Tests:**
 - `devices.test.ts`: Orientation detection and frame selection logic
 - `render.test.ts`: Image processing and compositing
 - `files.test.ts`: Configuration loading and validation
@@ -112,6 +120,32 @@ Tests use Vitest with temporary directories for file operations. Key test areas:
 - `watch-compose.test.ts`: Watch-specific rendering optimizations
 - `translation.test.ts`: AI translation service and API key detection
 - `ai-types.test.ts`: OpenAI model configurations and parameter handling
+- `fonts.test.ts`: FontService system font detection and validation (19 tests)
+- `fonts-command.test.ts`: Fonts command functionality (14 tests)
+- `font-stack.test.ts`: Font stack generation and fallbacks (17 tests)
+- `build-language-dirs.test.ts`: Language directory structure validation
+- `build-font-localization.test.ts`: Font localization in multi-language builds
+
+**Integration Tests** (`tests/integration/cli-integration.test.ts`):
+- Full CLI command testing (22 test scenarios)
+- End-to-end workflow validation
+- Multi-platform compatibility testing
+- Error handling and edge cases
+- Real screenshot generation and validation
+
+**CI/CD Testing:**
+- `.github/workflows/ci.yml`: Main CI pipeline with multi-OS and Node version matrix
+- `.github/workflows/integration-test.yml`: Comprehensive CLI integration tests
+- `.github/workflows/visual-validation.yml`: Screenshot visual validation with ImageMagick
+- Automated testing on every PR and push to main
+- Artifact upload for visual inspection
+- Claude agent integration for AI-powered validation
+
+**Test Matrix Configuration** (`tests/ci-test-matrix.json`):
+- Defines comprehensive test scenarios
+- Expected validation outcomes for each scenario
+- Visual validation rules and requirements
+- Claude validation parameters for AI analysis
 
 ## Important Implementation Details
 
@@ -196,6 +230,66 @@ The translation feature enables automatic localization of captions using OpenAI'
      - Shows progress callback
      - Handles errors per text without stopping batch
      - Returns map of text→translations
+
+### Font System (v0.4.0)
+The font system provides comprehensive font management with cross-platform support:
+
+1. **FontService** (`src/services/fonts.ts`)
+   - Singleton service for font operations
+   - System font detection for macOS, Linux, and Windows
+   - Font validation and availability checking
+   - Intelligent fallback chain generation
+   - Categorized font recommendations (web-safe, popular, system)
+   - Cache management for performance
+
+2. **System Font Detection**
+   - **macOS**: Uses `system_profiler SPFontsDataType -json` with 10MB buffer
+   - **Linux**: Uses `fc-list : family` command
+   - **Windows**: PowerShell with System.Drawing.Text.InstalledFontCollection
+   - Graceful fallback to recommended fonts if detection fails
+
+3. **Font Command** (`src/commands/fonts.ts`)
+   - `--all`: Lists all detected system fonts
+   - `--recommended`: Shows categorized recommended fonts (default)
+   - `--validate <name>`: Checks font availability
+   - `--json`: Outputs font data as JSON for automation
+   - Color-coded display (green=web-safe, yellow=popular, cyan=system)
+
+4. **Font Stack Mapping** (`src/core/compose.ts:getFontStack`)
+   - 50+ pre-configured font mappings with fallback chains
+   - Case-insensitive font name matching
+   - Intelligent fallback detection based on font name patterns:
+     - Contains "serif" (not "sans") → serif fallback chain
+     - Contains "mono" or "code" → monospace fallback chain
+     - Contains "display" or "headline" → display font fallback
+     - Default → sans-serif fallback chain
+   - XML-safe quote escaping for SVG rendering
+
+5. **Style Command Integration** (`src/commands/style.ts`)
+   - Interactive font selection during device configuration
+   - Shows current font with option to keep
+   - Categorized font list (recommended, system, custom)
+   - Font validation before applying
+   - Saves to device-specific `captionFont` config
+
+6. **Font Categories**
+   - **Web-Safe**: Arial, Helvetica, Georgia, Times New Roman, Courier New
+   - **Popular**: Roboto, Open Sans, Montserrat, Lato, Inter, Poppins
+   - **System**: SF Pro, San Francisco, New York, Segoe UI
+   - **Display**: Impact, Arial Black, Bebas Neue, Oswald
+
+7. **Implementation Details**
+   - Fixed hardcoded "Arial, sans-serif" bug in multi-line captions
+   - Font stack used consistently for all caption rendering
+   - Case-insensitive font name normalization
+   - Proper SVG attribute escaping with single quotes inside double quotes
+
+8. **Testing Coverage**
+   - FontService: 19 tests covering all service methods
+   - Fonts command: 14 tests for all command options
+   - Font stack: 17 tests for mapping and fallback logic
+   - Font validation: Tests for actual system font detection
+   - Total: 50+ new tests added in v0.4.0
 
 ### Caption Autocomplete System
 The caption command now includes intelligent autocomplete:

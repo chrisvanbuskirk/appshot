@@ -49,8 +49,24 @@ jobs:
           # Optional: Trigger when specific user is assigned to an issue
           # assignee_trigger: "claude-bot"
           
-          # Optional: Allow Claude to run specific commands
-          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
+          # Allow Claude to run specific commands including CI workflows
+          allowed_tools: |
+            Bash(npm install:*),
+            Bash(npm run build),
+            Bash(npm test:*),
+            Bash(npm run test:*),
+            Bash(npm run lint:*),
+            Bash(gh workflow run integration-test.yml),
+            Bash(gh workflow run visual-validation.yml),
+            Bash(gh run list:*),
+            Bash(gh run view:*),
+            Bash(gh run download:*),
+            Bash(appshot --version),
+            Bash(appshot --help),
+            Bash(appshot specs --json),
+            Bash(appshot presets --json),
+            Bash(appshot fonts --json),
+            Bash(appshot check)
           
           # Optional: Add custom instructions for Claude to customize its behavior for your project
           # custom_instructions: |

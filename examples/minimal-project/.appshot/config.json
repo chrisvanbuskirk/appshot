@@ -2,11 +2,14 @@
   "output": "./final",
   "frames": "../../frames",
   "gradient": {
-    "colors": ["#FF5733", "#FFC300"],
+    "colors": [
+      "#FF5733",
+      "#FFC300"
+    ],
     "direction": "top-bottom"
   },
   "caption": {
-    "font": "SF Pro",
+    "font": "Helvetica",
     "fontsize": 64,
     "color": "#FFFFFF",
     "align": "center",
@@ -36,7 +39,8 @@
       "resolution": "396x484",
       "autoFrame": true,
       "partialFrame": true,
-      "frameOffset": 30
+      "frameOffset": 30,
+      "captionFont": "SF Pro"
     }
   }
 }

@@ -1,0 +1,207 @@
+{
+  "scenarios": [
+    {
+      "name": "Basic iPhone Screenshot",
+      "description": "Test standard iPhone screenshot with ocean gradient",
+      "device": "iphone",
+      "caption": "Welcome to our amazing app",
+      "gradient": "ocean",
+      "frameOptions": {
+        "includeFrame": true,
+        "partialFrame": false
+      },
+      "expectedValidation": {
+        "hasGradient": true,
+        "gradientColors": ["blue", "cyan", "teal"],
+        "hasDevice": true,
+        "hasCaption": true,
+        "captionPosition": "above",
+        "outputDimensions": {
+          "width": 1290,
+          "height": 2796
+        }
+      }
+    },
+    {
+      "name": "Multi-language iPad",
+      "description": "Test iPad with multiple language captions",
+      "device": "ipad",
+      "languages": ["en", "es", "fr", "de"],
+      "captions": {
+        "en": "Track your progress",
+        "es": "Sigue tu progreso",
+        "fr": "Suivez vos progrès",
+        "de": "Verfolgen Sie Ihren Fortschritt"
+      },
+      "gradient": "sunset",
+      "expectedValidation": {
+        "hasGradient": true,
+        "gradientColors": ["orange", "pink", "purple"],
+        "hasDevice": true,
+        "languageDirectories": ["en", "es", "fr", "de"],
+        "outputDimensions": {
+          "width": 2048,
+          "height": 2732
+        }
+      }
+    },
+    {
+      "name": "Watch with Special Handling",
+      "description": "Test Apple Watch screenshot with caption wrapping",
+      "device": "watch",
+      "caption": "Quick glance information that should wrap to multiple lines",
+      "gradient": "forest",
+      "frameOptions": {
+        "includeFrame": true,
+        "partialFrame": true,
+        "frameOffset": 15
+      },
+      "expectedValidation": {
+        "hasGradient": true,
+        "gradientColors": ["green", "dark green"],
+        "captionLines": 2,
+        "devicePartiallyVisible": true,
+        "captionFontSize": 36,
+        "outputDimensions": {
+          "width": 396,
+          "height": 484
+        }
+      }
+    },
+    {
+      "name": "iPhone with Partial Frame",
+      "description": "Test iPhone with bottom portion cut off",
+      "device": "iphone",
+      "caption": "Modern App Store style",
+      "gradient": "purple",
+      "frameOptions": {
+        "includeFrame": true,
+        "partialFrame": true,
+        "frameOffset": 25,
+        "framePosition": "bottom"
+      },
+      "expectedValidation": {
+        "hasGradient": true,
+        "hasDevice": true,
+        "devicePosition": "bottom",
+        "devicePartiallyVisible": true,
+        "captionPosition": "above"
+      }
+    },
+    {
+      "name": "No Frame Test",
+      "description": "Test screenshot without device frame",
+      "device": "iphone",
+      "caption": "Clean screenshot",
+      "gradient": "ocean",
+      "frameOptions": {
+        "includeFrame": false
+      },
+      "expectedValidation": {
+        "hasGradient": true,
+        "hasDevice": false,
+        "hasCaption": true,
+        "isFullScreenScreenshot": true
+      }
+    },
+    {
+      "name": "Custom Font Test",
+      "description": "Test with specific font selection",
+      "device": "iphone",
+      "caption": "Testing Georgia font",
+      "font": "Georgia",
+      "gradient": "sunset",
+      "expectedValidation": {
+        "hasCaption": true,
+        "captionFont": "serif-like",
+        "textIsReadable": true
+      }
+    },
+    {
+      "name": "Mac Desktop Screenshot",
+      "description": "Test Mac desktop screenshot handling",
+      "device": "mac",
+      "caption": "Professional desktop experience",
+      "gradient": "dark",
+      "expectedValidation": {
+        "hasGradient": true,
+        "hasDevice": true,
+        "aspectRatio": "16:10",
+        "outputDimensions": {
+          "width": 2880,
+          "height": 1800
+        }
+      }
+    },
+    {
+      "name": "Error Scenarios",
+      "description": "Test error handling",
+      "tests": [
+        {
+          "name": "Missing Screenshot",
+          "device": "iphone",
+          "missingFile": true,
+          "expectedError": "Screenshot file not found"
+        },
+        {
+          "name": "Invalid Dimensions",
+          "device": "iphone",
+          "screenshotDimensions": {
+            "width": 100,
+            "height": 100
+          },
+          "expectedError": "Invalid screenshot dimensions"
+        },
+        {
+          "name": "Invalid Language Code",
+          "device": "iphone",
+          "languages": ["invalid-lang"],
+          "expectedError": "Invalid language code"
+        }
+      ]
+    }
+  ],
+  "validationRules": {
+    "gradient": {
+      "shouldBeSmooth": true,
+      "noBanding": true,
+      "coversFullBackground": true
+    },
+    "caption": {
+      "mustBeReadable": true,
+      "properPadding": true,
+      "noTextCutoff": true,
+      "correctAlignment": "center"
+    },
+    "device": {
+      "properAlignment": true,
+      "noPixelShift": true,
+      "correctShadow": true,
+      "maskAppliedCorrectly": true
+    },
+    "output": {
+      "validPNG": true,
+      "correctDimensions": true,
+      "fileSize": {
+        "max": "10MB",
+        "typical": "2-5MB"
+      }
+    }
+  },
+  "ciConfiguration": {
+    "parallel": true,
+    "maxConcurrency": 4,
+    "timeout": "5m",
+    "retryOnFailure": 1,
+    "artifactRetention": 7,
+    "platforms": ["ubuntu-latest", "macos-latest"],
+    "nodeVersions": ["18.x", "20.x", "22.x"]
+  },
+  "claudeValidation": {
+    "enabled": true,
+    "model": "claude-3-5-sonnet-20241022",
+    "validationPrompt": "Analyze this app store screenshot and verify: 1) Gradient quality and smoothness, 2) Text readability and positioning, 3) Device frame alignment if present, 4) Overall professional quality suitable for App Store submission. Report any issues found.",
+    "batchSize": 5,
+    "requiresApproval": false
+  }
+}
