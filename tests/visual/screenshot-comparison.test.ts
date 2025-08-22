@@ -16,7 +16,11 @@ const SCREENSHOTS_DIR = path.join(TEST_DIR, 'screenshots');
 const FINAL_DIR = path.join(TEST_DIR, 'final');
 const REFERENCE_DIR = path.join(__dirname, 'references');
 
-describe('Visual Screenshot Tests', () => {
+// Skip visual tests unless explicitly running visual test suite
+const shouldRunVisualTests = process.env.RUN_VISUAL_TESTS === 'true' || 
+                            process.argv.some(arg => arg.includes('visual'));
+
+describe.skipIf(!shouldRunVisualTests)('Visual Screenshot Tests', () => {
   beforeAll(async () => {
     // Clean up and create test directories
     await fs.rm(TEST_DIR, { recursive: true, force: true });
