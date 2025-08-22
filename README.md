@@ -627,6 +627,62 @@ appshot clean --all --yes
 appshot clean --history
 ```
 
+### `appshot doctor`
+
+Run comprehensive system diagnostics to verify appshot installation and dependencies.
+
+```bash
+appshot doctor [options]
+```
+
+**Options:**
+- `--json` - Output results as JSON for CI/automation
+- `--verbose` - Show detailed diagnostic information
+- `--category <categories>` - Run specific checks (comma-separated: system,dependencies,fonts,filesystem,frames)
+
+**Checks:**
+- **System Requirements** - Node.js version (≥18), npm availability, platform detection
+- **Dependencies** - Sharp module installation, native bindings, image processing test, OpenAI API key
+- **Font System** - Font detection commands, system font loading, common font availability
+- **File System** - Write permissions (current/temp directories), .appshot directory, configuration validity
+- **Frame Assets** - Frame directory presence, Frames.json validation, device frame counts, missing files
+
+**Examples:**
+```bash
+# Run all diagnostics
+appshot doctor
+
+# Check specific categories
+appshot doctor --category system,dependencies
+
+# JSON output for CI
+appshot doctor --json
+
+# Verbose mode for debugging
+appshot doctor --verbose
+```
+
+**Output Example:**
+```
+🏥 Appshot Doctor - System Diagnostics
+
+System Requirements:
+  ✓ Node.js v20.5.0 (minimum: v18.0.0)
+  ✓ npm v9.8.0
+  ✓ darwin (macOS)
+
+Dependencies:
+  ✓ Sharp v0.33.5 installed
+  ✓ libvips v8.15.3 loaded
+  ✓ Sharp image processing test passed
+  ⚠ OpenAI API key not found (translation features disabled)
+
+Summary: 20 passed, 1 warning, 0 errors
+
+Suggestions:
+  • Set OPENAI_API_KEY environment variable to enable translation features
+```
+
 ### `appshot fonts`
 
 Browse, validate, and set fonts for captions.
@@ -798,21 +854,50 @@ appshot presets --generate iphone-6-9,ipad-13
 
 ### `appshot specs`
 
-Display device specifications.
+Display complete Apple App Store screenshot specifications.
 
 ```bash
 appshot specs [options]
 ```
 
 **Options:**
-- `--device <name>` - Filter by device
-- `--json` - Output as JSON
+- `--device <name>` - Filter by device type (iphone|ipad|mac|watch|appletv|visionpro)
+- `--json` - Output as JSON (exact Apple specifications for diffing)
+- `--required` - Show only required presets
 
 **Shows:**
-- Supported resolutions
-- Frame availability
-- Orientation support
-- App Store requirements
+- Complete Apple specifications with exact resolutions
+- Display sizes and device compatibility lists
+- Required vs optional indicators
+- Fallback notes and requirements
+
+**JSON Output for Change Tracking:**
+The `--json` flag outputs the complete Apple App Store specifications data, perfect for tracking changes over time:
+
+```bash
+# Save current specifications
+appshot specs --json > apple-specs-2024-08.json
+
+# After Apple updates (typically September)
+appshot specs --json > apple-specs-2024-09.json
+
+# See what changed
+diff apple-specs-2024-08.json apple-specs-2024-09.json
+```
+
+**Data Source:**
+The specifications mirror [Apple's official screenshot requirements](https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications) 
+and are maintained in sync with Apple's updates. The JSON output preserves all metadata including:
+- Exact resolutions (e.g., `1290x2796` for iPhone 6.9")
+- Device groupings (which devices share requirements)
+- Requirement status (mandatory vs optional)
+- Fallback rules and special notes
+
+This is particularly useful for:
+- Tracking when Apple adds new device requirements
+- Validating screenshot compliance before submission
+- Automating screenshot generation pipelines
+- Planning resource allocation for new devices
 
 ### `appshot style`
 
