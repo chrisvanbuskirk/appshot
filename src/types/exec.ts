@@ -1,0 +1,1 @@
+export type ExecAsync = (cmd: string) => Promise<{ stdout: string; stderr: string }>;
