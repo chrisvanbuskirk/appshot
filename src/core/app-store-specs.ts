@@ -1,7 +1,10 @@
 /**
  * Official App Store Screenshot Specifications
  * Source: https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications
+ * Last Updated: 2024-12-01
  */
+
+export const SPECS_LAST_UPDATED = '2024-12-01';
 
 export interface DevicePreset {
   id: string;

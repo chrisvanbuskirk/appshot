@@ -42,7 +42,11 @@ appshot localize --langs ja --model gpt-5  # Use specific AI model
 appshot build       # Generate final screenshots
 appshot build --preset iphone-6-9,ipad-13  # Build with specific App Store presets
 appshot build --langs en,es,fr  # Build for multiple languages
-appshot specs       # Show device specifications
+appshot specs       # Show exact Apple App Store specifications
+appshot specs --json  # Output specifications as JSON for automation
+appshot doctor      # Run system diagnostics and dependency checks
+appshot doctor --json  # Output diagnostic results as JSON
+appshot doctor --category system,fonts  # Run specific diagnostic checks
 appshot check       # Validate configuration
 appshot presets     # List all App Store presets
 appshot presets --required  # Show only required presets
@@ -108,7 +112,7 @@ Each command in `src/commands/` returns a Commander command object. The build co
 ### Testing Strategy
 
 #### Comprehensive Test Coverage
-Appshot has extensive test coverage with 50+ test files using Vitest:
+Appshot has extensive test coverage with 380+ tests across 50+ test files using Vitest:
 
 **Unit Tests:**
 - `devices.test.ts`: Orientation detection and frame selection logic
@@ -125,6 +129,9 @@ Appshot has extensive test coverage with 50+ test files using Vitest:
 - `font-stack.test.ts`: Font stack generation and fallbacks (17 tests)
 - `build-language-dirs.test.ts`: Language directory structure validation
 - `build-font-localization.test.ts`: Font localization in multi-language builds
+- `specs-command.test.ts`: Specs command functionality and JSON output (8 tests)
+- `doctor.test.ts`: DoctorService diagnostic checks (18 tests)
+- `doctor-command.test.ts`: Doctor command with all options (27 tests)
 
 **Integration Tests** (`tests/integration/cli-integration.test.ts`):
 - Full CLI command testing (22 test scenarios)
@@ -369,6 +376,14 @@ Each preset includes:
 - Fallback chains (e.g., 6.5" falls back to 6.9" if not provided)
 - Special notes (e.g., Watch must use same size across all localizations)
 
+### Specs Command (v0.5.0)
+The `specs` command provides direct access to Apple's official App Store screenshot specifications:
+- Mirrors Apple's exact specifications from developer documentation
+- Includes "Last Updated" date to track specification changes over time
+- `--json` flag outputs structured data for automation and diffing
+- Data source: https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications
+- Useful for CI/CD pipelines to detect Apple specification changes
+
 ### Validation Features
 The `validate` command checks:
 - Resolution compliance with App Store specs
@@ -378,6 +393,10 @@ The `validate` command checks:
 
 ### Usage Patterns
 ```bash
+# View Apple's official specifications
+appshot specs
+appshot specs --json > specs-2024.json  # Save for future comparison
+
 # Generate config for iPhone 6.9" and iPad 13" presets
 appshot presets --generate iphone-6-9,ipad-13
 
@@ -386,6 +405,72 @@ appshot build --preset iphone-6-9-portrait,ipad-13-landscape
 
 # Validate existing screenshots
 appshot validate --fix  # Shows suggestions for invalid resolutions
+```
+
+## System Diagnostics (v0.5.0)
+
+### Doctor Command
+The `doctor` command provides comprehensive system diagnostics to verify appshot requirements:
+
+1. **System Requirements**
+   - Node.js version (≥18.0.0 required)
+   - npm installation and version
+   - Operating system compatibility
+
+2. **Dependencies**
+   - Sharp module installation and native bindings
+   - Optional dependencies status
+   - Package integrity verification
+
+3. **Font System**
+   - System font detection capability
+   - Platform-specific font service validation
+   - Font count and availability
+
+4. **Filesystem**
+   - Configuration directory write permissions
+   - Output directory access
+   - Temporary file creation capability
+
+5. **Frame Assets**
+   - Frame registry validation
+   - Physical frame file availability
+   - Missing frame identification (note: not all registry frames require files)
+
+### Doctor Service (`src/services/doctor.ts`)
+- Modular check system with category-based organization
+- Non-blocking checks continue even if individual tests fail
+- Detailed verbose mode for troubleshooting
+- JSON output for CI/CD integration
+- Exit code 1 if any critical checks fail
+
+### Usage Examples
+```bash
+# Run all diagnostics
+appshot doctor
+
+# Output as JSON for automation
+appshot doctor --json
+
+# Run specific category checks
+appshot doctor --category system,fonts
+
+# Verbose output for debugging
+appshot doctor --verbose
+```
+
+### CI/CD Integration
+The doctor command is particularly useful in CI/CD pipelines:
+```yaml
+# GitHub Actions example
+- name: Check appshot requirements
+  run: |
+    npx appshot doctor --json > doctor-report.json
+    if [ $? -ne 0 ]; then
+      echo "System requirements check failed"
+      cat doctor-report.json
+      exit 1
+    fi
 ```
 
 ## Implementation Notes for LLMs
@@ -547,3 +632,7 @@ appshot style --device iphone --reset  # Predictable reset
 - NEVER INSTALL librsvg. It's not necessary.
 - Keep the tool CLI-only - no web dashboards or GUIs.
 - Optimize for agent/automation use cases.
+- **Version Updates**: When bumping version, update in 3 places:
+  1. `package.json` - version field
+  2. `src/cli.ts` - .version() call (line ~23)
+  3. `src/services/doctor.ts` - version in JSON output (line ~480)

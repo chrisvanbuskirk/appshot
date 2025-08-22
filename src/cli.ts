@@ -6,6 +6,7 @@ import localizeCmd from './commands/localize.js';
 import buildCmd from './commands/build.js';
 import specsCmd from './commands/specs.js';
 import checkCmd from './commands/check.js';
+import doctorCmd from './commands/doctor.js';
 import presetsCmd from './commands/presets.js';
 import validateCmd from './commands/validate.js';
 import styleCmd from './commands/style.js';
@@ -19,7 +20,7 @@ const program = new Command();
 program
   .name('appshot')
   .description('Generate App Store–ready screenshots with frames, gradients, and captions.')
-  .version('0.4.0');
+  .version('0.5.0');
 
 program.addCommand(initCmd());
 program.addCommand(captionCmd());
@@ -30,6 +31,7 @@ program.addCommand(localizeCmd());
 program.addCommand(buildCmd());
 program.addCommand(specsCmd());
 program.addCommand(checkCmd());
+program.addCommand(doctorCmd());
 program.addCommand(presetsCmd());
 program.addCommand(validateCmd());
 program.addCommand(migrateCmd());

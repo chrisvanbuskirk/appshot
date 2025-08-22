@@ -52,10 +52,30 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
       const { stdout } = await runAppshot('specs --json');
       const specs = JSON.parse(stdout);
       
+      // Should include all device types
       expect(specs).toHaveProperty('iphone');
       expect(specs).toHaveProperty('ipad');
       expect(specs).toHaveProperty('mac');
       expect(specs).toHaveProperty('watch');
+      expect(specs).toHaveProperty('appletv');
+      expect(specs).toHaveProperty('visionpro');
+      
+      // Should have Apple's exact specifications structure
+      expect(Array.isArray(specs.iphone)).toBe(true);
+      expect(specs.iphone.length).toBeGreaterThan(0);
+      
+      // Verify structure matches Apple specs
+      const firstIphone = specs.iphone[0];
+      expect(firstIphone).toHaveProperty('id');
+      expect(firstIphone).toHaveProperty('name');
+      expect(firstIphone).toHaveProperty('displaySize');
+      expect(firstIphone).toHaveProperty('devices');
+      expect(firstIphone).toHaveProperty('resolutions');
+      
+      // Check exact resolution format
+      if (firstIphone.resolutions.portrait) {
+        expect(firstIphone.resolutions.portrait).toMatch(/^\d+x\d+$/);
+      }
     });
 
     it('should list presets', async () => {
@@ -325,6 +345,38 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     }, 10000); // 10 second timeout
   });
 
+  describe('Doctor Command', () => {
+    it('should run system diagnostics', async () => {
+      const { stdout } = await runAppshot('doctor');
+      
+      expect(stdout).toContain('Appshot Doctor - System Diagnostics');
+      expect(stdout).toContain('System Requirements');
+      expect(stdout).toContain('Dependencies');
+      expect(stdout).toContain('Summary:');
+    });
+
+    it('should output JSON format', async () => {
+      const { stdout } = await runAppshot('doctor --json');
+      
+      const report = JSON.parse(stdout);
+      expect(report).toHaveProperty('timestamp');
+      expect(report).toHaveProperty('version');
+      expect(report).toHaveProperty('platform');
+      expect(report).toHaveProperty('checks');
+      expect(report).toHaveProperty('summary');
+      expect(report.summary).toHaveProperty('passed');
+      expect(report.summary).toHaveProperty('warnings');
+      expect(report.summary).toHaveProperty('errors');
+    });
+
+    it('should run specific categories', async () => {
+      const { stdout } = await runAppshot('doctor --category system');
+      
+      expect(stdout).toContain('System Requirements');
+      expect(stdout).not.toContain('Frame Assets');
+    });
+  });
+
   describe('CLI Help and Version', () => {
     it('should show version', async () => {
       const { stdout } = await runAppshot('--version');
@@ -337,6 +389,7 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     expect(stdout).toContain('init');
     expect(stdout).toContain('build');
     expect(stdout).toContain('caption');
+    expect(stdout).toContain('doctor');
   });
 
   it('should show command-specific help', async () => {
@@ -344,6 +397,13 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     expect(stdout).toContain('--devices');
     expect(stdout).toContain('--langs');
     expect(stdout).toContain('--no-frame');
+  });
+
+  it('should show doctor command help', async () => {
+    const { stdout } = await runAppshot('doctor --help');
+    expect(stdout).toContain('--json');
+    expect(stdout).toContain('--verbose');
+    expect(stdout).toContain('--category');
   });
   });
 });
