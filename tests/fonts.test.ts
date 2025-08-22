@@ -59,9 +59,36 @@ async function importFontService() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Clear the font scan bypass for tests
+  delete process.env.APPSHOT_DISABLE_FONT_SCAN;
 });
 
 describe('FontService', () => {
+  describe('APPSHOT_DISABLE_FONT_SCAN bypass', () => {
+    it('should return recommended fonts when APPSHOT_DISABLE_FONT_SCAN is set', async () => {
+      process.env.APPSHOT_DISABLE_FONT_SCAN = '1';
+      
+      const fontService = await importFontService();
+      const fonts = await fontService.getSystemFonts();
+      
+      // Should return recommended fonts without calling exec
+      expect(fonts).toContain('Arial');
+      expect(fonts).toContain('Helvetica');
+      expect(mockExecAsync).not.toHaveBeenCalled();
+    });
+
+    it('should bypass font scanning when APPSHOT_DISABLE_FONT_SCAN is true', async () => {
+      process.env.APPSHOT_DISABLE_FONT_SCAN = 'true';
+      
+      const fontService = await importFontService();
+      const fonts = await fontService.getSystemFonts();
+      
+      // Should return recommended fonts without calling exec
+      expect(fonts.length).toBeGreaterThan(0);
+      expect(mockExecAsync).not.toHaveBeenCalled();
+    });
+  });
+
   describe('isFontInstalled', () => {
     it('should return true for installed fonts', async () => {
       // Set up mock BEFORE importing service
