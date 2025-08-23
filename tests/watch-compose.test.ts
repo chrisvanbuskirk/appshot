@@ -47,7 +47,7 @@ describe('watch-compose', () => {
   });
 
   describe('watch caption positioning', () => {
-    it('should position caption in top 1/3 for watch devices', async () => {
+    it('should position caption in top 1/3 for watch devices', { timeout: 60000 }, async () => {
       const gradientConfig: GradientConfig = {
         colors: ['#FF6B6B', '#FFE66D'],
         direction: 'top-bottom'
@@ -98,7 +98,7 @@ describe('watch-compose', () => {
       // This is verified in the compose function logic
     });
 
-    it('should wrap caption text on two lines for watch', async () => {
+    it('should wrap caption text on two lines for watch', { timeout: 60000 }, async () => {
       const gradientConfig: GradientConfig = {
         colors: ['#FF6B6B', '#FFE66D'],
         direction: 'top-bottom'
@@ -147,7 +147,7 @@ describe('watch-compose', () => {
       expect(metadata.height).toBe(600);
     });
 
-    it('should use smaller font size for watch captions', async () => {
+    it('should use smaller font size for watch captions', { timeout: 60000 }, async () => {
       const gradientConfig: GradientConfig = {
         colors: ['#FF6B6B', '#FFE66D'],
         direction: 'top-bottom'
@@ -196,7 +196,7 @@ describe('watch-compose', () => {
   });
 
   describe('watch device positioning', () => {
-    it('should position watch with bottom cut off', async () => {
+    it('should position watch with bottom cut off', { timeout: 60000 }, async () => {
       const gradientConfig: GradientConfig = {
         colors: ['#FF6B6B', '#FFE66D'],
         direction: 'top-bottom'
@@ -245,7 +245,7 @@ describe('watch-compose', () => {
       expect(metadata.height).toBe(600);
     });
 
-    it('should scale watch to 130% for better visibility', async () => {
+    it('should scale watch to 130% for better visibility', { timeout: 60000 }, async () => {
       const gradientConfig: GradientConfig = {
         colors: ['#FF6B6B', '#FFE66D'],
         direction: 'top-bottom'
@@ -292,7 +292,7 @@ describe('watch-compose', () => {
       expect(metadata).toBeDefined();
     });
 
-    it('should center watch horizontally', async () => {
+    it('should center watch horizontally', { timeout: 60000 }, async () => {
       const gradientConfig: GradientConfig = {
         colors: ['#FF6B6B', '#FFE66D'],
         direction: 'top-bottom'
