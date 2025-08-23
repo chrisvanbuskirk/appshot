@@ -46,7 +46,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-unit-${{ matrix.os }}-node${{ matrix.node }}
+          name: unit-test-results-${{ matrix.os }}-node${{ matrix.node }}-${{ github.run_id }}
           path: |
             test-results/
             coverage/

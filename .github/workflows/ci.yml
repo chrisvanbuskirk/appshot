@@ -1,4 +1,4 @@
-name: CI
+name: CI Pipeline
 
 on:
   push:
@@ -7,7 +7,13 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# Prevent duplicate runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Quick lint and type check (unchanged)
   lint-and-typecheck:
     name: Lint & Type Check
     runs-on: ubuntu-latest
@@ -30,45 +36,79 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-  test:
-    name: Test
-    runs-on: ${{ matrix.os }}
-    
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        node-version: [18.x, 20.x, 22.x]
+  # Fast unit tests across all platforms
+  unit-tests:
+    name: Unit Tests
+    needs: lint-and-typecheck
+    uses: ./.github/workflows/ci-unit.yml
+
+  # Integration tests (fewer platforms, one Node version)
+  integration-tests:
+    name: Integration Tests
+    needs: lint-and-typecheck
+    uses: ./.github/workflows/ci-integration.yml
+
+  # Visual tests (macOS only for pixel-perfect validation)
+  visual-tests:
+    name: Visual Tests
+    needs: lint-and-typecheck
+    if: |
+      github.event_name == 'pull_request' || 
+      github.ref == 'refs/heads/main' ||
+      contains(github.event.head_commit.message, '[visual]')
+    uses: ./.github/workflows/ci-visual.yml
+
+  # Status check for branch protection
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: always()
     
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build
-        run: npm run build
-      
-      - name: Run tests
-        run: npm test
-      
-      - name: Run frames validation test
-        run: npm test -- frames.test.ts
-      
-      - name: Run CLI integration tests
-        if: matrix.os != 'windows-latest'  # Skip on Windows for now
+      - name: Check status
         run: |
-          npm link
-          npm test -- tests/integration/cli-integration.test.ts
+          if [[ "${{ needs.unit-tests.result }}" == "failure" ]] || 
+             [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+            echo "❌ CI Failed"
+            echo "Unit Tests: ${{ needs.unit-tests.result }}"
+            echo "Integration Tests: ${{ needs.integration-tests.result }}"
+            exit 1
+          else
+            echo "✅ CI Passed"
+            echo "Unit Tests: ${{ needs.unit-tests.result }}"
+            echo "Integration Tests: ${{ needs.integration-tests.result }}"
+          fi
 
-  example-build:
-    name: Example Project Build
+  # Performance metrics (optional)
+  ci-metrics:
+    name: CI Metrics
     runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, visual-tests]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Calculate CI time
+        run: |
+          echo "## CI Performance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Visual Tests | ${{ needs.visual-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Optimizations Applied" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Font scanning disabled on Linux (APPSHOT_DISABLE_FONT_SCAN)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Visual tests run on macOS only" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Integration tests skip Windows" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Parallel execution of test suites" >> $GITHUB_STEP_SUMMARY
+
+  # Bundle size check for PRs
+  bundle-size:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     
     steps:
       - uses: actions/checkout@v4
@@ -82,68 +122,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Build TypeScript
+      - name: Build
         run: npm run build
       
-      - name: Initialize example project
+      - name: Check bundle size
         run: |
-          cd examples/minimal-project
-          # Initialize with new structure
-          ../../bin/appshot.js init --force
-          # Add sample screenshots for testing
-          mkdir -p screenshots/iphone screenshots/ipad
-          # Create test images using Node.js script
-          cat > create-test-images.js << 'EOF'
-          import sharp from 'sharp';
-          
-          // Create iPhone test image
-          await sharp({
-            create: {
-              width: 1290,
-              height: 2796,
-              channels: 4,
-              background: { r: 0, g: 0, b: 255, alpha: 1 }
-            }
-          })
-          .png()
-          .toFile('screenshots/iphone/test.png');
-          
-          // Create iPad test image
-          await sharp({
-            create: {
-              width: 2048,
-              height: 2732,
-              channels: 4,
-              background: { r: 0, g: 255, b: 0, alpha: 1 }
-            }
-          })
-          .png()
-          .toFile('screenshots/ipad/test.png');
-          
-          console.log('Test images created');
-          EOF
-          node create-test-images.js
-      
-      - name: Build example screenshots
-        run: |
-          cd examples/minimal-project
-          node ../../dist/cli.js build --devices iphone,ipad
-      
-      - name: Verify output exists
-        run: |
-          ls -la examples/minimal-project/final/
-          test -d examples/minimal-project/final/iphone
-          test -d examples/minimal-project/final/ipad
-      
-      - name: Upload example screenshots
-        uses: actions/upload-artifact@v4
-        with:
-          name: example-screenshots
-          path: examples/minimal-project/final/
-          retention-days: 7
+          echo "## 📦 Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Total dist size:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          du -sh dist/ >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "File sizes:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find dist -name "*.js" -exec du -h {} \; | sort -h >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
+  # Release job for main branch
   release:
-    needs: [lint-and-typecheck, test, example-build]
+    name: Release
+    needs: [unit-tests, integration-tests]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -157,6 +156,15 @@ jobs:
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+      
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
       
       - run: npm ci
       

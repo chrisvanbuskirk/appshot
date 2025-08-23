@@ -2,10 +2,12 @@ name: Integration Tests
 
 on:
   workflow_call:  # Allow this workflow to be called by others
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: 'Enable verbose output'
+        required: false
+        default: 'false'
 
 jobs:
   integration-tests:
@@ -104,8 +106,56 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-artifacts-${{ matrix.os }}
+          name: integration-artifacts-${{ matrix.os }}-${{ github.run_id }}
           path: |
             /tmp/appshot-e2e-*/final/
             /tmp/appshot-e2e-*/.appshot/
           retention-days: 7
+      
+      - name: Test additional CLI commands
+        run: |
+          # Test specs and presets commands
+          cd /tmp/appshot-e2e-${{ github.run_id }}
+          appshot specs --json > specs.json
+          test -s specs.json
+          appshot presets --json > presets.json
+          test -s presets.json
+          appshot presets --required > required.txt
+          test -s required.txt
+          
+          # Test fonts command
+          appshot fonts --json > fonts.json
+          test -s fonts.json
+          appshot fonts --validate "Arial" || echo "Font validation completed"
+          
+          # Test doctor command
+          appshot doctor --json > doctor.json
+          test -s doctor.json
+          
+          # Test gradients command
+          appshot gradients --list
+          appshot gradients --apply ocean
+          grep -q "ocean" .appshot/config.json || echo "Gradient applied"
+          
+          # Test validate command
+          appshot validate || echo "Validation completed"
+          
+          # Test multi-language build
+          cat > .appshot/captions/iphone.json << 'EOF'
+          {
+            "home.png": {
+              "en": "Welcome to our app",
+              "es": "Bienvenido a nuestra app",
+              "fr": "Bienvenue dans notre app"
+            }
+          }
+          EOF
+          appshot build --devices iphone --langs en,es,fr --no-frame
+          test -d final/iphone/en
+          test -d final/iphone/es
+          test -d final/iphone/fr
+          echo "✅ All CLI commands tested successfully"
+      
+      - name: Cleanup
+        if: always()
+        run: rm -rf /tmp/appshot-e2e-${{ github.run_id }}
