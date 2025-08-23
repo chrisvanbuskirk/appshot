@@ -6,7 +6,7 @@
 [![npm version](https://badge.fury.io/js/appshot-cli.svg)](https://www.npmjs.com/package/appshot-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🆕 **Version 0.4.0** - Language-aware output directories, comprehensive font system, and system locale detection!
+🆕 **Version 0.6.0** - 8 embedded OSS fonts with variants, dry-run mode, verbose debugging, and enhanced CLI UX!
 
 > ⚠️ **BREAKING CHANGE in v0.4.0**: Output structure now always uses language subdirectories.
 > Single language builds now output to `final/device/lang/` instead of `final/device/`.
@@ -55,6 +55,7 @@ Appshot is the only **agent-first CLI tool** designed for automated App Store sc
 - 🖼️ **Smart Frames** - Automatically detects portrait/landscape and selects appropriate device frame
 - 🎨 **Gradient Presets** - 24+ beautiful gradients with visual preview and easy application
 - 🔤 **Font System** - 50+ font mappings, direct font setting, interactive selection, and system detection
+- 📦 **Embedded Fonts** - 8 high-quality open source fonts bundled for consistent rendering everywhere
 - ✏️ **Dynamic Captions** - Smart text wrapping, auto-sizing, and multi-line support
 - 🌍 **AI Translation** - Real-time and batch translation using OpenAI's latest models
 - 📱 **Multi-Device** - iPhone, iPad, Mac, Apple TV, Vision Pro, and Apple Watch support
@@ -62,6 +63,8 @@ Appshot is the only **agent-first CLI tool** designed for automated App Store sc
 - 🔄 **Orientation Detection** - Intelligently handles both portrait and landscape
 - ⚡ **Parallel Processing** - Configurable concurrency for large batches
 - 🔍 **Caption Autocomplete** - Intelligent suggestions with fuzzy search and learning
+- 🔬 **Dry-Run Mode** - Preview what would be built without generating images
+- 🐛 **Verbose Debugging** - Detailed rendering metrics for troubleshooting
 
 ## 🚀 Quick Start
 
@@ -524,6 +527,8 @@ appshot build [options]
 - `--langs <list>` - Build for specific languages (if not specified, auto-detects)
 - `--preview` - Generate low-res previews
 - `--concurrency <n>` - Parallel processing limit (default: 5)
+- `--dry-run` - Show what would be rendered without generating images
+- `--verbose` - Show detailed rendering information
 - `--no-frame` - Skip device frames
 - `--no-gradient` - Skip gradient backgrounds
 - `--no-caption` - Skip captions
@@ -548,6 +553,12 @@ appshot build --preset iphone-6-9-portrait,ipad-13-landscape
 
 # Preview mode
 appshot build --preview --devices iphone
+
+# Dry-run to see what would be built
+appshot build --dry-run
+
+# Verbose mode for debugging
+appshot build --verbose --devices iphone
 ```
 
 **Exit Codes:**
@@ -685,7 +696,7 @@ Suggestions:
 
 ### `appshot fonts`
 
-Browse, validate, and set fonts for captions.
+Browse, validate, and set fonts for captions. Includes 8 high-quality embedded fonts for consistent rendering across all platforms.
 
 ```bash
 appshot fonts [options]
@@ -693,29 +704,47 @@ appshot fonts [options]
 
 **Options:**
 - `--all` - List all system fonts
+- `--embedded` - Show embedded fonts bundled with appshot
 - `--recommended` - Show recommended fonts only (default)
-- `--validate <name>` - Check if font is available
+- `--validate <name>` - Check if font is available (embedded or system)
 - `--set <name>` - Set the caption font
 - `--select` - Interactive font selection
 - `--device <name>` - Target specific device (with --set or --select)
 - `--json` - Output as JSON
+
+**Embedded Fonts (Always Available):**
+- **Modern UI**: Inter, Poppins, Montserrat, DM Sans
+- **Popular Web**: Roboto, Open Sans, Lato, Work Sans
+- **Variants**: Regular, Italic, Bold, and Bold Italic styles
+
+All embedded fonts use open source licenses (OFL or Apache 2.0) and provide consistent rendering without requiring system installation. Font variants are automatically detected and properly rendered with correct styles.
 
 **Examples:**
 ```bash
 # Browse recommended fonts
 appshot fonts
 
-# Set global font directly
-appshot fonts --set "Montserrat"
+# Show embedded fonts
+appshot fonts --embedded
+
+# Set global font directly (embedded font)
+appshot fonts --set "Inter"
+
+# Set font variant (italic style)
+appshot fonts --set "Poppins Italic"
+
+# Set bold variant
+appshot fonts --set "Montserrat Bold"
 
 # Interactive font selection
 appshot fonts --select
 
-# Set device-specific font
-appshot fonts --set "SF Pro" --device iphone
+# Set device-specific font variant
+appshot fonts --set "Poppins Bold Italic" --device iphone
 
-# Validate before setting
-appshot fonts --validate "My Font" && appshot fonts --set "My Font"
+# Validate font availability
+appshot fonts --validate "Inter"  # Shows: embedded
+appshot fonts --validate "Arial"  # Shows: system installed
 
 # List all system fonts
 appshot fonts --all
@@ -1454,6 +1483,34 @@ appshot build --devices iphone
 appshot build --devices ipad
 ```
 
+### Debugging with Verbose Mode
+
+Use `--verbose` flag to diagnose rendering issues:
+
+```bash
+# See detailed caption metrics
+appshot build --verbose --devices iphone
+
+# Output includes:
+# - Caption wrap width and line count
+# - Font stack with fallbacks
+# - Device frame scaling factors
+# - Position calculations
+```
+
+Use `--dry-run` to validate configuration without processing:
+
+```bash
+# Check what would be generated
+appshot build --dry-run
+
+# Verify frame selection
+appshot build --dry-run --devices iphone
+
+# Check multi-language output
+appshot build --dry-run --langs en,es,fr
+```
+
 ### Performance Tips
 
 1. **Use appropriate concurrency**
@@ -1632,7 +1689,7 @@ For security vulnerabilities, please see [SECURITY.md](SECURITY.md).
 ### NPM Package
 
 - 📦 [appshot-cli on NPM](https://www.npmjs.com/package/appshot-cli)
-- 🔄 Latest version: 0.4.0
+- 🔄 Latest version: 0.6.0
 - ⬇️ Weekly downloads: ![npm](https://img.shields.io/npm/dw/appshot-cli)
 
 ---

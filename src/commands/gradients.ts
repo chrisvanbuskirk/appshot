@@ -30,17 +30,57 @@ function getColorBlock(color: string): string {
 
 export default function gradientsCmd() {
   const cmd = new Command('gradients')
-    .description('Browse and preview gradient presets')
+    .description('Browse, preview, and apply beautiful gradient presets')
     .option('--list', 'list all available gradients')
     .option('--category <name>', 'filter by category (warm, cool, vibrant, subtle, monochrome, brand)')
     .option('--preview <id>', 'generate preview image for a gradient')
     .option('--sample', 'generate sample images for all gradients')
     .option('--apply <id>', 'apply gradient preset to current project')
+    .addHelpText('after', `
+${pc.bold('Examples:')}
+  ${pc.dim('# Browse all gradients with color preview')}
+  $ appshot gradients
+  
+  ${pc.dim('# Interactive gradient selection')}
+  $ appshot gradients select
+  
+  ${pc.dim('# Filter by category')}
+  $ appshot gradients --category vibrant
+  
+  ${pc.dim('# Preview a specific gradient')}
+  $ appshot gradients --preview sunset
+  
+  ${pc.dim('# Apply gradient to project')}
+  $ appshot gradients --apply ocean
+  
+  ${pc.dim('# Generate samples of all gradients')}
+  $ appshot gradients --sample
+
+${pc.bold('Categories:')}
+  ${pc.red('█')} ${pc.cyan('warm')}       Sunset, fire, autumn colors
+  ${pc.blue('█')} ${pc.cyan('cool')}       Ocean, sky, winter tones
+  ${pc.magenta('█')} ${pc.cyan('vibrant')}    Bold, energetic combinations
+  ${pc.gray('█')} ${pc.cyan('subtle')}     Soft, professional gradients
+  ${pc.white('█')} ${pc.cyan('monochrome')} Single color variations
+  ${pc.green('█')} ${pc.cyan('brand')}      Popular brand colors
+  
+${pc.bold('Gradient Presets:')}
+  24+ beautiful gradients including:
+  • sunset, ocean, forest, lavender
+  • fire, ice, aurora, cosmic
+  • instagram, twitter, spotify
+  
+${pc.bold('Direction Options:')}
+  → left-right, ← right-left
+  ↓ top-bottom, ↑ bottom-top
+  ↘ diagonal
+  
+${pc.dim('Gradients update .appshot/config.json')}`)
     .action(async (opts) => {
       try {
         // List mode
         if (opts.list || (!opts.preview && !opts.sample && !opts.apply)) {
-          console.log(pc.bold('\n📊 Gradient Presets\n'));
+          console.log(pc.bold('\n🎨 Gradient Presets\n'));
 
           const categories = opts.category ? [opts.category] : getGradientCategories();
 

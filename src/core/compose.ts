@@ -1,9 +1,42 @@
 import sharp from 'sharp';
 import { promises as fs } from 'fs';
+import pc from 'picocolors';
 import type { GradientConfig, CaptionConfig, DeviceConfig } from '../types.js';
 import { renderGradient } from './render.js';
 import { applyRoundedCorners } from './mask-generator.js';
 import { calculateAdaptiveCaptionHeight, wrapText } from './text-utils.js';
+import { FontService } from '../services/fonts.js';
+
+/**
+ * Parse font name to extract style and weight
+ */
+function parseFontName(fontName: string): { family: string; style?: string; weight?: string } {
+  const parts = fontName.trim().split(/\s+/);
+  let family = fontName;
+  let style: string | undefined;
+  let weight: string | undefined;
+
+  // Check for italic
+  if (parts[parts.length - 1]?.toLowerCase() === 'italic') {
+    style = 'italic';
+    parts.pop();
+
+    // Check for bold italic
+    if (parts[parts.length - 1]?.toLowerCase() === 'bold') {
+      weight = 'bold';
+      parts.pop();
+    }
+
+    family = parts.join(' ');
+  } else if (parts[parts.length - 1]?.toLowerCase() === 'bold') {
+    // Just bold
+    weight = 'bold';
+    parts.pop();
+    family = parts.join(' ');
+  }
+
+  return { family, style, weight };
+}
 
 /**
  * Escape special XML/HTML characters in text
@@ -40,6 +73,7 @@ export interface ComposeOptions {
   deviceConfig: DeviceConfig;
   outputWidth: number;
   outputHeight: number;
+  verbose?: boolean;
 }
 
 /**
@@ -55,7 +89,8 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     gradientConfig,
     deviceConfig,
     outputWidth,
-    outputHeight
+    outputHeight,
+    verbose = false
   } = options;
 
 
@@ -105,6 +140,14 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     const captionBoxConfig = deviceConfig.captionBox || captionConfig.box || {};
     const autoSize = captionBoxConfig.autoSize !== false; // Default true
 
+    if (verbose) {
+      console.log(pc.dim('    Caption metrics:'));
+      console.log(pc.dim(`      Text: "${caption.substring(0, 50)}${caption.length > 50 ? '...' : ''}"`));
+      console.log(pc.dim(`      Base font size: ${captionFontSize}px`));
+      console.log(pc.dim(`      Canvas width: ${outputWidth}px`));
+      console.log(pc.dim(`      Auto-size: ${autoSize}`));
+    }
+
     if (isWatch) {
       // Use proper text wrapping for watch with padding
       captionHeight = Math.floor(outputHeight / 3);
@@ -112,6 +155,11 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       const watchFontSize = Math.min(36, captionFontSize);
       // Use wrapText which now accounts for watch padding - allow 3 lines for watch
       captionLines = wrapText(caption, outputWidth, watchFontSize, 3);
+
+      if (verbose) {
+        console.log(pc.dim(`      Watch mode: font reduced to ${watchFontSize}px`));
+        console.log(pc.dim(`      Wrap width: ${outputWidth}px (with padding)`));
+      }
     } else if (autoSize) {
       // Use adaptive caption height
       const result = calculateAdaptiveCaptionHeight(
@@ -125,6 +173,10 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       );
       captionHeight = result.height;
       captionLines = result.lines;
+
+      if (verbose) {
+        console.log(pc.dim(`      Adaptive height: ${captionHeight}px`));
+      }
     } else {
       // Use fixed height with text wrapping
       const maxLines = captionBoxConfig.maxLines || 3;
@@ -140,6 +192,17 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       if (captionBoxConfig.maxHeight) {
         captionHeight = Math.min(captionBoxConfig.maxHeight, captionHeight);
       }
+
+      if (verbose) {
+        console.log(pc.dim(`      Max lines: ${maxLines}`));
+        console.log(pc.dim(`      Line height: ${lineHeight}`));
+        console.log(pc.dim(`      Fixed height: ${captionHeight}px`));
+      }
+    }
+
+    if (verbose && captionLines.length > 0) {
+      console.log(pc.dim(`      Lines wrapped: ${captionLines.length}`));
+      console.log(pc.dim(`      Wrap width: ${outputWidth - 80}px`)); // Assuming 40px padding each side
     }
   }
 
@@ -181,14 +244,31 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       // Create SVG with multiple text lines
       // Use device-specific font if available, otherwise use global caption font
       const fontToUse = deviceConfig.captionFont || captionConfig.font;
+
+      // Parse font name for style and weight
+      const parsedFont = parseFontName(fontToUse);
+      const fontFamily = getFontStack(parsedFont.family);
+      const fontStyle = parsedFont.style || 'normal';
+      const fontWeight = parsedFont.weight === 'bold' ? '700' : '400';
+
+      if (verbose) {
+        console.log(pc.dim('    Font information:'));
+        console.log(pc.dim(`      Requested: ${fontToUse}`));
+        console.log(pc.dim(`      Font stack: ${fontFamily}`));
+        if (parsedFont.style || parsedFont.weight) {
+          console.log(pc.dim(`      Style: ${fontStyle}, Weight: ${fontWeight}`));
+        }
+      }
+
       const textElements = captionLines.map((line, index) => {
         const y = startY + (index * fontSize * lineHeight);
         return `<text x="${canvasWidth/2}" y="${y}" 
-                font-family="${getFontStack(fontToUse)}" 
+                font-family="${fontFamily}" 
                 font-size="${fontSize}" 
+                font-style="${fontStyle}"
+                font-weight="${fontWeight}" 
                 fill="${captionConfig.color}" 
-                text-anchor="middle"
-                font-weight="bold">${escapeXml(line)}</text>`;
+                text-anchor="middle">${escapeXml(line)}</text>`;
       }).join('\n');
 
       svgText = `<svg width="${canvasWidth}" height="${captionHeight}" xmlns="http://www.w3.org/2000/svg">
@@ -265,6 +345,14 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     // Apply scaling to optimize canvas usage
     let targetDeviceWidth = Math.min(Math.floor(originalFrameWidth * scale), outputWidth);
     let targetDeviceHeight = Math.min(Math.floor(originalFrameHeight * scale), outputHeight);
+
+    if (verbose) {
+      console.log(pc.dim('    Device composition:'));
+      console.log(pc.dim(`      Frame: ${frameMetadata.displayName || frameMetadata.name}`));
+      console.log(pc.dim(`      Original size: ${originalFrameWidth}x${originalFrameHeight}`));
+      console.log(pc.dim(`      Scale factor: ${scale.toFixed(2)}`));
+      console.log(pc.dim(`      Target size: ${targetDeviceWidth}x${targetDeviceHeight}`));
+    }
 
     // Scale screenshot to fit in frame's screen area
     let resizedScreenshot;
@@ -389,6 +477,12 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     // If partial frame, crop the bottom
     if (partialFrame) {
       const cropHeight = Math.floor(originalFrameHeight * (1 - frameOffset / 100));
+
+      if (verbose) {
+        console.log(pc.dim(`      Partial frame: cropping ${frameOffset}% from bottom`));
+        console.log(pc.dim(`      Crop height: ${cropHeight}px`));
+      }
+
       try {
         deviceComposite = await sharp(deviceComposite)
           .extract({
@@ -448,6 +542,10 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     // Ensure device doesn't go off canvas
     deviceTop = Math.floor(Math.max(captionHeight, Math.min(deviceTop, canvasHeight - targetDeviceHeight)));
     const deviceLeft = Math.floor((canvasWidth - targetDeviceWidth) / 2);
+
+    if (verbose) {
+      console.log(pc.dim(`      Position: ${framePosition} → top: ${deviceTop}px, left: ${deviceLeft}px`));
+    }
 
     // Add the complete device to composites
     composites.push({
@@ -613,6 +711,27 @@ function _createCaptionSvg(
 /**
  * Get a safe font stack that Sharp's SVG renderer can use
  */
+export async function getFontStackAsync(requestedFont: string): Promise<{ stack: string; isEmbedded: boolean; path?: string }> {
+  // Check if font is embedded
+  const fontService = FontService.getInstance();
+  const fontStatus = await fontService.getFontStatusWithEmbedded(requestedFont);
+
+  if (fontStatus.embedded && fontStatus.path) {
+    // Return embedded font info
+    return {
+      stack: getFontStack(requestedFont),
+      isEmbedded: true,
+      path: fontStatus.path
+    };
+  }
+
+  // Return normal font stack
+  return {
+    stack: getFontStack(requestedFont),
+    isEmbedded: false
+  };
+}
+
 export function getFontStack(requestedFont: string): string {
   // Map common fonts to web-safe alternatives with appropriate fallbacks
   // Note: Using single quotes inside to avoid XML attribute quote conflicts
@@ -634,6 +753,8 @@ export function getFontStack(requestedFont: string): string {
     'Lato': "Lato, 'Helvetica Neue', Arial, sans-serif",
     'Poppins': "Poppins, 'Helvetica Neue', Arial, sans-serif",
     'Inter': "Inter, system-ui, 'Helvetica Neue', Arial, sans-serif",
+    'DM Sans': "'DM Sans', system-ui, 'Helvetica Neue', Arial, sans-serif",
+    'Work Sans': "'Work Sans', 'Helvetica Neue', Arial, sans-serif",
     'Segoe UI': "'Segoe UI', system-ui, Tahoma, Geneva, sans-serif",
     'Ubuntu': "Ubuntu, system-ui, 'Helvetica Neue', Arial, sans-serif",
     'Fira Sans': "'Fira Sans', 'Helvetica Neue', Arial, sans-serif",

@@ -52,6 +52,7 @@ export interface AppshotConfig {
     [key: string]: DeviceConfig;
   };
   defaultLanguage?: string;  // Optional override for system language
+  useEmbeddedFonts?: boolean;  // Use embedded fonts when available
 }
 
 export interface CaptionEntry {

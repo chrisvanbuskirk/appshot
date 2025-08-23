@@ -1,6 +1,6 @@
 {
   "name": "appshot-cli",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Generate App Store–ready screenshots with frames, gradients, and captions.",
   "bin": {
     "appshot": "bin/appshot.js"
@@ -45,7 +45,8 @@
   "files": [
     "dist",
     "bin",
-    "frames"
+    "frames",
+    "fonts"
   ],
   "license": "MIT",
   "homepage": "https://github.com/chrisvanbuskirk/appshot",

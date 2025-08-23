@@ -9,13 +9,45 @@ import { translationService } from '../services/translation.js';
 
 export default function localizeCmd() {
   return new Command('localize')
-    .description('Generate translations for all captions using AI')
+    .description('Batch translate all captions to multiple languages using AI')
     .requiredOption('--langs <codes>', 'comma-separated language codes (e.g., fr,de,es)')
     .option('--device <name>', 'specific device (iphone|ipad|mac|watch), or all devices')
     .option('--model <name>', 'OpenAI model to use', 'gpt-4o-mini')
     .option('--source <lang>', 'source language', 'en')
     .option('--review', 'review translations before saving')
     .option('--overwrite', 'overwrite existing translations')
+    .addHelpText('after', `
+${pc.bold('Examples:')}
+  ${pc.dim('# Translate all captions to Spanish, French, and German')}
+  $ appshot localize --langs es,fr,de
+  
+  ${pc.dim('# Translate with review before saving')}
+  $ appshot localize --langs ja,ko,zh-CN --review
+  
+  ${pc.dim('# Use GPT-4o for higher quality')}
+  $ appshot localize --langs pt-BR --model gpt-4o
+  
+  ${pc.dim('# Translate only iPhone captions')}
+  $ appshot localize --langs ar,he --device iphone
+  
+  ${pc.dim('# Overwrite existing translations')}
+  $ appshot localize --langs it,nl --overwrite
+
+${pc.bold('Supported Languages:')}
+  ${pc.cyan('European:')} es, fr, de, it, pt, pt-BR, nl, sv, no, da, fi, pl, ru
+  ${pc.cyan('Asian:')} ja, ko, zh-CN, zh-TW, hi, th, vi, id, ms
+  ${pc.cyan('Middle East:')} ar, he, tr
+  
+${pc.bold('AI Models:')}
+  ${pc.cyan('gpt-4o-mini')} - Fast and affordable (default)
+  ${pc.cyan('gpt-4o')} - Higher quality translations
+  ${pc.cyan('gpt-5')} - Most advanced (when available)
+  
+${pc.bold('Requirements:')}
+  Set ${pc.cyan('OPENAI_API_KEY')} environment variable
+  
+${pc.bold('Output:')}
+  Updates ${pc.cyan('.appshot/captions/[device].json')} with translations`)
     .action(async (opts) => {
       try {
         // Check for API key

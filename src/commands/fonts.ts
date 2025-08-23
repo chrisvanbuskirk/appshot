@@ -17,14 +17,52 @@ async function saveConfig(config: AppshotConfig): Promise<void> {
 
 export default function fontsCmd(): Command {
   const cmd = new Command('fonts')
-    .description('List available fonts for captions')
+    .description('Browse, validate, and configure fonts for captions')
     .option('--all', 'Show all system fonts')
+    .option('--embedded', 'Show embedded fonts bundled with appshot')
     .option('--recommended', 'Show only recommended fonts')
     .option('--json', 'Output as JSON')
     .option('--validate <font>', 'Check if a font is available')
     .option('--set <font>', 'Set the caption font')
     .option('--select', 'Interactive font selection')
     .option('--device <name>', 'Set font for specific device (use with --set or --select)')
+    .addHelpText('after', `
+${pc.bold('Examples:')}
+  ${pc.dim('# Browse recommended fonts')}
+  $ appshot fonts
+  
+  ${pc.dim('# Show embedded fonts with variants')}
+  $ appshot fonts --embedded
+  
+  ${pc.dim('# Set italic font variant')}
+  $ appshot fonts --set "Poppins Italic"
+  
+  ${pc.dim('# Set bold variant for specific device')}
+  $ appshot fonts --set "Montserrat Bold" --device iphone
+  
+  ${pc.dim('# Interactive font selection')}
+  $ appshot fonts --select
+  
+  ${pc.dim('# Validate font availability')}
+  $ appshot fonts --validate "Inter"
+  
+  ${pc.dim('# Export font list as JSON')}
+  $ appshot fonts --embedded --json > fonts.json
+
+${pc.bold('Embedded Fonts (8 families, 20+ variants):')}
+  • ${pc.cyan('Modern UI:')} Inter, Poppins, Montserrat, DM Sans
+  • ${pc.cyan('Popular:')} Roboto, Open Sans, Lato, Work Sans
+  • ${pc.cyan('Variants:')} Regular, Italic, Bold, Bold Italic
+  
+${pc.bold('Font Variants:')}
+  Simply append the variant to the font name:
+  • "Poppins" → Regular weight
+  • "Poppins Italic" → Italic style
+  • "Poppins Bold" → Bold weight
+  • "Poppins Bold Italic" → Bold + Italic
+  
+${pc.dim('All embedded fonts use OFL or Apache 2.0 licenses.')}
+${pc.dim('Embedded fonts work consistently across all platforms.')}`)
     .action(async (options) => {
       const fontService = FontService.getInstance();
 
@@ -42,11 +80,14 @@ export default function fontsCmd(): Command {
 
       // Validate a specific font
       if (options.validate) {
-        const fontStatus = await fontService.getFontStatus(options.validate);
+        const fontStatus = await fontService.getFontStatusWithEmbedded(options.validate);
         if (options.json) {
           console.log(JSON.stringify(fontStatus));
         } else {
-          if (fontStatus.installed) {
+          if (fontStatus.embedded) {
+            console.log(pc.green(`✓ Font "${options.validate}" is embedded in appshot`));
+            console.log(pc.dim(`  Path: ${fontStatus.path}`));
+          } else if (fontStatus.installed) {
             console.log(pc.green(`✓ Font "${options.validate}" is installed and available`));
           } else {
             console.log(pc.red(`✗ Font "${options.validate}" is NOT installed on your system`));
@@ -56,6 +97,33 @@ export default function fontsCmd(): Command {
             }
           }
         }
+        return;
+      }
+
+      // Show embedded fonts
+      if (options.embedded) {
+        const embeddedFonts = await fontService.getEmbeddedFonts();
+
+        if (options.json) {
+          console.log(JSON.stringify(embeddedFonts, null, 2));
+          return;
+        }
+
+        console.log(pc.bold('\n📦 Embedded Fonts (Bundled with Appshot)\n'));
+
+        if (embeddedFonts.length === 0) {
+          console.log(pc.yellow('No embedded fonts found'));
+          console.log(pc.dim('Embedded fonts may not be available in development mode'));
+          return;
+        }
+
+        for (const font of embeddedFonts) {
+          console.log(pc.green(`✓ ${font.name}`) + pc.dim(' - Always available'));
+        }
+
+        console.log();
+        console.log(pc.dim('These fonts are included with appshot and always available'));
+        console.log(pc.dim('They provide consistent rendering across all platforms'));
         return;
       }
 
@@ -76,6 +144,15 @@ export default function fontsCmd(): Command {
         const popularInstalled = recommended.filter(f => f.category === 'recommended' && f.installed);
         const popularNotInstalled = recommended.filter(f => f.category === 'recommended' && !f.installed);
         const systemInstalled = recommended.filter(f => f.category === 'system' && f.installed);
+        const embeddedFonts = await fontService.getEmbeddedFonts();
+
+        if (embeddedFonts.length > 0) {
+          console.log(pc.cyan('Embedded Fonts (always available):'));
+          for (const font of embeddedFonts) {
+            console.log(pc.green(`  ✓ ${font.name}`) + pc.dim(' [embedded]'));
+          }
+          console.log();
+        }
 
         if (webSafeInstalled.length > 0) {
           console.log(pc.cyan('Web-Safe Fonts (installed):'));
@@ -208,9 +285,11 @@ export default function fontsCmd(): Command {
 async function handleSetFont(fontName: string, deviceName: string | undefined, fontService: FontService): Promise<void> {
   try {
     // Get detailed font status
-    const fontStatus = await fontService.getFontStatus(fontName);
+    const fontStatus = await fontService.getFontStatusWithEmbedded(fontName);
 
-    if (!fontStatus.installed) {
+    if (fontStatus.embedded) {
+      console.log(pc.green(`✓ Font "${fontName}" is embedded and always available`));
+    } else if (!fontStatus.installed) {
       console.error(pc.red(`✗ Font "${fontName}" is not installed on your system`));
       console.log(pc.yellow(`⚠ Fallback will be used: ${fontStatus.fallback}`));
       console.log();
@@ -297,18 +376,28 @@ async function handleSelectFont(deviceName: string | undefined, fontService: Fon
     // Get font categories for selection
     const categories = await fontService.getFontCategories();
     const recommended = await fontService.getRecommendedFonts();
+    const embeddedFonts = await fontService.getEmbeddedFonts();
 
     // Build selection choices
     const choices: any[] = [];
 
     // Add current font at the top
-    const currentFontStatus = await fontService.getFontStatus(currentFont);
+    const currentFontStatus = await fontService.getFontStatusWithEmbedded(currentFont);
     const currentStatus = currentFontStatus.installed ? pc.green('✓') : pc.yellow('⚠');
     choices.push({
       name: `${currentStatus} Keep current: ${currentFont}`,
       value: currentFont
     });
     choices.push(new inquirer.Separator());
+
+    // Embedded fonts (always available)
+    if (embeddedFonts.length > 0) {
+      choices.push(new inquirer.Separator(pc.magenta('── Embedded Fonts (Always Available) ──')));
+      for (const font of embeddedFonts) {
+        const marker = font.name === currentFont ? pc.cyan('● ') : '  ';
+        choices.push({ name: `${marker}${pc.green('✓')} ${font.name} ${pc.dim('[embedded]')}`, value: font.name });
+      }
+    }
 
     // Web-Safe fonts (installed)
     const webSafeInstalled = recommended.filter(f => f.category === 'web-safe' && f.installed);

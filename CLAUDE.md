@@ -238,16 +238,17 @@ The translation feature enables automatic localization of captions using OpenAI'
      - Handles errors per text without stopping batch
      - Returns map of text→translations
 
-### Font System (v0.4.0)
-The font system provides comprehensive font management with cross-platform support:
+### Font System (v0.4.0 - Enhanced with Embedded Fonts v0.6.0)
+The font system provides comprehensive font management with cross-platform support and embedded fonts:
 
 1. **FontService** (`src/services/fonts.ts`)
    - Singleton service for font operations
    - System font detection for macOS, Linux, and Windows
    - Font validation and availability checking
    - Intelligent fallback chain generation
-   - Categorized font recommendations (web-safe, popular, system)
+   - Categorized font recommendations (web-safe, popular, system, embedded)
    - Cache management for performance
+   - **NEW: Embedded font support with 8 high-quality OSS fonts**
 
 2. **System Font Detection**
    - **macOS**: Uses `system_profiler SPFontsDataType -json` with 10MB buffer
@@ -257,10 +258,11 @@ The font system provides comprehensive font management with cross-platform suppo
 
 3. **Font Command** (`src/commands/fonts.ts`)
    - `--all`: Lists all detected system fonts
+   - `--embedded`: Shows embedded fonts bundled with appshot
    - `--recommended`: Shows categorized recommended fonts (default)
-   - `--validate <name>`: Checks font availability
+   - `--validate <name>`: Checks font availability (embedded, then system)
    - `--json`: Outputs font data as JSON for automation
-   - Color-coded display (green=web-safe, yellow=popular, cyan=system)
+   - Color-coded display (magenta=embedded, green=web-safe, yellow=popular, cyan=system)
 
 4. **Font Stack Mapping** (`src/core/compose.ts:getFontStack`)
    - 50+ pre-configured font mappings with fallback chains
@@ -291,12 +293,38 @@ The font system provides comprehensive font management with cross-platform suppo
    - Case-insensitive font name normalization
    - Proper SVG attribute escaping with single quotes inside double quotes
 
-8. **Testing Coverage**
+8. **Embedded Fonts with Variants (v0.6.0)**
+   - **Bundled Fonts**: 8 font families with complete variant support
+     - Inter, Poppins, Montserrat, DM Sans (Modern UI fonts)
+     - Roboto, Open Sans, Lato, Work Sans (Popular web fonts)
+   - **Font Variants**: Regular, Italic, Bold, and Bold Italic for most fonts
+     - Example: "Poppins", "Poppins Italic", "Poppins Bold", "Poppins Bold Italic"
+     - Variable fonts (Inter) support all weights and styles
+   - **Licensing**: All fonts use OFL (Open Font License) or Apache 2.0
+   - **Font Detection Priority**: Embedded → System → Fallback
+   - **Variant Support**:
+     - Automatic detection of style (italic) and weight (bold) from font name
+     - SVG generation applies correct font-style and font-weight attributes
+     - Example: `appshot fonts --set "Poppins Italic"` works seamlessly
+   - **New Methods**:
+     - `getEmbeddedFonts()` - Lists all bundled fonts with variants
+     - `isFontAvailable()` - Checks embedded + system fonts
+     - `getFontStatusWithEmbedded()` - Enhanced status with variant info
+     - `getAllAvailableFonts()` - Unified font listing
+   - **Commands**:
+     - `appshot fonts --embedded` - Show all font variants
+     - `appshot fonts --validate "Poppins Italic"` - Validates variants
+     - `appshot fonts --set "Montserrat Bold"` - Sets font variant
+   - **Configuration**: `useEmbeddedFonts: true` to prefer embedded fonts
+
+9. **Testing Coverage**
    - FontService: 19 tests covering all service methods
    - Fonts command: 14 tests for all command options
    - Font stack: 17 tests for mapping and fallback logic
    - Font validation: Tests for actual system font detection
-   - Total: 50+ new tests added in v0.4.0
+   - Embedded fonts: 14 tests for embedded font functionality
+   - Font variants: 11 tests for variant detection and handling
+   - Total: 75+ tests for font system
 
 ### Caption Autocomplete System
 The caption command now includes intelligent autocomplete:

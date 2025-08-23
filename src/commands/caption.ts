@@ -19,12 +19,39 @@ import {
 
 export default function captionCmd() {
   const cmd = new Command('caption')
-    .description('Interactively add/edit captions in a device folder')
+    .description('Interactively add/edit captions for screenshots')
     .requiredOption('--device <name>', 'device name (iphone|ipad|mac|watch)')
     .option('--lang <code>', 'primary language code', 'en')
     .option('--translate', 'enable AI-powered translation')
     .option('--langs <codes>', 'target languages for translation (comma-separated)')
     .option('--model <name>', 'OpenAI model to use', 'gpt-4o-mini')
+    .addHelpText('after', `
+${pc.bold('Examples:')}
+  ${pc.dim('# Add captions for iPhone screenshots')}
+  $ appshot caption --device iphone
+  
+  ${pc.dim('# Add captions with real-time translation')}
+  $ appshot caption --device iphone --translate --langs es,fr,de
+  
+  ${pc.dim('# Use specific AI model for translation')}
+  $ appshot caption --device ipad --translate --model gpt-4o
+  
+  ${pc.dim('# Edit captions for a specific language')}
+  $ appshot caption --device mac --lang fr
+
+${pc.bold('Features:')}
+  • Intelligent autocomplete with fuzzy search
+  • Learning from existing captions
+  • Real-time AI translation to 25+ languages
+  • Pattern detection ("Track your *", "Manage your *")
+  • Device-specific suggestions
+  
+${pc.bold('Supported Languages:')}
+  en, es, fr, de, it, pt, pt-BR, nl, sv, no, da, fi, pl, ru,
+  ja, ko, zh-CN, zh-TW, ar, he, tr, hi, th, vi, id, ms
+  
+${pc.bold('Requires:')}
+  OPENAI_API_KEY environment variable for translation`)
     .action(async ({ device, lang, translate, langs, model }) => {
       try {
         const dir = path.join(process.cwd(), 'screenshots', device);

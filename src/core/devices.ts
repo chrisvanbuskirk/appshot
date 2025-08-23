@@ -837,7 +837,8 @@ export async function autoSelectFrame(
   screenshotPath: string,
   framesDir: string,
   deviceType: 'iphone' | 'ipad' | 'mac' | 'watch',
-  preferredFrame?: string
+  preferredFrame?: string,
+  dryRun: boolean = false
 ): Promise<{ frame: Buffer | null; metadata: DeviceFrame | null }> {
   try {
     // Get screenshot dimensions
@@ -848,6 +849,11 @@ export async function autoSelectFrame(
 
     if (!frameMetadata) {
       return { frame: null, metadata: null };
+    }
+
+    // In dry-run mode, skip loading the actual frame image
+    if (dryRun) {
+      return { frame: null, metadata: frameMetadata };
     }
 
     // Try to load the frame image
