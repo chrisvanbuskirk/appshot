@@ -231,7 +231,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-test-results
+          name: visual-test-results-${{ github.run_id }}
           path: |
             visual-results/
             visual-test-project/final/
@@ -276,3 +276,107 @@ jobs:
               body: comment
             });
         continue-on-error: true  # Don't fail if commenting fails
+
+  # Technical validation with ImageMagick
+  technical-validation:
+    name: Technical Image Validation
+    needs: visual-tests
+    runs-on: ubuntu-latest
+    if: success() || failure()
+    
+    steps:
+      - name: Download visual test results
+        uses: actions/download-artifact@v4
+        with:
+          name: visual-test-results-${{ github.run_id }}
+          path: visual-results
+      
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+      
+      - name: Analyze image properties
+        run: |
+          echo "# Technical Image Analysis" > technical-report.md
+          echo "" >> technical-report.md
+          
+          for img in $(find visual-results -name "*.png" | head -10); do
+            echo "## $(basename $img)" >> technical-report.md
+            echo '```' >> technical-report.md
+            
+            # Get image dimensions
+            identify -format "Dimensions: %wx%h\n" "$img" >> technical-report.md
+            
+            # Get color profile
+            identify -format "Colorspace: %[colorspace]\n" "$img" >> technical-report.md
+            
+            # Get file size
+            echo "File size: $(du -h "$img" | cut -f1)" >> technical-report.md
+            
+            # Check for transparency
+            if identify -format "%A" "$img" | grep -q "True"; then
+              echo "Has transparency: Yes" >> technical-report.md
+            else
+              echo "Has transparency: No" >> technical-report.md
+            fi
+            
+            echo '```' >> technical-report.md
+            echo "" >> technical-report.md
+          done
+          
+          cat technical-report.md
+      
+      - name: Check for common issues
+        run: |
+          echo "## Automated Checks" >> technical-report.md
+          echo "" >> technical-report.md
+          
+          # Check for expected dimensions
+          iphone_imgs=$(find visual-results -path "*/iphone/*.png" -type f)
+          if [ -n "$iphone_imgs" ]; then
+            for img in $iphone_imgs; do
+              dims=$(identify -format "%wx%h" "$img")
+              if [[ ! "$dims" =~ ^(1290x2796|1179x2556|1284x2778)$ ]]; then
+                echo "⚠️ Warning: $img has unexpected dimensions: $dims" >> technical-report.md
+              fi
+            done
+          fi
+          
+          # Check file sizes (warn if > 5MB)
+          for img in $(find visual-results -name "*.png"); do
+            size_kb=$(du -k "$img" | cut -f1)
+            if [ "$size_kb" -gt 5000 ]; then
+              echo "⚠️ Warning: $img is larger than 5MB (${size_kb}KB)" >> technical-report.md
+            fi
+          done
+          
+          echo "" >> technical-report.md
+          echo "✅ Technical validation complete" >> technical-report.md
+      
+      - name: Upload technical report
+        uses: actions/upload-artifact@v4
+        with:
+          name: technical-validation-report-${{ github.run_id }}
+          path: technical-report.md
+          retention-days: 7
+      
+      - name: Create validation summary
+        run: |
+          echo "## 🎨 Visual Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Count screenshots
+          total_screenshots=$(find visual-results -name "*.png" -type f | wc -l)
+          echo "- Total screenshots analyzed: $total_screenshots" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for visual test failures
+          if [ -f visual-results/diff-result.txt ]; then
+            DIFF_PIXELS=$(cat visual-results/diff-result.txt | grep -oE '[0-9]+' | head -1 || echo "0")
+            if [ "$DIFF_PIXELS" -gt "100" ]; then
+              echo "- ⚠️ Visual differences detected: $DIFF_PIXELS pixels" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ✅ Visual tests passed (diff: $DIFF_PIXELS pixels)" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View detailed technical report in artifacts]" >> $GITHUB_STEP_SUMMARY
