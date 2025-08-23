@@ -10,7 +10,7 @@ import { resolveLanguages, normalizeLanguageCode } from '../utils/language.js';
 
 export default function buildCmd() {
   const cmd = new Command('build')
-    .description('Render screenshots using frames, gradients, and captions')
+    .description('Generate final screenshots with frames, gradients, and captions')
     .option('--devices <list>', 'comma-separated device list (e.g., iphone,ipad)', 'iphone,ipad,mac,watch')
     .option('--preset <ids>', 'use specific App Store presets (e.g., iphone-6-9,ipad-13)')
     .option('--config <file>', 'use specific config file', 'appshot.json')
@@ -20,9 +20,50 @@ export default function buildCmd() {
     .option('--no-frame', 'skip device frames')
     .option('--no-gradient', 'skip gradient backgrounds')
     .option('--no-caption', 'skip captions')
+    .option('--dry-run', 'show what would be rendered without generating images')
+    .option('--verbose', 'show detailed rendering information')
+    .addHelpText('after', `
+${pc.bold('Examples:')}
+  ${pc.dim('# Build all devices')}
+  $ appshot build
+  
+  ${pc.dim('# Build specific devices')}
+  $ appshot build --devices iphone,ipad
+  
+  ${pc.dim('# Build for multiple languages')}
+  $ appshot build --langs en,es,fr,de
+  
+  ${pc.dim('# Use App Store presets')}
+  $ appshot build --preset iphone-6-9,ipad-13
+  
+  ${pc.dim('# Fast preview mode')}
+  $ appshot build --preview --concurrency 8
+  
+  ${pc.dim('# Frames only (no gradient/caption)')}
+  $ appshot build --no-gradient --no-caption
+  
+  ${pc.dim('# Preview what would be built')}
+  $ appshot build --dry-run
+  
+  ${pc.dim('# Show detailed rendering info')}
+  $ appshot build --verbose
+
+${pc.bold('Output:')}
+  Screenshots are saved to: ${pc.cyan('final/[device]/[language]/')}
+  
+${pc.bold('Language Detection:')}
+  1. --langs parameter (if provided)
+  2. Languages in caption files
+  3. defaultLanguage in config.json
+  4. System locale
+  5. Fallback to 'en'`)
     .action(async (opts) => {
       try {
-        console.log(pc.bold('Building screenshots...'));
+        if (opts.dryRun) {
+          console.log(pc.bold('Dry run mode - no images will be generated\n'));
+        } else {
+          console.log(pc.bold('Building screenshots...'));
+        }
 
         // Load configuration
         const config = await loadConfig();
@@ -78,7 +119,7 @@ export default function buildCmd() {
           const cliLangs = opts.langs ? opts.langs.split(',').map((l: string) => normalizeLanguageCode(l.trim())) : undefined;
           const { languages, source } = resolveLanguages(cliLangs, captions, config);
 
-          console.log(pc.cyan(`\n${device}:`), `Processing ${screenshots.length} screenshots`);
+          console.log(pc.cyan(`\n${device}:`), `${opts.dryRun ? 'Would process' : 'Processing'} ${screenshots.length} screenshots`);
           if (!cliLangs) {
             console.log(pc.dim(`  Using language: ${languages.join(', ')} (from ${source})`));
           }
@@ -87,7 +128,9 @@ export default function buildCmd() {
           for (const lang of languages) {
             // Always use language subdirectory
             const langDir = path.join(outputDir, lang);
-            await fs.mkdir(langDir, { recursive: true });
+            if (!opts.dryRun) {
+              await fs.mkdir(langDir, { recursive: true });
+            }
 
             // Process screenshots in batches
             for (let i = 0; i < screenshots.length; i += concurrency) {
@@ -107,21 +150,23 @@ export default function buildCmd() {
                   }
 
                   // Get screenshot dimensions and orientation
-                  const { orientation } = await getImageDimensions(inputPath);
+                  const { width: srcWidth, height: srcHeight, orientation } = await getImageDimensions(inputPath);
 
-                  // Load screenshot
-                  let screenshotBuffer: Buffer;
-                  try {
-                    // First verify the file exists and is readable
-                    await fs.access(inputPath, fs.constants.R_OK);
+                  // In dry-run mode, skip loading the screenshot buffer
+                  let screenshotBuffer: Buffer | undefined;
+                  if (!opts.dryRun) {
+                    try {
+                      // First verify the file exists and is readable
+                      await fs.access(inputPath, fs.constants.R_OK);
 
-                    // Load the screenshot into a buffer
-                    screenshotBuffer = await sharp(inputPath)
-                      .png() // Ensure output is PNG
-                      .toBuffer();
-                  } catch (error) {
-                    console.error(pc.red(`  ✗ ${path.basename(inputPath)}`), `Failed to load screenshot: ${error instanceof Error ? error.message : String(error)}`);
-                    return;
+                      // Load the screenshot into a buffer
+                      screenshotBuffer = await sharp(inputPath)
+                        .png() // Ensure output is PNG
+                        .toBuffer();
+                    } catch (error) {
+                      console.error(pc.red(`  ✗ ${path.basename(inputPath)}`), `Failed to load screenshot: ${error instanceof Error ? error.message : String(error)}`);
+                      return;
+                    }
                   }
 
                   // Parse resolution for output dimensions
@@ -160,59 +205,94 @@ export default function buildCmd() {
                       inputPath,
                       path.resolve(config.frames),
                       device as 'iphone' | 'ipad' | 'mac' | 'watch',
-                      deviceConfig.preferredFrame
+                      deviceConfig.preferredFrame,
+                      opts.dryRun // Pass dry-run flag
                     );
 
                     frame = result.frame;
                     frameMetadata = result.metadata;
 
-                    if (frame && frameMetadata) {
+                    if (frameMetadata) {
                       frameUsed = true;
-                      console.log(pc.dim(`    Using ${frameMetadata.displayName} ${orientation} frame`));
-                    } else if (frameMetadata && !frame) {
+                      if (opts.verbose || opts.dryRun) {
+                        console.log(pc.dim(`    ${opts.dryRun ? 'Would use' : 'Using'} ${frameMetadata.displayName} ${orientation} frame`));
+                      }
+                    } else if (!opts.dryRun && frameMetadata && !frame) {
                       console.error(pc.red('    ERROR: Frame metadata found but image failed to load!'));
                     }
                   }
 
-                  // Use the new compose function
-                  let image: Buffer;
-                  try {
-                    image = await composeAppStoreScreenshot({
-                      screenshot: screenshotBuffer,
-                      frame: frame,
-                      frameMetadata: frameMetadata ? {
-                        frameWidth: frameMetadata.frameWidth,
-                        frameHeight: frameMetadata.frameHeight,
-                        screenRect: frameMetadata.screenRect,
-                        maskPath: frameMetadata.maskPath,
-                        deviceType: frameMetadata.deviceType,
-                        displayName: frameMetadata.displayName,
-                        name: frameMetadata.name
-                      } : undefined,
-                      caption: opts.caption !== false ? captionText : undefined,
-                      captionConfig: config.caption,
-                      gradientConfig: config.gradient,
-                      deviceConfig: deviceConfig,
-                      outputWidth: outWidth,
-                      outputHeight: outHeight
-                    });
-                  } catch (error) {
-                    console.error(pc.red(`  ✗ ${path.basename(inputPath)}`), error instanceof Error ? error.message : String(error));
-                    return;
+                  // Handle dry-run vs actual rendering
+                  if (opts.dryRun) {
+                    // Dry-run output
+                    console.log(pc.cyan(`  ${screenshot}`) + pc.dim(` → ${lang}`));
+
+                    // Show source dimensions
+                    console.log(pc.dim(`    Source: ${srcWidth}x${srcHeight} (${orientation})`));
+
+                    // Show frame info
+                    if (frameMetadata) {
+                      console.log(pc.dim(`    Frame: ${frameMetadata.displayName} (${frameMetadata.frameWidth}x${frameMetadata.frameHeight})`));
+                    } else if (opts.frame !== false) {
+                      console.log(pc.dim('    Frame: No matching frame found'));
+                    }
+
+                    // Show caption info
+                    if (captionText && opts.caption !== false) {
+                      const lines = captionText.split('\n').length;
+                      console.log(pc.dim(`    Caption: "${captionText.substring(0, 50)}${captionText.length > 50 ? '...' : ''}" (${captionText.length} chars, ${lines} line${lines > 1 ? 's' : ''})`));
+
+                      // Show font info
+                      const fontName = deviceConfig.captionFont || config.caption.font;
+                      console.log(pc.dim(`    Font: ${fontName}`));
+                    }
+
+                    // Show output info
+                    console.log(pc.dim(`    Output: ${outWidth}x${outHeight} → ${outputPath}`));
+
+                    totalProcessed++;
+                  } else {
+                    // Actual rendering
+                    let image: Buffer;
+                    try {
+                      image = await composeAppStoreScreenshot({
+                        screenshot: screenshotBuffer!,
+                        frame: frame,
+                        frameMetadata: frameMetadata ? {
+                          frameWidth: frameMetadata.frameWidth,
+                          frameHeight: frameMetadata.frameHeight,
+                          screenRect: frameMetadata.screenRect,
+                          maskPath: frameMetadata.maskPath,
+                          deviceType: frameMetadata.deviceType,
+                          displayName: frameMetadata.displayName,
+                          name: frameMetadata.name
+                        } : undefined,
+                        caption: opts.caption !== false ? captionText : undefined,
+                        captionConfig: config.caption,
+                        gradientConfig: config.gradient,
+                        deviceConfig: deviceConfig,
+                        outputWidth: outWidth,
+                        outputHeight: outHeight,
+                        verbose: opts.verbose
+                      });
+                    } catch (error) {
+                      console.error(pc.red(`  ✗ ${path.basename(inputPath)}`), error instanceof Error ? error.message : String(error));
+                      return;
+                    }
+
+                    // Save final image
+                    await sharp(image)
+                      .resize(opts.preview ? 800 : undefined, undefined, {
+                        fit: 'inside',
+                        withoutEnlargement: true
+                      })
+                      .png()  // Ensure output is PNG
+                      .toFile(outputPath);
+
+                    console.log(pc.green('  ✓'), path.basename(outputPath),
+                      pc.dim(`[${orientation}${frameUsed ? ', framed' : ''}${captionText ? ', captioned' : ''}]`));
+                    totalProcessed++;
                   }
-
-                  // Save final image
-                  await sharp(image)
-                    .resize(opts.preview ? 800 : undefined, undefined, {
-                      fit: 'inside',
-                      withoutEnlargement: true
-                    })
-                    .png()  // Ensure output is PNG
-                    .toFile(outputPath);
-
-                  console.log(pc.green('  ✓'), path.basename(outputPath),
-                    pc.dim(`[${orientation}${frameUsed ? ', framed' : ''}${captionText ? ', captioned' : ''}]`));
-                  totalProcessed++;
                 } catch (error) {
                   console.log(pc.red('  ✗'), screenshot, pc.dim(error instanceof Error ? error.message : String(error)));
                   totalErrors++;
@@ -225,12 +305,17 @@ export default function buildCmd() {
         }
 
         // Summary
-        console.log('\n' + pc.bold('Build complete!'));
-        console.log(pc.green(`✓ ${totalProcessed} screenshots processed`));
-        if (totalErrors > 0) {
-          console.log(pc.red(`✗ ${totalErrors} errors`));
+        if (opts.dryRun) {
+          console.log('\n' + pc.bold('Dry run complete!'));
+          console.log(pc.cyan(`→ ${totalProcessed} screenshots would be generated`));
+        } else {
+          console.log('\n' + pc.bold('Build complete!'));
+          console.log(pc.green(`✓ ${totalProcessed} screenshots processed`));
+          if (totalErrors > 0) {
+            console.log(pc.red(`✗ ${totalErrors} errors`));
+          }
+          console.log(pc.dim(`Output directory: ${config.output}`));
         }
-        console.log(pc.dim(`Output directory: ${config.output}`));
 
       } catch (error) {
         console.error(pc.red('Error:'), error instanceof Error ? error.message : String(error));

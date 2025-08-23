@@ -6,8 +6,27 @@ import type { AppshotConfig } from '../types.js';
 
 export default function initCmd() {
   const cmd = new Command('init')
-    .description('Scaffold appshot configuration and per-device captions files')
+    .description('Initialize a new appshot project with configuration and directory structure')
     .option('--force', 'overwrite existing files')
+    .addHelpText('after', `
+${pc.bold('Creates:')}
+  ${pc.cyan('.appshot/config.json')}      Main configuration file
+  ${pc.cyan('.appshot/captions/*.json')}  Per-device caption files
+  ${pc.cyan('screenshots/[device]/')}      Input directories for screenshots
+  
+${pc.bold('Examples:')}
+  ${pc.dim('# Initialize new project')}
+  $ appshot init
+  
+  ${pc.dim('# Force overwrite existing config')}
+  $ appshot init --force
+  
+${pc.bold('Next Steps:')}
+  1. Add screenshots to ${pc.cyan('screenshots/[device]/')} folders
+  2. Run ${pc.cyan('appshot caption --device iphone')} to add captions
+  3. Run ${pc.cyan('appshot fonts --select')} to choose a font
+  4. Run ${pc.cyan('appshot gradients select')} to pick a gradient
+  5. Run ${pc.cyan('appshot build')} to generate final screenshots`)
     .action(async (opts) => {
       try {
         const root = process.cwd();

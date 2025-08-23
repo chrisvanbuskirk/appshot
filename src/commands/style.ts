@@ -9,12 +9,45 @@ import type { AppshotConfig } from '../types.js';
 
 export default function styleCmd() {
   const cmd = new Command('style')
-    .description('Configure device positioning and caption styling')
+    .description('Configure device positioning, frame options, and caption styling')
     .option('--device <name>', 'device name (iphone, ipad, mac, watch)')
     .option('--reset', 'reset device styling to defaults')
+    .addHelpText('after', `
+${pc.bold('Examples:')}
+  ${pc.dim('# Interactive configuration for iPhone')}
+  $ appshot style --device iphone
+  
+  ${pc.dim('# Reset device to default styling')}
+  $ appshot style --device ipad --reset
+  
+  ${pc.dim('# Configure without specifying device (interactive)')}
+  $ appshot style
+
+${pc.bold('Configurable Options:')}
+  ${pc.cyan('Frame Options:')}
+  • Partial frame (cut off bottom portion)
+  • Frame offset (15%, 25%, 35%, 50%, or custom)
+  • Frame position (top, center, bottom, or 0-100)
+  • Frame scale (0.5x to 2.0x)
+  
+  ${pc.cyan('Caption Options:')}
+  • Caption font (with embedded fonts)
+  • Caption size override
+  • Caption position (above or overlay)
+  • Auto-sizing based on content
+  • Maximum lines (1-10)
+  • Line height (1.0-2.0)
+  
+${pc.bold('Special Handling:')}
+  ${pc.cyan('Watch:')} Optimized caption positioning and text wrapping
+  ${pc.cyan('iPad:')} Landscape-friendly caption scaling
+  ${pc.cyan('Mac:')} Full-width caption support
+  
+${pc.bold('Output:')}
+  Updates device configuration in ${pc.cyan('.appshot/config.json')}`)
     .action(async (opts) => {
       try {
-        console.log(pc.bold('Device Style Configuration'));
+        console.log(pc.bold('\n🎨 Device Style Configuration'));
         console.log(pc.dim('Configure how devices appear in screenshots\n'));
 
         // Load current configuration

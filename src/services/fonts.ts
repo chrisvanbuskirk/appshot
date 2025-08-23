@@ -1,16 +1,29 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { platform } from 'os';
+import { existsSync, readdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const execAsync = promisify(exec);
+
+export interface FontVariant {
+  style: 'normal' | 'italic';
+  weight: 'normal' | 'bold' | number;
+  path: string;
+}
 
 export interface FontInfo {
   name: string;
   family?: string;
   style?: string;
-  category?: 'system' | 'recommended' | 'web-safe';
+  weight?: string | number;
+  category?: 'system' | 'recommended' | 'web-safe' | 'embedded';
   fallback?: string;
   installed?: boolean;  // Whether font is actually installed on system
+  embedded?: boolean;  // Whether font is embedded in the package
+  path?: string;  // Path to embedded font file
+  variants?: FontVariant[];  // Available variants for embedded fonts
 }
 
 export interface FontCategory {
@@ -21,14 +34,20 @@ export interface FontCategory {
 export interface FontStatus {
   name: string;
   installed: boolean;
-  category?: 'system' | 'recommended' | 'web-safe';
+  embedded?: boolean;
+  category?: 'system' | 'recommended' | 'web-safe' | 'embedded';
   fallback: string;
   warning?: string;
+  path?: string;
+  style?: 'normal' | 'italic';
+  weight?: 'normal' | 'bold' | number;
+  variants?: FontVariant[];
 }
 
 export class FontService {
   private static instance: FontService;
   private systemFontsCache: string[] | null = null;
+  private embeddedFontsCache: FontInfo[] | null = null;
 
   public static getInstance(): FontService {
     if (!FontService.instance) {
@@ -375,5 +394,243 @@ export class FontService {
       // Default to sans-serif
       return 'Arial, Helvetica, sans-serif';
     }
+  }
+
+  /**
+   * Get the path to the fonts directory
+   */
+  private getFontsDirectory(): string {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    // Go up from src/services to project root, then to fonts/
+    return join(__dirname, '..', '..', 'fonts');
+  }
+
+  /**
+   * Get list of embedded fonts bundled with the package
+   */
+  async getEmbeddedFonts(): Promise<FontInfo[]> {
+    if (this.embeddedFontsCache) {
+      return this.embeddedFontsCache;
+    }
+
+    const fonts: FontInfo[] = [];
+    const fontsDir = this.getFontsDirectory();
+
+    if (!existsSync(fontsDir)) {
+      this.embeddedFontsCache = [];
+      return [];
+    }
+
+    try {
+      const fontDirs = readdirSync(fontsDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+
+      for (const fontDir of fontDirs) {
+        const fontPath = join(fontsDir, fontDir);
+        const fontFiles = readdirSync(fontPath)
+          .filter(file => file.endsWith('.ttf') || file.endsWith('.otf'));
+
+        if (fontFiles.length > 0) {
+          // Normalize font name (e.g., "DMSans" -> "DM Sans", "OpenSans" -> "Open Sans")
+          let displayName = fontDir;
+          if (fontDir === 'DMSans') displayName = 'DM Sans';
+          else if (fontDir === 'OpenSans') displayName = 'Open Sans';
+          else if (fontDir === 'WorkSans') displayName = 'Work Sans';
+
+          // Detect all variants
+          const variants: FontVariant[] = [];
+          const fontFamilyMap = new Map<string, FontInfo>();
+
+          for (const file of fontFiles) {
+            const fileLower = file.toLowerCase();
+            const filePath = join(fontPath, file);
+
+            // Determine style and weight from filename
+            let style: 'normal' | 'italic' = 'normal';
+            let weight: 'normal' | 'bold' = 'normal';
+            let variantName = displayName;
+
+            if (fileLower.includes('italic')) {
+              style = 'italic';
+              variantName += ' Italic';
+            }
+
+            if (fileLower.includes('bold')) {
+              weight = 'bold';
+              if (style === 'italic') {
+                variantName = displayName + ' Bold Italic';
+              } else {
+                variantName = displayName + ' Bold';
+              }
+            }
+
+            // Handle variable fonts
+            if (fileLower.includes('variable')) {
+              if (!fileLower.includes('italic')) {
+                // Variable font supports multiple weights
+                variants.push({ style: 'normal', weight: 'normal', path: filePath });
+                variants.push({ style: 'normal', weight: 'bold', path: filePath });
+              } else {
+                // Variable italic font
+                variants.push({ style: 'italic', weight: 'normal', path: filePath });
+                variants.push({ style: 'italic', weight: 'bold', path: filePath });
+              }
+
+              // Add base font entry
+              if (!fontFamilyMap.has(displayName)) {
+                fontFamilyMap.set(displayName, {
+                  name: displayName,
+                  family: displayName,
+                  category: 'embedded',
+                  fallback: this.getFontFallback(displayName),
+                  embedded: true,
+                  installed: false,
+                  path: filePath,
+                  variants: []
+                });
+              }
+            } else {
+              // Regular font files
+              variants.push({ style, weight, path: filePath });
+
+              // Create a font entry for each variant
+              fontFamilyMap.set(variantName, {
+                name: variantName,
+                family: displayName,
+                style: style === 'italic' ? 'italic' : undefined,
+                weight: weight === 'bold' ? 'bold' : undefined,
+                category: 'embedded',
+                fallback: this.getFontFallback(displayName),
+                embedded: true,
+                installed: false,
+                path: filePath,
+                variants: [{ style, weight, path: filePath }]
+              });
+            }
+          }
+
+          // Add base font if not already added
+          const regularFile = fontFiles.find(f =>
+            f.toLowerCase().includes('regular') ||
+            (f.toLowerCase().includes('variable') && !f.toLowerCase().includes('italic'))
+          ) || fontFiles[0];
+
+          if (!fontFamilyMap.has(displayName)) {
+            fontFamilyMap.set(displayName, {
+              name: displayName,
+              family: displayName,
+              category: 'embedded',
+              fallback: this.getFontFallback(displayName),
+              embedded: true,
+              installed: false,
+              path: join(fontPath, regularFile),
+              variants: variants
+            });
+          } else {
+            // Update variants for base font
+            const baseFont = fontFamilyMap.get(displayName)!;
+            baseFont.variants = variants;
+          }
+
+          // Add all font entries
+          fonts.push(...fontFamilyMap.values());
+        }
+      }
+    } catch (error) {
+      console.error('Error reading embedded fonts:', error);
+    }
+
+    this.embeddedFontsCache = fonts;
+    return fonts;
+  }
+
+  /**
+   * Check if a font is available (either embedded or installed)
+   */
+  async isFontAvailable(fontName: string): Promise<boolean> {
+    // Check embedded fonts first
+    const embeddedFonts = await this.getEmbeddedFonts();
+    if (embeddedFonts.some(f => f.name.toLowerCase() === fontName.toLowerCase())) {
+      return true;
+    }
+
+    // Then check system fonts
+    return this.isFontInstalled(fontName);
+  }
+
+  /**
+   * Get detailed status about a font (including embedded status)
+   */
+  async getFontStatusWithEmbedded(fontName: string): Promise<FontStatus> {
+    const embeddedFonts = await this.getEmbeddedFonts();
+    const embeddedFont = embeddedFonts.find(f => f.name.toLowerCase() === fontName.toLowerCase());
+
+    if (embeddedFont) {
+      return {
+        name: fontName,
+        installed: false,
+        embedded: true,
+        category: 'embedded',
+        fallback: embeddedFont.fallback || this.getFontFallback(fontName),
+        path: embeddedFont.path,
+        style: embeddedFont.style as 'normal' | 'italic' | undefined,
+        weight: embeddedFont.weight as 'normal' | 'bold' | number | undefined,
+        variants: embeddedFont.variants
+      };
+    }
+
+    // Fall back to regular font status check
+    return this.getFontStatus(fontName);
+  }
+
+  /**
+   * Get all available fonts (embedded + system + recommended)
+   */
+  async getAllAvailableFonts(): Promise<FontInfo[]> {
+    const [embeddedFonts, recommendedFonts, systemFonts] = await Promise.all([
+      this.getEmbeddedFonts(),
+      this.getRecommendedFonts(),
+      this.getSystemFonts()
+    ]);
+
+    // Create a map to deduplicate fonts by name
+    const fontMap = new Map<string, FontInfo>();
+
+    // Add embedded fonts first (highest priority)
+    for (const font of embeddedFonts) {
+      fontMap.set(font.name.toLowerCase(), font);
+    }
+
+    // Add recommended fonts (mark if they're also embedded)
+    for (const font of recommendedFonts) {
+      const key = font.name.toLowerCase();
+      if (!fontMap.has(key)) {
+        fontMap.set(key, font);
+      } else {
+        // Update installed status if the system has this font
+        const existing = fontMap.get(key)!;
+        if (font.installed && !existing.installed) {
+          existing.installed = true;
+        }
+      }
+    }
+
+    // Add additional system fonts not in embedded or recommended
+    const knownFonts = new Set([...fontMap.keys()]);
+    for (const fontName of systemFonts) {
+      if (!knownFonts.has(fontName.toLowerCase())) {
+        fontMap.set(fontName.toLowerCase(), {
+          name: fontName,
+          family: fontName,
+          category: 'system',
+          installed: true,
+          fallback: this.getFontFallback(fontName)
+        });
+      }
+    }
+
+    return Array.from(fontMap.values());
   }
 }
