@@ -48,6 +48,24 @@ vi.mock('../src/services/fonts.js', () => {
             warning: installed ? null : 'This font is not installed on your system'
           };
         }),
+        getEmbeddedFonts: vi.fn(async () => [
+          { name: 'Poppins', family: 'Poppins', category: 'embedded', fallback: 'sans-serif', installed: true },
+          { name: 'Inter', family: 'Inter', category: 'embedded', fallback: 'sans-serif', installed: true },
+        ]),
+        getFontStatusWithEmbedded: vi.fn(async (fontName: string) => {
+          const installedFonts = ['Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'SF Pro'];
+          const embeddedFonts = ['Poppins', 'Inter', 'Roboto', 'Montserrat'];
+          const installed = installedFonts.some(f => f.toLowerCase() === fontName.toLowerCase());
+          const embedded = embeddedFonts.some(f => f.toLowerCase() === fontName.toLowerCase());
+          return {
+            name: fontName,
+            installed,
+            embedded,
+            path: embedded ? `/fonts/${fontName}/Regular.ttf` : undefined,
+            fallback: installed || embedded ? '' : 'Arial, sans-serif',
+            warning: installed || embedded ? null : 'This font is not installed on your system'
+          };
+        }),
         getFontCategories: vi.fn(async () => [
           {
             name: 'Recommended (Web-Safe)',
