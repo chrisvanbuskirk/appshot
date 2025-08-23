@@ -1,7 +1,7 @@
 {
   "name": "appshot-cli",
   "version": "0.6.0",
-  "description": "Generate App Store–ready screenshots with frames, gradients, and captions.",
+  "description": "Generate App Store–ready screenshots with frames, gradients, and captions",
   "bin": {
     "appshot": "bin/appshot.js"
   },
