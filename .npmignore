@@ -37,4 +37,4 @@ vitest.config.ts
 *.log
 .DS_Store
 tmp/
-temp/
+temp/# Trigger npm publish for v0.6.0
