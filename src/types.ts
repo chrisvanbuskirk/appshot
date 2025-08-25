@@ -11,6 +11,18 @@ export interface CaptionBoxConfig {
   maxHeight?: number;         // Maximum caption area height
 }
 
+export interface CaptionBackgroundConfig {
+  color?: string;             // Hex color for background (e.g., "#000000")
+  opacity?: number;           // Background opacity (0-1, default: 0.8)
+  padding?: number;           // Padding around text within background (default: 20)
+}
+
+export interface CaptionBorderConfig {
+  color?: string;             // Hex color for border (e.g., "#FFFFFF")
+  width?: number;             // Border thickness in pixels (1-10, default: 2)
+  radius?: number;            // Border radius for rounded corners (0-30, default: 12)
+}
+
 export interface CaptionConfig {
   font: string;
   fontsize: number;
@@ -20,15 +32,17 @@ export interface CaptionConfig {
   paddingBottom?: number;
   paddingLeft?: number;
   paddingRight?: number;
-  position?: 'overlay' | 'above';  // Default: 'above'
+  position?: 'overlay' | 'above' | 'below';  // Default: 'above'
   box?: CaptionBoxConfig;          // Caption box configuration
+  background?: CaptionBackgroundConfig;  // Caption background styling
+  border?: CaptionBorderConfig;    // Caption border styling
 }
 
 export interface DeviceStyleConfig {
   framePosition?: 'top' | 'center' | 'bottom' | number;  // Vertical position (0-100)
   frameScale?: number;        // Scale multiplier (0.5-2.0)
   captionSize?: number;       // Device-specific caption size override
-  captionPosition?: 'above' | 'overlay';  // Device-specific position
+  captionPosition?: 'above' | 'below' | 'overlay';  // Device-specific position
   captionBox?: CaptionBoxConfig;  // Device-specific caption box settings
   captionFont?: string;       // Device-specific caption font override
 }

@@ -33,7 +33,9 @@ ${pc.bold('Configurable Options:')}
   ${pc.cyan('Caption Options:')}
   • Caption font (with embedded fonts)
   • Caption size override
-  • Caption position (above or overlay)
+  • Caption position (above, below, or overlay)
+  • Caption background (color, opacity, padding)
+  • Caption border (color, width, corner radius)
   • Auto-sizing based on content
   • Maximum lines (1-10)
   • Line height (1.0-2.0)
@@ -370,6 +372,7 @@ ${pc.bold('Output:')}
             message: 'Caption position:',
             choices: [
               { name: 'Above device frame (default)', value: 'above' },
+              { name: 'Below device frame', value: 'below' },
               { name: 'Overlay on gradient', value: 'overlay' },
               { name: 'Use global default', value: null }
             ],
@@ -377,6 +380,136 @@ ${pc.bold('Output:')}
           }]);
 
           captionPosition = posAnswer.captionPosition || undefined;
+
+          // Caption styling (background and border)
+          const stylingAnswer = await inquirer.prompt([{
+            type: 'confirm',
+            name: 'customizeStyling',
+            message: 'Add background or border styling to captions?',
+            default: false
+          }]);
+
+          if (stylingAnswer.customizeStyling) {
+            // Background configuration
+            const backgroundAnswer = await inquirer.prompt([{
+              type: 'confirm',
+              name: 'addBackground',
+              message: 'Add background behind caption text?',
+              default: false
+            }]);
+
+            if (backgroundAnswer.addBackground) {
+              const bgColorAnswer = await inquirer.prompt([{
+                type: 'list',
+                name: 'color',
+                message: 'Background color:',
+                choices: [
+                  { name: 'Black (semi-transparent)', value: '#000000' },
+                  { name: 'White (semi-transparent)', value: '#FFFFFF' },
+                  { name: 'Dark gray', value: '#333333' },
+                  { name: 'Blue', value: '#007AFF' },
+                  { name: 'Red', value: '#FF3B30' },
+                  { name: 'Custom hex color...', value: 'custom' }
+                ]
+              }]);
+
+              let bgColor = bgColorAnswer.color;
+              if (bgColor === 'custom') {
+                const customColorAnswer = await inquirer.prompt([{
+                  type: 'input',
+                  name: 'customColor',
+                  message: 'Enter hex color (e.g., #FF5733):',
+                  validate: (value) => /^#[0-9A-Fa-f]{6}$/.test(value) || 'Please enter a valid hex color (e.g., #FF5733)'
+                }]);
+                bgColor = customColorAnswer.customColor;
+              }
+
+              const bgOpacityAnswer = await inquirer.prompt([{
+                type: 'list',
+                name: 'opacity',
+                message: 'Background opacity:',
+                choices: [
+                  { name: '80% (recommended)', value: 0.8 },
+                  { name: '60% (lighter)', value: 0.6 },
+                  { name: '90% (darker)', value: 0.9 },
+                  { name: '100% (solid)', value: 1.0 }
+                ],
+                default: 0.8
+              }]);
+
+              config.caption.background = {
+                color: bgColor,
+                opacity: bgOpacityAnswer.opacity,
+                padding: 25
+              };
+            }
+
+            // Border configuration
+            const borderAnswer = await inquirer.prompt([{
+              type: 'confirm',
+              name: 'addBorder',
+              message: 'Add border around caption?',
+              default: false
+            }]);
+
+            if (borderAnswer.addBorder) {
+              const borderColorAnswer = await inquirer.prompt([{
+                type: 'list',
+                name: 'color',
+                message: 'Border color:',
+                choices: [
+                  { name: 'White', value: '#FFFFFF' },
+                  { name: 'Black', value: '#000000' },
+                  { name: 'Gray', value: '#888888' },
+                  { name: 'Blue', value: '#007AFF' },
+                  { name: 'Custom hex color...', value: 'custom' }
+                ]
+              }]);
+
+              let borderColor = borderColorAnswer.color;
+              if (borderColor === 'custom') {
+                const customBorderColorAnswer = await inquirer.prompt([{
+                  type: 'input',
+                  name: 'customColor',
+                  message: 'Enter hex color (e.g., #FFFFFF):',
+                  validate: (value) => /^#[0-9A-Fa-f]{6}$/.test(value) || 'Please enter a valid hex color (e.g., #FFFFFF)'
+                }]);
+                borderColor = customBorderColorAnswer.customColor;
+              }
+
+              const borderWidthAnswer = await inquirer.prompt([{
+                type: 'list',
+                name: 'width',
+                message: 'Border thickness:',
+                choices: [
+                  { name: 'Thin (2px)', value: 2 },
+                  { name: 'Medium (3px)', value: 3 },
+                  { name: 'Thick (4px)', value: 4 },
+                  { name: 'Extra thick (6px)', value: 6 }
+                ],
+                default: 3
+              }]);
+
+              const borderRadiusAnswer = await inquirer.prompt([{
+                type: 'list',
+                name: 'radius',
+                message: 'Corner rounding:',
+                choices: [
+                  { name: 'Square (0)', value: 0 },
+                  { name: 'Slightly rounded (8px)', value: 8 },
+                  { name: 'Rounded (12px)', value: 12 },
+                  { name: 'Very rounded (20px)', value: 20 }
+                ],
+                default: 12
+              }]);
+
+              config.caption.border = {
+                color: borderColor,
+                width: borderWidthAnswer.width,
+                radius: borderRadiusAnswer.radius
+              };
+            }
+          }
 
           // Caption box settings
           const boxAnswer = await inquirer.prompt([{

@@ -50,6 +50,89 @@ function escapeXml(text: string): string {
     .replace(/'/g, '&apos;');
 }
 
+/**
+ * Generate SVG with text, background, and border support
+ */
+function generateCaptionSVG(
+  lines: string[],
+  width: number,
+  height: number,
+  fontSize: number,
+  fontFamily: string,
+  fontStyle: string,
+  fontWeight: string,
+  textColor: string,
+  lineHeight: number,
+  captionConfig: CaptionConfig
+): string {
+  const backgroundConfig = captionConfig.background;
+  const borderConfig = captionConfig.border;
+
+  // Calculate text positioning
+  const totalTextHeight = lines.length * fontSize * lineHeight;
+  const startY = (height - totalTextHeight) / 2 + fontSize;
+
+  // SVG elements array
+  const svgElements: string[] = [];
+
+  // Add background rectangle if configured
+  if (backgroundConfig?.color) {
+    const bgPadding = backgroundConfig.padding || 20;
+    const bgOpacity = backgroundConfig.opacity || 0.8;
+
+    // Use full width minus margins for uniform appearance
+    const sideMargin = 30; // Margin from edges
+    const bgWidth = width - (sideMargin * 2);
+    const bgHeight = totalTextHeight + bgPadding * 2;
+    const bgX = sideMargin;
+    const bgY = startY - fontSize - bgPadding;
+
+    const bgRadius = borderConfig?.radius || 12; // Default to 12px for better visibility
+
+    svgElements.push(
+      `<rect x="${bgX}" y="${bgY}" width="${bgWidth}" height="${bgHeight}" ` +
+      `fill="${backgroundConfig.color}" opacity="${bgOpacity}" rx="${bgRadius}"/>`
+    );
+  }
+
+  // Add border rectangle if configured
+  if (borderConfig?.color && borderConfig?.width) {
+    const bgPadding = backgroundConfig?.padding || 20;
+    const borderWidth = borderConfig.width;
+    const borderRadius = borderConfig.radius || 12;
+
+    // Use full width minus margins for uniform appearance
+    const sideMargin = 30; // Margin from edges
+    const rectWidth = width - (sideMargin * 2);
+    const rectHeight = totalTextHeight + bgPadding * 2;
+    const rectX = sideMargin;
+    const rectY = startY - fontSize - bgPadding;
+
+    svgElements.push(
+      `<rect x="${rectX}" y="${rectY}" width="${rectWidth}" height="${rectHeight}" ` +
+      `fill="none" stroke="${borderConfig.color}" stroke-width="${borderWidth}" rx="${borderRadius}"/>`
+    );
+  }
+
+  // Add text elements
+  const textElements = lines.map((line, index) => {
+    const y = startY + (index * fontSize * lineHeight);
+    return `<text x="${width/2}" y="${y}" ` +
+           `font-family="${fontFamily}" ` +
+           `font-size="${fontSize}" ` +
+           `font-style="${fontStyle}" ` +
+           `font-weight="${fontWeight}" ` +
+           `fill="${textColor}" ` +
+           `text-anchor="middle">${escapeXml(line)}</text>`;
+  });
+
+  svgElements.push(...textElements);
+
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    ${svgElements.join('\n    ')}
+  </svg>`;
+}
+
 export interface ComposeOptions {
   screenshot: Buffer;
   frame?: Buffer | null;
@@ -128,11 +211,11 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     }
   }
 
-  // Calculate caption height if positioned above
+  // Calculate caption height based on position
   let captionHeight = 0;
   let captionLines: string[] = [];
 
-  if (captionPosition === 'above' && caption) {
+  if ((captionPosition === 'above' || captionPosition === 'below') && caption) {
     const isWatch = outputWidth < 500;
     const captionFontSize = deviceConfig.captionSize || captionConfig.fontsize;
 
@@ -237,11 +320,6 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         captionLines = [caption];
       }
 
-      // Calculate vertical positioning for centered text block
-      const totalTextHeight = captionLines.length * fontSize * lineHeight;
-      const startY = (captionHeight - totalTextHeight) / 2 + fontSize;
-
-      // Create SVG with multiple text lines
       // Use device-specific font if available, otherwise use global caption font
       const fontToUse = deviceConfig.captionFont || captionConfig.font;
 
@@ -260,20 +338,18 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         }
       }
 
-      const textElements = captionLines.map((line, index) => {
-        const y = startY + (index * fontSize * lineHeight);
-        return `<text x="${canvasWidth/2}" y="${y}" 
-                font-family="${fontFamily}" 
-                font-size="${fontSize}" 
-                font-style="${fontStyle}"
-                font-weight="${fontWeight}" 
-                fill="${captionConfig.color}" 
-                text-anchor="middle">${escapeXml(line)}</text>`;
-      }).join('\n');
-
-      svgText = `<svg width="${canvasWidth}" height="${captionHeight}" xmlns="http://www.w3.org/2000/svg">
-        ${textElements}
-      </svg>`;
+      svgText = generateCaptionSVG(
+        captionLines,
+        canvasWidth,
+        captionHeight,
+        fontSize,
+        fontFamily,
+        fontStyle,
+        fontWeight,
+        captionConfig.color,
+        lineHeight,
+        captionConfig
+      );
 
       const captionImage = await sharp(Buffer.from(svgText))
         .png()
@@ -318,7 +394,18 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 
     // Calculate available space for the device
     const availableWidth = outputWidth;
-    let availableHeight = Math.max(100, outputHeight - captionHeight); // Default: account for caption
+    let availableHeight;
+
+    // For 'above' positioning, reduce available height by caption
+    // For 'below' positioning, we'll adjust positioning later but calculate scale normally
+    if (captionPosition === 'above') {
+      availableHeight = Math.max(100, outputHeight - captionHeight);
+    } else if (captionPosition === 'below') {
+      availableHeight = Math.max(100, outputHeight - captionHeight);
+    } else {
+      // 'overlay' positioning doesn't reduce available space
+      availableHeight = outputHeight;
+    }
 
     // If frameScale is explicitly set, use total output height for consistent sizing
     if (deviceFrameScale !== undefined) {
@@ -517,30 +604,83 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     }
 
     // Recalculate position with actual caption height
-    if (typeof framePosition === 'number') {
-      // Custom position as percentage from top (0-100)
-      const availableSpace = canvasHeight - captionHeight - targetDeviceHeight;
-      deviceTop = captionHeight + Math.floor(availableSpace * (framePosition / 100));
-    } else if (framePosition === 'top') {
-      deviceTop = captionHeight;
-    } else if (framePosition === 'bottom') {
-      deviceTop = canvasHeight - targetDeviceHeight;
-    } else if (framePosition === 'center') {
-      // Default centered positioning
-      if (frameMetadata.deviceType === 'watch' && !deviceConfig.framePosition) {
-        // Special watch positioning (unless explicitly overridden)
-        deviceTop = canvasHeight - Math.floor(targetDeviceHeight * 0.75) - 25;
+    if (captionPosition === 'above') {
+      // Caption above: position device below caption area
+      if (typeof framePosition === 'number') {
+        // Custom position as percentage from top (0-100)
+        const availableSpace = canvasHeight - captionHeight - targetDeviceHeight;
+        deviceTop = captionHeight + Math.floor(availableSpace * (framePosition / 100));
+      } else if (framePosition === 'top') {
+        deviceTop = captionHeight;
+      } else if (framePosition === 'bottom') {
+        deviceTop = canvasHeight - targetDeviceHeight;
+      } else if (framePosition === 'center') {
+        // Default centered positioning
+        if (frameMetadata.deviceType === 'watch' && !deviceConfig.framePosition) {
+          // Special watch positioning (unless explicitly overridden)
+          deviceTop = canvasHeight - Math.floor(targetDeviceHeight * 0.75) - 25;
+        } else {
+          const availableSpace = canvasHeight - captionHeight;
+          deviceTop = captionHeight + Math.floor((availableSpace - targetDeviceHeight) / 2);
+        }
       } else {
-        const availableSpace = canvasHeight - captionHeight;
-        deviceTop = captionHeight + Math.floor((availableSpace - targetDeviceHeight) / 2);
+        // Default to centered
+        deviceTop = captionHeight;
       }
-    } else {
-      // Default to centered
-      deviceTop = captionHeight;
-    }
 
-    // Ensure device doesn't go off canvas
-    deviceTop = Math.floor(Math.max(captionHeight, Math.min(deviceTop, canvasHeight - targetDeviceHeight)));
+      // Ensure device doesn't go off canvas
+      deviceTop = Math.floor(Math.max(captionHeight, Math.min(deviceTop, canvasHeight - targetDeviceHeight)));
+
+    } else if (captionPosition === 'below') {
+      // Caption below: position device in upper area, leaving space for caption at bottom
+      const deviceAreaHeight = canvasHeight - captionHeight;
+
+      if (typeof framePosition === 'number') {
+        // Custom position as percentage within device area
+        const availableSpace = deviceAreaHeight - targetDeviceHeight;
+        deviceTop = Math.floor(availableSpace * (framePosition / 100));
+      } else if (framePosition === 'top') {
+        deviceTop = 0;
+      } else if (framePosition === 'bottom') {
+        deviceTop = deviceAreaHeight - targetDeviceHeight;
+      } else if (framePosition === 'center') {
+        // Default centered positioning in device area
+        if (frameMetadata.deviceType === 'watch' && !deviceConfig.framePosition) {
+          // Special watch positioning (unless explicitly overridden)
+          deviceTop = Math.max(0, deviceAreaHeight - Math.floor(targetDeviceHeight * 0.75) - 25);
+        } else {
+          deviceTop = Math.floor((deviceAreaHeight - targetDeviceHeight) / 2);
+        }
+      } else {
+        // Default to centered in device area
+        deviceTop = Math.floor((deviceAreaHeight - targetDeviceHeight) / 2);
+      }
+
+      // Ensure device doesn't go off canvas or into caption area
+      deviceTop = Math.floor(Math.max(0, Math.min(deviceTop, deviceAreaHeight - targetDeviceHeight)));
+
+    } else {
+      // 'overlay' positioning: position device normally without caption area considerations
+      if (typeof framePosition === 'number') {
+        const availableSpace = canvasHeight - targetDeviceHeight;
+        deviceTop = Math.floor(availableSpace * (framePosition / 100));
+      } else if (framePosition === 'top') {
+        deviceTop = 0;
+      } else if (framePosition === 'bottom') {
+        deviceTop = canvasHeight - targetDeviceHeight;
+      } else if (framePosition === 'center') {
+        if (frameMetadata.deviceType === 'watch' && !deviceConfig.framePosition) {
+          deviceTop = canvasHeight - Math.floor(targetDeviceHeight * 0.75) - 25;
+        } else {
+          deviceTop = Math.floor((canvasHeight - targetDeviceHeight) / 2);
+        }
+      } else {
+        deviceTop = Math.floor((canvasHeight - targetDeviceHeight) / 2);
+      }
+
+      // Ensure device doesn't go off canvas
+      deviceTop = Math.floor(Math.max(0, Math.min(deviceTop, canvasHeight - targetDeviceHeight)));
+    }
     const deviceLeft = Math.floor((canvasWidth - targetDeviceWidth) / 2);
 
     if (verbose) {
@@ -561,7 +701,20 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 
     // Calculate available space for the screenshot
     const availableWidth = outputWidth;
-    const availableHeight = outputHeight - captionHeight;
+    let availableHeight;
+    let deviceTop;
+
+    if (captionPosition === 'above') {
+      availableHeight = outputHeight - captionHeight;
+      deviceTop = Math.floor(captionHeight);
+    } else if (captionPosition === 'below') {
+      availableHeight = outputHeight - captionHeight;
+      deviceTop = 0; // Start from top when caption is below
+    } else {
+      // 'overlay' positioning
+      availableHeight = outputHeight;
+      deviceTop = 0;
+    }
 
     // Calculate scale to fit within available space while maintaining aspect ratio
     const scaleX = availableWidth / screenshotWidth;
@@ -582,8 +735,12 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         .toBuffer();
     }
 
+    // For 'below' positioning, center the screenshot in the available device area
+    if (captionPosition === 'below') {
+      deviceTop = Math.floor((availableHeight - targetHeight) / 2);
+    }
+
     // Center the screenshot horizontally
-    const deviceTop = Math.floor(captionHeight);
     const deviceLeft = Math.floor((canvasWidth - targetWidth) / 2);
 
     composites.push({
@@ -593,11 +750,213 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     });
   }
 
-  // Add overlay caption if specified (legacy support)
-  // Note: Caption rendering requires librsvg to be installed
+  // Add caption if positioned below the device
+  if (caption && captionPosition === 'below') {
+    try {
+      // Create simple SVG text
+      const isWatch = outputWidth < 500;
+      // Use device-specific caption size if provided
+      const baseFontSize = deviceConfig.captionSize || captionConfig.fontsize;
+      const fontSize = isWatch ? Math.min(36, baseFontSize) : baseFontSize; // Smaller font for watch
+
+      let svgText: string;
+
+      // Get caption box config
+      const captionBoxConfig = deviceConfig.captionBox || captionConfig.box || {};
+      const lineHeight = captionBoxConfig.lineHeight || 1.4;
+
+      if (captionLines.length === 0) {
+        // Fallback if no lines were calculated
+        captionLines = [caption];
+      }
+
+      // Use device-specific font if available, otherwise use global caption font
+      const fontToUse = deviceConfig.captionFont || captionConfig.font;
+
+      // Parse font name for style and weight
+      const parsedFont = parseFontName(fontToUse);
+      const fontFamily = getFontStack(parsedFont.family);
+      const fontStyle = parsedFont.style || 'normal';
+      const fontWeight = parsedFont.weight === 'bold' ? '700' : '400';
+
+      if (verbose) {
+        console.log(pc.dim('    Caption below device:'));
+        console.log(pc.dim(`      Font: ${fontToUse} → ${fontFamily}`));
+        if (parsedFont.style || parsedFont.weight) {
+          console.log(pc.dim(`      Style: ${fontStyle}, Weight: ${fontWeight}`));
+        }
+      }
+
+      svgText = generateCaptionSVG(
+        captionLines,
+        canvasWidth,
+        captionHeight,
+        fontSize,
+        fontFamily,
+        fontStyle,
+        fontWeight,
+        captionConfig.color,
+        lineHeight,
+        captionConfig
+      );
+
+      const captionImage = await sharp(Buffer.from(svgText))
+        .png()
+        .toBuffer();
+
+      // Position caption at bottom of canvas
+      const captionTop = canvasHeight - captionHeight;
+      composites.push({
+        input: captionImage,
+        top: captionTop,
+        left: 0
+      });
+
+    } catch {
+      // If text rendering fails, just add transparent area at bottom
+      console.log('[INFO] Bottom caption rendering failed, reserving space');
+      const captionArea = await sharp({
+        create: {
+          width: canvasWidth,
+          height: captionHeight,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        }
+      })
+        .png()
+        .toBuffer();
+
+      composites.push({
+        input: captionArea,
+        top: canvasHeight - captionHeight,
+        left: 0
+      });
+    }
+  }
+
+  // Add overlay caption if specified
   if (caption && captionPosition === 'overlay') {
-    // Skip caption rendering for now - would require librsvg
-    // TODO: Implement pure bitmap text rendering in future version
+    try {
+      // Create simple SVG text for overlay
+      const isWatch = outputWidth < 500;
+      const baseFontSize = deviceConfig.captionSize || captionConfig.fontsize;
+      const fontSize = isWatch ? Math.min(36, baseFontSize) : baseFontSize;
+
+      // Get caption box config
+      const captionBoxConfig = deviceConfig.captionBox || captionConfig.box || {};
+      const lineHeight = captionBoxConfig.lineHeight || 1.4;
+
+      // For overlay, use simple single line or basic wrapping
+      let overlayLines: string[] = [];
+      if (captionLines.length > 0) {
+        overlayLines = captionLines;
+      } else {
+        // Simple fallback wrapping for overlay
+        const maxCharsPerLine = Math.floor(outputWidth / (fontSize * 0.6));
+        if (caption.length > maxCharsPerLine) {
+          overlayLines = wrapText(caption, outputWidth, fontSize, 2); // Max 2 lines for overlay
+        } else {
+          overlayLines = [caption];
+        }
+      }
+
+      // Position overlay text based on padding settings
+      const textY = captionConfig.paddingTop + fontSize;
+
+      // Use device-specific font if available, otherwise use global caption font
+      const fontToUse = deviceConfig.captionFont || captionConfig.font;
+
+      // Parse font name for style and weight
+      const parsedFont = parseFontName(fontToUse);
+      const fontFamily = getFontStack(parsedFont.family);
+      const fontStyle = parsedFont.style || 'normal';
+      const fontWeight = parsedFont.weight === 'bold' ? '700' : '400';
+
+      if (verbose) {
+        console.log(pc.dim('    Overlay caption:'));
+        console.log(pc.dim(`      Font: ${fontToUse} → ${fontFamily}`));
+        console.log(pc.dim(`      Position: ${textY}px from top`));
+      }
+
+      // For overlay, we need custom SVG generation with background/border support
+      const svgElements: string[] = [];
+
+      // Add background rectangle if configured
+      const backgroundConfig = captionConfig.background;
+      const borderConfig = captionConfig.border;
+
+      if (backgroundConfig?.color) {
+        const bgPadding = backgroundConfig.padding || 20;
+        const bgOpacity = backgroundConfig.opacity || 0.8;
+
+        // Use full width minus margins for uniform appearance
+        const totalTextHeight = overlayLines.length * fontSize * lineHeight;
+        const sideMargin = 30; // Margin from edges
+        const bgWidth = canvasWidth - (sideMargin * 2);
+        const bgHeight = totalTextHeight + bgPadding * 2;
+        const bgX = sideMargin;
+        const bgY = textY - fontSize - bgPadding;
+
+        const bgRadius = borderConfig?.radius || 12; // Default to 12px for better visibility
+
+        svgElements.push(
+          `<rect x="${bgX}" y="${bgY}" width="${bgWidth}" height="${bgHeight}" ` +
+          `fill="${backgroundConfig.color}" opacity="${bgOpacity}" rx="${bgRadius}"/>`
+        );
+      }
+
+      // Add border rectangle if configured
+      if (borderConfig?.color && borderConfig?.width) {
+        const bgPadding = backgroundConfig?.padding || 20;
+        const borderWidth = borderConfig.width;
+        const borderRadius = borderConfig.radius || 12;
+
+        const totalTextHeight = overlayLines.length * fontSize * lineHeight;
+        const sideMargin = 30; // Margin from edges
+        const rectWidth = canvasWidth - (sideMargin * 2);
+        const rectHeight = totalTextHeight + bgPadding * 2;
+        const rectX = sideMargin;
+        const rectY = textY - fontSize - bgPadding;
+
+        svgElements.push(
+          `<rect x="${rectX}" y="${rectY}" width="${rectWidth}" height="${rectHeight}" ` +
+          `fill="none" stroke="${borderConfig.color}" stroke-width="${borderWidth}" rx="${borderRadius}"/>`
+        );
+      }
+
+      // Add text elements
+      const textElements = overlayLines.map((line, index) => {
+        const y = textY + (index * fontSize * lineHeight);
+        return `<text x="${canvasWidth/2}" y="${y}" ` +
+               `font-family="${fontFamily}" ` +
+               `font-size="${fontSize}" ` +
+               `font-style="${fontStyle}" ` +
+               `font-weight="${fontWeight}" ` +
+               `fill="${captionConfig.color}" ` +
+               `text-anchor="middle">${escapeXml(line)}</text>`;
+      });
+
+      svgElements.push(...textElements);
+
+      const svgText = `<svg width="${canvasWidth}" height="${canvasHeight}" xmlns="http://www.w3.org/2000/svg">
+        ${svgElements.join('\n        ')}
+      </svg>`;
+
+      const overlayImage = await sharp(Buffer.from(svgText))
+        .png()
+        .toBuffer();
+
+      // Add overlay caption on top of everything
+      composites.push({
+        input: overlayImage,
+        top: 0,
+        left: 0,
+        blend: 'over'
+      });
+
+    } catch {
+      console.log('[INFO] Overlay caption rendering failed, skipping caption');
+    }
   }
 
   // Composite everything onto the gradient

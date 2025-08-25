@@ -121,6 +121,7 @@ Appshot has extensive test coverage with 380+ tests across 50+ test files using 
 - `style.test.ts`: Device styling configuration and validation
 - `caption-box.test.ts`: Text wrapping and caption height calculations
 - `caption-history.test.ts`: Autocomplete and suggestion system
+- `caption-styling.test.ts`: Caption background and border styling (23 tests)
 - `watch-compose.test.ts`: Watch-specific rendering optimizations
 - `translation.test.ts`: AI translation service and API key detection
 - `ai-types.test.ts`: OpenAI model configurations and parameter handling
@@ -140,13 +141,17 @@ Appshot has extensive test coverage with 380+ tests across 50+ test files using 
 - Error handling and edge cases
 - Real screenshot generation and validation
 
-**CI/CD Testing:**
-- `.github/workflows/ci.yml`: Main CI pipeline with multi-OS and Node version matrix
-- `.github/workflows/integration-test.yml`: Comprehensive CLI integration tests
-- `.github/workflows/visual-validation.yml`: Screenshot visual validation with ImageMagick
-- Automated testing on every PR and push to main
-- Artifact upload for visual inspection
-- Claude agent integration for AI-powered validation
+**CI/CD Testing (7 Workflows):**
+- `.github/workflows/ci.yml`: Main orchestrator - runs lint, type-check, and calls other workflows
+- `.github/workflows/ci-unit.yml`: Unit tests - 9-job matrix (3 OS × 3 Node versions)
+- `.github/workflows/ci-integration.yml`: CLI integration tests - full command testing
+- `.github/workflows/ci-visual.yml`: Visual regression + ImageMagick technical validation
+- `.github/workflows/claude.yml`: AI assistant - responds to @claude mentions
+- `.github/workflows/claude-code-review.yml`: Automated PR reviews by Claude
+- `.github/workflows/scheduled.yml`: Weekly health checks (Mondays 2 AM UTC)
+- **Optimizations:** Concurrency control, smart caching, conditional execution
+- **Performance:** ~5-7 minutes total PR time (parallelized)
+- See `CI-CD-GUIDE.md` for complete documentation
 
 **Test Matrix Configuration** (`tests/ci-test-matrix.json`):
 - Defines comprehensive test scenarios
@@ -248,7 +253,7 @@ The font system provides comprehensive font management with cross-platform suppo
    - Intelligent fallback chain generation
    - Categorized font recommendations (web-safe, popular, system, embedded)
    - Cache management for performance
-   - **NEW: Embedded font support with 8 high-quality OSS fonts**
+   - **NEW: Embedded font support with 10 high-quality OSS fonts**
 
 2. **System Font Detection**
    - **macOS**: Uses `system_profiler SPFontsDataType -json` with 10MB buffer
@@ -294,9 +299,10 @@ The font system provides comprehensive font management with cross-platform suppo
    - Proper SVG attribute escaping with single quotes inside double quotes
 
 8. **Embedded Fonts with Variants (v0.6.0)**
-   - **Bundled Fonts**: 8 font families with complete variant support
+   - **Bundled Fonts**: 10 font families with complete variant support
      - Inter, Poppins, Montserrat, DM Sans (Modern UI fonts)
      - Roboto, Open Sans, Lato, Work Sans (Popular web fonts)
+     - JetBrains Mono, Fira Code (Monospace/Code fonts)
    - **Font Variants**: Regular, Italic, Bold, and Bold Italic for most fonts
      - Example: "Poppins", "Poppins Italic", "Poppins Bold", "Poppins Bold Italic"
      - Variable fonts (Inter) support all weights and styles
@@ -334,6 +340,86 @@ The caption command now includes intelligent autocomplete:
 4. **Frequency Tracking** - Tracks usage count to prioritize common captions
 5. **Device-Specific** - Maintains separate suggestions per device type
 6. **Pattern Recognition** - Detects patterns like "Track your *", "Manage your *"
+
+### Caption Positioning System (v0.7.0)
+Flexible caption positioning with support for above, below, and overlay modes:
+
+1. **Position Options** (`src/types.ts`)
+   - `'above'` - Caption appears above device frame (default, existing behavior)
+   - `'below'` - Caption appears below device frame (new in v0.7.0)
+   - `'overlay'` - Caption overlays on gradient background (legacy)
+
+2. **Configuration Hierarchy**
+   - Global: `config.caption.position`
+   - Device Override: `config.devices.deviceName.captionPosition`
+   - Device-specific setting takes priority
+
+3. **Layout Engine** (`src/core/compose.ts`)
+   - **Above Mode**: Caption height calculated first, device positioned below
+   - **Below Mode**: Device positioned in upper area, caption rendered at bottom
+   - **Overlay Mode**: Full canvas available, caption overlays content
+
+4. **Style Command Integration** (`src/commands/style.ts`)
+   - Interactive selection includes "Below device frame" option
+   - Saves to device-specific `captionPosition` configuration
+
+5. **Template Foundation**
+   - Designed to support future template system with multiple text areas
+   - Flexible positioning enables various screenshot layouts
+   - Maintains backward compatibility with existing projects
+
+### Caption Styling System (v0.7.0)
+Professional caption styling with backgrounds, borders, and customizable colors:
+
+1. **Type Definitions** (`src/types.ts`)
+   - `CaptionBackgroundConfig` - Background color, opacity, and padding
+   - `CaptionBorderConfig` - Border color, width, and radius
+   - Added to `CaptionConfig` interface as optional properties
+   - Device-specific overrides via `captionBackground` and `captionBorder`
+
+2. **SVG-Based Rendering** (`src/core/compose.ts`)
+   - `generateCaptionSVG()` helper function for consistent caption rendering
+   - Full-width styling (device width minus 30px margins on each side)
+   - Layered rendering: background → border → text
+   - Proper z-ordering ensures text is always visible
+
+3. **Styling Properties**
+   - **Background**:
+     - `color`: Hex color value (e.g., "#000000")
+     - `opacity`: Transparency from 0 to 1 (default: 0.8)
+     - `padding`: Internal padding around text (default: 20px)
+   - **Border**:
+     - `color`: Hex color value (e.g., "#FFFFFF")
+     - `width`: Border thickness 1-10px (default: 2px)
+     - `radius`: Rounded corners 0-30px (default: 12px)
+   - **Text Color**: Configurable via `caption.color` property
+
+4. **Full-Width Implementation**
+   - Consistent width across all devices for professional appearance
+   - Side margins of 30px for visual balance
+   - Background and border span full width regardless of text length
+   - Works with all caption positions (above, below, overlay)
+
+5. **Style Command Integration** (`src/commands/style.ts`)
+   - Interactive prompts for background configuration
+   - Interactive prompts for border configuration
+   - Color validation ensures hex format
+   - Range validation for opacity, width, and radius
+   - Saves to device-specific configuration
+
+6. **Configuration Hierarchy**
+   - Global `caption.background` and `caption.border` (base)
+   - Device-specific `captionBackground` and `captionBorder` (override)
+   - Merged at render time with device settings taking priority
+
+7. **Testing Coverage** (`tests/caption-styling.test.ts`)
+   - 23 comprehensive tests covering all styling features
+   - Background configuration validation
+   - Border configuration validation
+   - Combined styling scenarios
+   - Edge cases and defaults
+   - Full-width calculations
+   - SVG generation validation
 
 ### Dynamic Caption Box System
 Intelligent caption rendering that adapts to content and device positioning:

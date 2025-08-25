@@ -32,6 +32,8 @@ vi.mock('../src/services/fonts.js', () => {
           { name: 'Helvetica', family: 'Helvetica', category: 'web-safe', fallback: 'Arial, sans-serif', installed: true },
           { name: 'Arial', family: 'Arial', category: 'web-safe', fallback: 'Helvetica, sans-serif', installed: true },
           { name: 'Roboto', family: 'Roboto', category: 'recommended', fallback: 'Arial, sans-serif', installed: false },
+          { name: 'JetBrains Mono', family: 'JetBrains Mono', category: 'recommended', fallback: 'Consolas, Monaco, Courier New, monospace', installed: true },
+          { name: 'Fira Code', family: 'Fira Code', category: 'recommended', fallback: 'Consolas, Monaco, Courier New, monospace', installed: true },
           { name: 'SF Pro', family: 'SF Pro', category: 'system', fallback: 'system-ui, sans-serif', installed: true },
         ]),
         getSystemFonts: vi.fn(async () => [
@@ -39,7 +41,7 @@ vi.mock('../src/services/fonts.js', () => {
           'Georgia', 'Verdana', 'Tahoma', 'SF Pro', 'SF Pro Display'
         ]),
         getFontStatus: vi.fn(async (fontName: string) => {
-          const installedFonts = ['Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'SF Pro'];
+          const installedFonts = ['Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'SF Pro', 'JetBrains Mono', 'Fira Code'];
           const installed = installedFonts.some(f => f.toLowerCase() === fontName.toLowerCase());
           return {
             name: fontName,
@@ -51,10 +53,12 @@ vi.mock('../src/services/fonts.js', () => {
         getEmbeddedFonts: vi.fn(async () => [
           { name: 'Poppins', family: 'Poppins', category: 'embedded', fallback: 'sans-serif', installed: true },
           { name: 'Inter', family: 'Inter', category: 'embedded', fallback: 'sans-serif', installed: true },
+          { name: 'JetBrainsMono', family: 'JetBrainsMono', category: 'embedded', fallback: 'monospace', installed: true },
+          { name: 'FiraCode', family: 'FiraCode', category: 'embedded', fallback: 'monospace', installed: true },
         ]),
         getFontStatusWithEmbedded: vi.fn(async (fontName: string) => {
-          const installedFonts = ['Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'SF Pro'];
-          const embeddedFonts = ['Poppins', 'Inter', 'Roboto', 'Montserrat'];
+          const installedFonts = ['Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'SF Pro', 'JetBrains Mono', 'Fira Code'];
+          const embeddedFonts = ['Poppins', 'Inter', 'Roboto', 'Montserrat', 'JetBrainsMono', 'FiraCode'];
           const installed = installedFonts.some(f => f.toLowerCase() === fontName.toLowerCase());
           const embedded = embeddedFonts.some(f => f.toLowerCase() === fontName.toLowerCase());
           return {

@@ -200,6 +200,8 @@ export class FontService {
       { name: 'Merriweather', family: 'Merriweather', category: 'recommended', fallback: 'Georgia, serif' },
 
       // Monospace fonts
+      { name: 'JetBrains Mono', family: 'JetBrains Mono', category: 'recommended', fallback: 'Consolas, Monaco, Courier New, monospace' },
+      { name: 'Fira Code', family: 'Fira Code', category: 'recommended', fallback: 'Consolas, Monaco, Courier New, monospace' },
       { name: 'Courier New', family: 'Courier New', category: 'web-safe', fallback: 'monospace' },
       { name: 'Monaco', family: 'Monaco', category: 'web-safe', fallback: 'Courier New, monospace' },
       { name: 'Consolas', family: 'Consolas', category: 'web-safe', fallback: 'Courier New, monospace' },
