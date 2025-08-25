@@ -2,15 +2,27 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import type { AppshotConfig, CaptionsFile } from '../types.js';
 
-export async function loadConfig(): Promise<AppshotConfig> {
-  const configPath = path.join(process.cwd(), '.appshot', 'config.json');
+export async function loadConfig(configFile?: string): Promise<AppshotConfig> {
+  // If a custom config file is specified, use it directly
+  // Otherwise, use the default .appshot/config.json
+  let configPath: string;
+
+  if (configFile && configFile !== 'appshot.json') {
+    // Custom config file specified
+    configPath = path.isAbsolute(configFile)
+      ? configFile
+      : path.join(process.cwd(), configFile);
+  } else {
+    // Default to .appshot/config.json
+    configPath = path.join(process.cwd(), '.appshot', 'config.json');
+  }
 
   try {
     const content = await fs.readFile(configPath, 'utf8');
     return JSON.parse(content) as AppshotConfig;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new Error('Configuration not found. Run "appshot init" first.\n(Looking for .appshot/config.json)');
+      throw new Error(`Configuration not found: ${configPath}\n${!configFile ? 'Run "appshot init" first.' : 'Check that the config file exists.'}`);
     }
     throw new Error(`Failed to load configuration: ${error instanceof Error ? error.message : String(error)}`);
   }

@@ -42,7 +42,7 @@ ${pc.bold('Common Workflows:')}
   $ appshot localize --langs es,fr,de        # Batch translate
 
 ${pc.dim('Docs: https://github.com/chrisvanbuskirk/appshot')}`)
-  .version('0.6.0')
+  .version('0.7.0')
   .addHelpText('after', `\n${pc.bold('Environment Variables:')}
   OPENAI_API_KEY              API key for translation features
   APPSHOT_DISABLE_FONT_SCAN   Skip system font detection (CI optimization)

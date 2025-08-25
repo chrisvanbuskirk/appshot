@@ -24,6 +24,34 @@ describe('Font Variants', () => {
       expect(variantNames).toContain('Poppins Bold Italic');
     });
 
+    it('should detect JetBrains Mono variants', async () => {
+      const embeddedFonts = await fontService.getEmbeddedFonts();
+      
+      // Check for JetBrains Mono variants
+      const jetbrainsVariants = embeddedFonts.filter(f => f.family === 'JetBrainsMono');
+      expect(jetbrainsVariants.length).toBeGreaterThan(1);
+      
+      const variantNames = jetbrainsVariants.map(f => f.name);
+      expect(variantNames).toContain('JetBrainsMono');
+      expect(variantNames).toContain('JetBrainsMono Italic');
+      expect(variantNames).toContain('JetBrainsMono Bold');
+      expect(variantNames).toContain('JetBrainsMono Bold Italic');
+    });
+
+    it('should detect Fira Code variants', async () => {
+      const embeddedFonts = await fontService.getEmbeddedFonts();
+      
+      // Check for Fira Code variants
+      const firaVariants = embeddedFonts.filter(f => f.family === 'FiraCode');
+      expect(firaVariants.length).toBeGreaterThan(0);
+      
+      const variantNames = firaVariants.map(f => f.name);
+      expect(variantNames).toContain('FiraCode');
+      // Fira Code may also have Bold (but not necessarily italic variants)
+      // Since Fira Code doesn't have true italics, we check what's actually available
+      expect(firaVariants.some(f => f.name.includes('Bold') || f.name === 'FiraCode')).toBe(true);
+    });
+
     it('should set correct style and weight for variants', async () => {
       const embeddedFonts = await fontService.getEmbeddedFonts();
       
@@ -92,6 +120,9 @@ describe('Font Variants', () => {
       expect(await fontService.isFontAvailable('Montserrat Italic')).toBe(true);
       expect(await fontService.isFontAvailable('Roboto Italic')).toBe(true);
       expect(await fontService.isFontAvailable('Lato Bold')).toBe(true);
+      expect(await fontService.isFontAvailable('JetBrainsMono Bold')).toBe(true);
+      expect(await fontService.isFontAvailable('JetBrainsMono Italic')).toBe(true);
+      expect(await fontService.isFontAvailable('FiraCode Bold')).toBe(true);
     });
 
     it('should be case-insensitive for variants', async () => {
@@ -99,6 +130,8 @@ describe('Font Variants', () => {
       expect(await fontService.isFontAvailable('POPPINS ITALIC')).toBe(true);
       expect(await fontService.isFontAvailable('Poppins italic')).toBe(true);
       expect(await fontService.isFontAvailable('poppins Italic')).toBe(true);
+      expect(await fontService.isFontAvailable('jetbrainsmono bold')).toBe(true);
+      expect(await fontService.isFontAvailable('FIRACODE BOLD')).toBe(true);
     });
   });
 

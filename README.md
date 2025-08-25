@@ -6,7 +6,9 @@
 [![npm version](https://badge.fury.io/js/appshot-cli.svg)](https://www.npmjs.com/package/appshot-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🆕 **Version 0.6.0** - 8 embedded OSS fonts with variants, dry-run mode, verbose debugging, and enhanced CLI UX!
+🆕 **Version 0.7.0** - **Enhanced caption styling**, flexible positioning (above/below/overlay), customizable backgrounds and borders for professional App Store screenshots!
+
+> ⚠️ **NEW in v0.7.0**: Complete caption styling system with backgrounds, borders, and flexible positioning. Create professional captions with customizable colors, opacity, padding, and rounded corners.
 
 > ⚠️ **BREAKING CHANGE in v0.4.0**: Output structure now always uses language subdirectories.
 > Single language builds now output to `final/device/lang/` instead of `final/device/`.
@@ -55,7 +57,7 @@ Appshot is the only **agent-first CLI tool** designed for automated App Store sc
 - 🖼️ **Smart Frames** - Automatically detects portrait/landscape and selects appropriate device frame
 - 🎨 **Gradient Presets** - 24+ beautiful gradients with visual preview and easy application
 - 🔤 **Font System** - 50+ font mappings, direct font setting, interactive selection, and system detection
-- 📦 **Embedded Fonts** - 8 high-quality open source fonts bundled for consistent rendering everywhere
+- 📦 **Embedded Fonts** - 10 high-quality open source fonts bundled for consistent rendering everywhere
 - ✏️ **Dynamic Captions** - Smart text wrapping, auto-sizing, and multi-line support
 - 🌍 **AI Translation** - Real-time and batch translation using OpenAI's latest models
 - 📱 **Multi-Device** - iPhone, iPad, Mac, Apple TV, Vision Pro, and Apple Watch support
@@ -345,13 +347,104 @@ Intelligent caption rendering that adapts to content:
 ```json
 {
   "caption": {
-    "position": "above",      // above or overlay
+    "position": "above",      // above, below, or overlay
     "box": {
       "autoSize": true,       // Dynamic height
       "maxLines": 3,          // Line limit
       "lineHeight": 1.4,      // Line spacing
       "minHeight": 100,
       "maxHeight": 500
+    }
+  }
+}
+```
+
+#### Caption Positioning Options
+
+- **`above`** (default): Caption appears above the device frame
+- **`below`** (new in v0.7.0): Caption appears below the device frame  
+- **`overlay`**: Caption overlays on the gradient background
+
+```bash
+# Configure caption below device
+appshot style --device iphone
+# → Select "Below device frame" option
+
+# Or set directly in config
+{
+  "devices": {
+    "iphone": {
+      "captionPosition": "below"
+    }
+  }
+}
+```
+
+#### Caption Styling (New in v0.7.0)
+
+Create professional captions with customizable backgrounds and borders:
+
+```json
+{
+  "caption": {
+    "color": "#FFFFFF",           // Text color (hex)
+    "background": {
+      "color": "#000000",         // Background color (hex)
+      "opacity": 0.8,             // Transparency (0-1)
+      "padding": 20               // Padding around text
+    },
+    "border": {
+      "color": "#FFFFFF",         // Border color (hex)
+      "width": 2,                 // Border thickness (1-10)
+      "radius": 12                // Rounded corners (0-30)
+    }
+  }
+}
+```
+
+**Key Features:**
+- **Full-width styling** - Backgrounds and borders span device width for uniformity
+- **Flexible positioning** - Works with above, below, and overlay positions
+- **Device-specific overrides** - Customize styling per device type
+- **Professional appearance** - Rounded corners and padding for polished look
+
+**Interactive Configuration:**
+```bash
+# Configure caption styling interactively
+appshot style --device iphone
+# → Choose caption position (above/below/overlay)
+# → Configure background color and opacity
+# → Set border color, width, and radius
+```
+
+**Examples:**
+
+```json
+// Dark background with white border
+{
+  "caption": {
+    "color": "#FFFFFF",
+    "background": {
+      "color": "#000000",
+      "opacity": 0.9,
+      "padding": 30
+    },
+    "border": {
+      "color": "#FFFFFF",
+      "width": 3,
+      "radius": 16
+    }
+  }
+}
+
+// Subtle gradient-matched styling
+{
+  "caption": {
+    "color": "#FFFFFF",
+    "background": {
+      "color": "#FF5733",
+      "opacity": 0.6,
+      "padding": 25
     }
   }
 }
@@ -715,6 +808,7 @@ appshot fonts [options]
 **Embedded Fonts (Always Available):**
 - **Modern UI**: Inter, Poppins, Montserrat, DM Sans
 - **Popular Web**: Roboto, Open Sans, Lato, Work Sans
+- **Monospace**: JetBrains Mono, Fira Code
 - **Variants**: Regular, Italic, Bold, and Bold Italic styles
 
 All embedded fonts use open source licenses (OFL or Apache 2.0) and provide consistent rendering without requiring system installation. Font variants are automatically detected and properly rendered with correct styles.
@@ -991,11 +1085,21 @@ appshot validate [options]
   "caption": {
     "font": "Font Name",
     "fontsize": 64,              // Pixels
-    "color": "#FFFFFF",
+    "color": "#FFFFFF",         // Text color (hex)
     "align": "center",           // left, center, right
-    "position": "above",         // above, overlay
+    "position": "above",         // above, below, overlay
     "paddingTop": 100,
     "paddingBottom": 60,
+    "background": {              // Optional background styling
+      "color": "#000000",        // Background color (hex)
+      "opacity": 0.8,            // Transparency (0-1)
+      "padding": 20              // Padding around text
+    },
+    "border": {                  // Optional border styling
+      "color": "#FFFFFF",        // Border color (hex)
+      "width": 2,                // Border thickness (1-10)
+      "radius": 12               // Rounded corners (0-30)
+    },
     "box": {
       "autoSize": true,          // Dynamic height
       "maxLines": 3,
@@ -1051,6 +1155,16 @@ Each device can override global settings:
       "captionFont": "SF Pro",
       "captionSize": 64,
       "captionPosition": "above",
+      "captionBackground": {     // Device-specific background
+        "color": "#FF5733",
+        "opacity": 0.7,
+        "padding": 25
+      },
+      "captionBorder": {         // Device-specific border
+        "color": "#FFFFFF",
+        "width": 3,
+        "radius": 16
+      },
       "captionBox": {
         "autoSize": false,
         "minHeight": 320,
@@ -1647,7 +1761,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ### Completed ✅
 - [x] Official App Store specifications
-- [x] Caption positioning (above/overlay)
+- [x] Caption positioning (above/below/overlay)
 - [x] Partial frame support
 - [x] Intelligent caption autocomplete
 - [x] Apple Watch optimizations

@@ -66,7 +66,7 @@ ${pc.bold('Language Detection:')}
         }
 
         // Load configuration
-        const config = await loadConfig();
+        const config = await loadConfig(opts.config);
         const devices = opts.devices.split(',').map((d: string) => d.trim());
         const concurrency = parseInt(opts.concurrency, 10);
 

@@ -9,7 +9,7 @@
     "direction": "top-bottom"
   },
   "caption": {
-    "font": "Poppins Italic",
+    "font": "Fira Code",
     "fontsize": 64,
     "color": "#FFFFFF",
     "align": "center",

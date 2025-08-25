@@ -28,6 +28,8 @@ describe('Embedded Fonts', () => {
       expect(fontNames).toContain('Open Sans');
       expect(fontNames).toContain('Lato');
       expect(fontNames).toContain('Work Sans');
+      expect(fontNames).toContain('JetBrainsMono');
+      expect(fontNames).toContain('FiraCode');
     });
 
     it('should have correct properties for embedded fonts', async () => {
@@ -155,7 +157,7 @@ describe('Embedded Fonts', () => {
       expect(existsSync(fontsDir)).toBe(true);
       
       // Check each font directory
-      const expectedFonts = ['Inter', 'Poppins', 'Montserrat', 'DMSans', 'Roboto', 'OpenSans', 'Lato', 'WorkSans'];
+      const expectedFonts = ['Inter', 'Poppins', 'Montserrat', 'DMSans', 'Roboto', 'OpenSans', 'Lato', 'WorkSans', 'JetBrainsMono', 'FiraCode'];
       for (const fontDir of expectedFonts) {
         const fontPath = join(fontsDir, fontDir);
         expect(existsSync(fontPath)).toBe(true);
@@ -167,7 +169,7 @@ describe('Embedded Fonts', () => {
       const __dirname = dirname(__filename);
       const fontsDir = join(__dirname, '..', 'fonts');
       
-      const fontDirs = ['Inter', 'Poppins', 'Montserrat', 'DMSans', 'Roboto', 'OpenSans', 'Lato', 'WorkSans'];
+      const fontDirs = ['Inter', 'Poppins', 'Montserrat', 'DMSans', 'Roboto', 'OpenSans', 'Lato', 'WorkSans', 'JetBrainsMono', 'FiraCode'];
       
       for (const fontDir of fontDirs) {
         const fontPath = join(fontsDir, fontDir);
