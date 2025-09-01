@@ -216,6 +216,10 @@ ${pc.bold('Examples:')}
         let totalErrors = 0;
 
         if (stat.isFile()) {
+          // Ensure output directory exists if specified
+          if (options.output) {
+            await ensureDir(path.resolve(options.output));
+          }
           const res = await processSingleFile(inputPath, framesDir, options);
           totalProcessed += res.processed;
           totalErrors += res.errors;
