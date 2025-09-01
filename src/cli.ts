@@ -14,6 +14,7 @@ import gradientsCmd from './commands/gradients.js';
 import fontsCmd from './commands/fonts.js';
 import migrateCmd from './commands/migrate.js';
 import { createCleanCommand } from './commands/clean.js';
+import frameCmd from './commands/frame.js';
 
 const program = new Command();
 
@@ -33,16 +34,18 @@ ${pc.bold('Features:')}
 ${pc.bold('Quick Start:')}
   $ appshot init                    # Initialize project
   $ appshot caption --device iphone  # Add captions
-  $ appshot build                    # Generate screenshots
+  $ appshot frame screenshot.png     # Apply device frame only
+  $ appshot build                    # Generate full screenshots
 
 ${pc.bold('Common Workflows:')}
   $ appshot fonts --set "Poppins Italic"     # Set italic font
   $ appshot gradients select                  # Pick gradient
+  $ appshot frame ./screenshots --recursive   # Batch frame images
   $ appshot build --preset iphone-6-9,ipad-13 # App Store presets
   $ appshot localize --langs es,fr,de        # Batch translate
 
 ${pc.dim('Docs: https://github.com/chrisvanbuskirk/appshot')}`)
-  .version('0.7.0')
+  .version('0.8.0')
   .addHelpText('after', `\n${pc.bold('Environment Variables:')}
   OPENAI_API_KEY              API key for translation features
   APPSHOT_DISABLE_FONT_SCAN   Skip system font detection (CI optimization)
@@ -61,6 +64,7 @@ program.addCommand(gradientsCmd());
 program.addCommand(fontsCmd());
 program.addCommand(localizeCmd());
 program.addCommand(buildCmd());
+program.addCommand(frameCmd());
 program.addCommand(specsCmd());
 program.addCommand(checkCmd());
 program.addCommand(doctorCmd());

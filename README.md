@@ -6,9 +6,9 @@
 [![npm version](https://badge.fury.io/js/appshot-cli.svg)](https://www.npmjs.com/package/appshot-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🆕 **Version 0.7.0** - **Enhanced caption styling**, flexible positioning (above/below/overlay), customizable backgrounds and borders for professional App Store screenshots!
+🆕 **Version 0.8.0** - **Frame-Only Mode**, apply device frames quickly to screenshots with transparent backgrounds - perfect for design workflows and quick exports!
 
-> ⚠️ **NEW in v0.7.0**: Complete caption styling system with backgrounds, borders, and flexible positioning. Create professional captions with customizable colors, opacity, padding, and rounded corners.
+> ⚠️ **NEW in v0.8.0**: `appshot frame` command for standalone device framing without gradients or captions. Auto-detects device types and supports batch processing with transparent PNG output.
 
 > ⚠️ **BREAKING CHANGE in v0.4.0**: Output structure now always uses language subdirectories.
 > Single language builds now output to `final/device/lang/` instead of `final/device/`.
@@ -61,6 +61,7 @@ Appshot is the only **agent-first CLI tool** designed for automated App Store sc
 - ✏️ **Dynamic Captions** - Smart text wrapping, auto-sizing, and multi-line support
 - 🌍 **AI Translation** - Real-time and batch translation using OpenAI's latest models
 - 📱 **Multi-Device** - iPhone, iPad, Mac, Apple TV, Vision Pro, and Apple Watch support
+- 🎭 **Frame-Only Mode** - Quick device framing with transparent backgrounds (no gradients/captions)
 - 📏 **App Store Specs** - All official resolutions with validation and presets
 - 🔄 **Orientation Detection** - Intelligently handles both portrait and landscape
 - ⚡ **Parallel Processing** - Configurable concurrency for large batches
@@ -113,6 +114,20 @@ appshot gradients --apply ocean
 appshot build
 
 # ✨ Output ready in final/ directory!
+```
+
+### Quick Frame-Only Mode
+
+Need just device frames without the full treatment? Use the new frame command:
+
+```bash
+# Frame a single screenshot
+appshot frame screenshot.png
+
+# Batch frame a directory
+appshot frame ./screenshots --recursive
+
+# ✨ Framed PNGs with transparent backgrounds ready!
 ```
 
 ### Example Output Structure
@@ -303,6 +318,78 @@ Every font automatically includes appropriate fallback chains:
 - **macOS**: Uses `system_profiler` for complete font list
 - **Linux**: Uses `fc-list` for fontconfig fonts
 - **Windows**: PowerShell queries font registry
+
+### Frame-Only Mode
+
+New in v0.8.0, the `appshot frame` command provides a quick way to apply device frames to screenshots without adding gradients or captions. Perfect for design workflows, quick exports, and when you just need a framed device mockup.
+
+#### Features
+
+- **Auto Device Detection** - Intelligently detects iPhone, iPad, Mac, or Apple Watch from image dimensions
+- **Transparent Backgrounds** - Outputs PNG with alpha channel preserved
+- **Batch Processing** - Frame entire directories with recursive support
+- **Smart Frame Selection** - Automatically chooses portrait/landscape frames
+- **No Configuration Required** - Works instantly without setup
+
+#### Basic Usage
+
+```bash
+# Frame a single screenshot
+appshot frame screenshot.png
+
+# Frame all images in a directory
+appshot frame ./screenshots
+
+# Recursive directory processing
+appshot frame ./screenshots --recursive
+
+# Output to specific directory
+appshot frame screenshot.png -o ./framed
+
+# Force device type
+appshot frame screenshot.png --device iphone
+```
+
+#### Options
+
+- `-o, --output <dir>` - Output directory (default: same as input)
+- `-d, --device <type>` - Force device type (iphone|ipad|mac|watch)
+- `-r, --recursive` - Process directories recursively
+- `-f, --format <type>` - Output format: png (default) or jpeg
+- `--suffix <text>` - Filename suffix (default: "-framed")
+- `--overwrite` - Overwrite original file name
+- `--dry-run` - Preview without processing
+- `--verbose` - Show detailed information
+
+#### Examples
+
+```bash
+# Batch frame iPhone screenshots
+appshot frame ./iphone-screenshots
+
+# Frame with custom output directory
+appshot frame ./screenshots -o ./mockups --recursive
+
+# Preview what would be framed
+appshot frame ./screenshots --dry-run
+
+# Force iPad frame for ambiguous dimensions
+appshot frame screenshot.png --device ipad
+
+# JPEG output with white background
+appshot frame screenshot.png --format jpeg
+```
+
+#### Device Detection Logic
+
+The frame command uses intelligent heuristics to detect device type:
+
+1. **Apple Watch** - Small, square-ish images (< 600k pixels, aspect ratio 0.75-1.3)
+2. **iPad** - 4:3 aspect ratio (1.20-1.40) with 1.5M-8M pixels
+3. **Mac** - 16:10 or 16:9 aspect ratio (1.50-1.85) with 2M+ pixels
+4. **iPhone** - Tall aspect ratios (1.60-2.40) with < 5M pixels
+
+When dimensions are ambiguous, use `--device` to specify the target device.
 
 ### Device Frames
 
@@ -845,6 +932,55 @@ appshot fonts --all
 
 # JSON output for automation
 appshot fonts --json > fonts.json
+```
+
+### `appshot frame`
+
+Apply device frames to screenshots with transparent backgrounds (no gradients or captions).
+
+```bash
+appshot frame <input> [options]
+```
+
+**Arguments:**
+- `<input>` - Input image file or directory
+
+**Options:**
+- `-o, --output <dir>` - Output directory (default: same as input)
+- `-d, --device <type>` - Force device type (iphone|ipad|mac|watch)
+- `-r, --recursive` - Process directories recursively
+- `-f, --format <type>` - Output format: png or jpeg (default: png)
+- `--suffix <text>` - Filename suffix when not overwriting (default: "-framed")
+- `--overwrite` - Overwrite original file name
+- `--dry-run` - Preview files without processing
+- `--verbose` - Show detailed information
+
+**Features:**
+- Auto-detects device type from image dimensions
+- Preserves transparency with PNG output
+- Batch processes entire directories
+- Smart portrait/landscape frame selection
+- Progress indicators for large batches
+
+**Examples:**
+```bash
+# Frame single file (auto-detect device)
+appshot frame screenshot.png
+
+# Specify output directory
+appshot frame screenshot.png -o framed/
+
+# Force device type
+appshot frame screenshot.png --device iphone
+
+# Batch process directory
+appshot frame ./screenshots -o ./framed --recursive
+
+# Dry run with verbose logs
+appshot frame ./screenshots --dry-run --verbose
+
+# JPEG output (white background)
+appshot frame screenshot.png --format jpeg
 ```
 
 ### `appshot gradients`
@@ -1768,20 +1904,27 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 - [x] Gradient presets system (24+ gradients)
 - [x] AI-Powered Translations (GPT-4o, GPT-5, o1, o3)
 - [x] Comprehensive Font System (v0.4.0)
+- [x] Frame-Only Mode (v0.8.0)
 
 ### In Progress 🚧
 - [ ] MCP Integration Guide
 - [ ] Agent API Mode
 
 ### Planned 📋
+- [ ] Fastlane Integration Plugin
+- [ ] GitHub Actions Marketplace Action
+- [ ] CI/CD Templates (Jenkins, GitLab CI, CircleCI)
+- [ ] Image Backgrounds (as alternative to gradients)
+- [ ] Screenshot Templates System
 - [ ] Android Device Support (Google Play Store)
 - [ ] Batch Config Files
 - [ ] Screenshot Validation API
-- [ ] Auto-Caption Generation
-- [ ] Smart Frame Detection
+- [ ] Auto-Caption Generation (AI-powered)
+- [ ] Smart Frame Detection (ML-based)
 - [ ] Pipeline Mode
 - [ ] WebP/AVIF Support
 - [ ] Differential Builds
+- [ ] Screenshot A/B Testing Framework
 
 ## 📄 License & Support
 
@@ -1803,7 +1946,7 @@ For security vulnerabilities, please see [SECURITY.md](SECURITY.md).
 ### NPM Package
 
 - 📦 [appshot-cli on NPM](https://www.npmjs.com/package/appshot-cli)
-- 🔄 Latest version: 0.6.0
+- 🔄 Latest version: 0.8.0
 - ⬇️ Weekly downloads: ![npm](https://img.shields.io/npm/dw/appshot-cli)
 
 ---

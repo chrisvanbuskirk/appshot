@@ -540,6 +540,51 @@ export function detectOrientation(width: number, height: number): Orientation {
 }
 
 /**
+ * Best-effort device type detection from raw dimensions.
+ * Uses simple heuristics and pixel thresholds; not perfect but fast.
+ */
+export function detectDeviceTypeFromDimensions(
+  width: number,
+  height: number
+): 'iphone' | 'ipad' | 'mac' | 'watch' | null {
+  if (!width || !height) return null;
+
+  const w = Math.max(width, height);
+  const h = Math.min(width, height);
+  const aspect = w / h; // normalized >= 1
+  const pixels = width * height;
+
+  // Watch: small and close to square
+  if (pixels <= 600_000 && aspect >= 0.75 && aspect <= 1.3) {
+    return 'watch';
+  }
+
+  // iPad: around 4:3 (1.33) in either orientation
+  if (aspect >= 1.20 && aspect <= 1.40) {
+    // ensure it's not too tiny (exclude watches) and not huge like Macs
+    if (pixels >= 1_500_000 && pixels <= 8_000_000) {
+      return 'ipad';
+    }
+  }
+
+  // Mac: typically 16:10 (~1.6) or 16:9 (~1.78) and large pixel counts
+  if (aspect >= 1.50 && aspect <= 1.85 && pixels >= 2_000_000) {
+    return 'mac';
+  }
+
+  // iPhone: taller ratios (19.5:9 ≈ 2.17) or older 16:9 ≈ 1.78 at phone pixel counts
+  if (aspect >= 1.60 && aspect <= 2.40 && pixels <= 5_000_000) {
+    return 'iphone';
+  }
+
+  // Fallbacks: try to guess based on size alone
+  if (pixels < 1_200_000) return 'iphone';
+  if (pixels > 8_000_000) return 'mac';
+
+  return null;
+}
+
+/**
  * Get image dimensions from file
  */
 export async function getImageDimensions(imagePath: string): Promise<{ width: number; height: number; orientation: Orientation }> {
