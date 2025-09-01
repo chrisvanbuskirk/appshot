@@ -969,6 +969,114 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
 }
 
 /**
+ * Compose a framed device with a fully transparent background.
+ * No gradient or captions are applied; output is frame-sized.
+ */
+export async function composeFrameOnly(options: {
+  screenshot: Buffer;
+  frame: Buffer;
+  frameMetadata: {
+    frameWidth: number;
+    frameHeight: number;
+    screenRect: { x: number; y: number; width: number; height: number };
+    maskPath?: string;
+    deviceType?: 'iphone' | 'ipad' | 'mac' | 'watch';
+    displayName?: string;
+    name?: string;
+  };
+  outputFormat?: 'png' | 'jpeg';
+  jpegQuality?: number;
+  verbose?: boolean;
+}): Promise<Buffer> {
+  const { screenshot, frame, frameMetadata, outputFormat = 'png', jpegQuality = 92, verbose = false } = options;
+
+  if (!frame || !frameMetadata) {
+    throw new Error('composeFrameOnly requires a frame buffer and frame metadata');
+  }
+
+  const { frameWidth, frameHeight, screenRect } = frameMetadata;
+
+  if (verbose) {
+    console.log(pc.dim('Framing with transparent background:'));
+    if (frameMetadata.displayName || frameMetadata.name) {
+      console.log(pc.dim(`  Frame: ${frameMetadata.displayName || frameMetadata.name}`));
+    }
+    console.log(pc.dim(`  Frame size: ${frameWidth}x${frameHeight}`));
+    console.log(pc.dim(`  Screen rect: ${screenRect.width}x${screenRect.height} @ (${screenRect.x}, ${screenRect.y})`));
+  }
+
+  // Prepare screenshot to fit the frame's screen area
+  let resizedScreenshot = await sharp(screenshot)
+    .resize(screenRect.width, screenRect.height, { fit: 'fill' })
+    .toBuffer();
+
+  // Apply mask if available; otherwise add rounded corners for iPhone heuristically
+  let maskApplied = false;
+  if (frameMetadata.maskPath) {
+    try {
+      const maskBuffer = await fs.readFile(frameMetadata.maskPath);
+      const resizedMask = await sharp(maskBuffer)
+        .resize(screenRect.width, screenRect.height, { fit: 'fill' })
+        .toBuffer();
+
+      const screenshotRgb = await sharp(resizedScreenshot).removeAlpha().toBuffer();
+      const maskAlpha = await sharp(resizedMask).extractChannel('red').toBuffer();
+
+      resizedScreenshot = await sharp(screenshotRgb).joinChannel(maskAlpha).png().toBuffer();
+      maskApplied = true;
+    } catch (err) {
+      if (verbose) {
+        console.warn(pc.dim(`  Mask load failed, falling back to rounded corners (if applicable): ${err instanceof Error ? err.message : String(err)}`));
+      }
+    }
+  }
+
+  if (!maskApplied && frameMetadata.deviceType === 'iphone') {
+    // Heuristic rounded corners for iPhone if mask missing
+    let cornerRadius: number;
+    const frameName = frameMetadata.displayName?.toLowerCase() || frameMetadata.name?.toLowerCase() || '';
+    if (frameName.includes('16 pro') || frameName.includes('15 pro') || frameName.includes('14 pro')) {
+      cornerRadius = Math.floor(screenRect.width * 0.12);
+    } else if (frameName.includes('se') || frameName.includes('8')) {
+      cornerRadius = 0;
+    } else {
+      cornerRadius = Math.floor(screenRect.width * 0.10);
+    }
+    if (cornerRadius > 0) {
+      resizedScreenshot = await applyRoundedCorners(
+        resizedScreenshot,
+        screenRect.width,
+        screenRect.height,
+        cornerRadius
+      );
+    }
+  }
+
+  // Base transparent canvas sized to the frame
+  const base = sharp({
+    create: {
+      width: frameWidth,
+      height: frameHeight,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    }
+  });
+
+  // Composite screenshot at screen coordinates, then overlay frame image
+  let composed = base.composite([
+    { input: resizedScreenshot, top: screenRect.y, left: screenRect.x },
+    { input: frame, top: 0, left: 0 }
+  ]);
+
+  if (outputFormat === 'png') {
+    return composed.png().toBuffer();
+  }
+
+  // JPEG cannot store alpha; flatten on white
+  return composed.flatten({ background: '#ffffff' }).jpeg({ quality: jpegQuality }).toBuffer();
+}
+
+/**
  * Create SVG for caption text
  */
 function _createCaptionSvg(

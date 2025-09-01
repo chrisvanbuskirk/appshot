@@ -5,6 +5,7 @@ import os from 'os';
 import sharp from 'sharp';
 import {
   detectOrientation,
+  detectDeviceTypeFromDimensions,
   getImageDimensions,
   findBestFrame,
   loadFrame,
@@ -17,6 +18,27 @@ describe('devices', () => {
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'appshot-device-test-'));
+  });
+
+  describe('detectDeviceTypeFromDimensions', () => {
+    it('should detect iPhone-like tall ratio', () => {
+      expect(detectDeviceTypeFromDimensions(1290, 2796)).toBe('iphone');
+      expect(detectDeviceTypeFromDimensions(2796, 1290)).toBe('iphone');
+    });
+
+    it('should detect iPad 4:3 ratio', () => {
+      expect(detectDeviceTypeFromDimensions(2048, 2732)).toBe('ipad');
+      expect(detectDeviceTypeFromDimensions(2732, 2048)).toBe('ipad');
+    });
+
+    it('should detect Mac large landscape', () => {
+      expect(detectDeviceTypeFromDimensions(3456, 2234)).toBe('mac');
+    });
+
+    it('should detect Watch small near-square', () => {
+      expect(detectDeviceTypeFromDimensions(396, 484)).toBe('watch');
+      expect(detectDeviceTypeFromDimensions(448, 368)).toBe('watch');
+    });
   });
 
   afterEach(async () => {
