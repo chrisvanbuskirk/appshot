@@ -787,7 +787,14 @@ export function findBestFrame(
 function getBundledFramesPath(): string {
   // When running from installed package, frames are in node_modules/appshot/frames
   // When running in development, frames are in the project root
-  const dirname = path.dirname(new URL(import.meta.url).pathname);
+  let dirname = path.dirname(new URL(import.meta.url).pathname);
+  
+  // On Windows, URL pathname starts with '/' which needs to be removed
+  // e.g., '/D:/path/to/file' should be 'D:/path/to/file'
+  if (process.platform === 'win32' && dirname.startsWith('/')) {
+    dirname = dirname.slice(1);
+  }
+  
   const projectRoot = path.resolve(dirname, '..', '..');
   return path.join(projectRoot, 'frames');
 }
