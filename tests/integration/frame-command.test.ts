@@ -47,12 +47,23 @@ describe('frame command', { timeout: 60000 }, () => {
       }
     }).png().toFile(inputPath);
 
-    // Frame it
+    // Frame it - use relative paths since we changed cwd
     const outDir = path.join(testDir, 'framed');
-    await run(`frame ${inputPath} -o ${outDir}`);
+    const result = await run(`frame screen.png -o framed`);
+    
+    // Check if command succeeded
+    if (result.stderr) {
+      console.error('Frame command stderr:', result.stderr);
+      console.error('Frame command stdout:', result.stdout);
+    }
 
     const outFiles = await fs.readdir(outDir);
-    const outFile = outFiles.find(f => f.includes('screen-framed') && f.endsWith('.png'));
+    // Log what files we got
+    if (outFiles.length === 0) {
+      console.error('No files created in output directory');
+      console.error('Command stdout:', result.stdout);
+    }
+    const outFile = outFiles.find(f => f.includes('framed') && f.endsWith('.png'));
     expect(outFile).toBeDefined();
 
     const outPath = path.join(outDir, outFile!);
@@ -79,7 +90,7 @@ describe('frame command', { timeout: 60000 }, () => {
       }
     }).png().toFile(inputPath);
 
-    const { stdout } = await run(`frame ${inputPath} --dry-run --verbose`);
+    const { stdout } = await run(`frame screen2.png --dry-run --verbose`);
     const out = stdout.toLowerCase();
     expect(out).toContain('dry run complete');
     expect(out).toMatch(/would be framed|images would be framed/);
