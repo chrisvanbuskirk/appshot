@@ -20,14 +20,14 @@ describe('frame command', { timeout: 60000 }, () => {
   const run = async (args: string) => execAsync(`node ${cliPath} ${args}`);
 
   beforeAll(async () => {
+    // Initialize frame registry BEFORE changing directory
+    // This ensures the bundled frames are properly loaded
+    await initializeFrameRegistry();
+
     // temp work dir
     testDir = path.join(process.cwd(), 'tmp-frame-cmd-' + Date.now());
     await fs.mkdir(testDir, { recursive: true });
     process.chdir(testDir);
-
-    // Ensure registry initialized with bundled frames
-    const framesDir = path.join(process.cwd(), 'frames');
-    await initializeFrameRegistry(framesDir);
   });
 
   afterAll(async () => {
