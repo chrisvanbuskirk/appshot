@@ -8,9 +8,9 @@
 [![Node.js Version](https://img.shields.io/node/v/appshot-cli.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🆕 **Version 0.8.0** - **Frame-Only Mode**, apply device frames quickly to screenshots with transparent backgrounds - perfect for design workflows and quick exports!
+🆕 **Version 0.8.5** - **Watch Mode & Device Capture** - File system monitoring with auto-processing and direct iOS simulator capture!
 
-> ⚠️ **NEW in v0.8.0**: `appshot frame` command for standalone device framing without gradients or captions. Auto-detects device types and supports batch processing with transparent PNG output.
+> ⚠️ **NEW in v0.8.5**: `appshot watch` for automatic screenshot processing and `appshot device` for iOS simulator capture (macOS only). Includes duplicate detection and background service management.
 
 > ⚠️ **BREAKING CHANGE in v0.4.0**: Output structure now always uses language subdirectories.
 > Single language builds now output to `final/device/lang/` instead of `final/device/`.
@@ -2044,7 +2044,7 @@ For security vulnerabilities, please see [SECURITY.md](SECURITY.md).
 ### NPM Package
 
 - 📦 [appshot-cli on NPM](https://www.npmjs.com/package/appshot-cli)
-- 🔄 Latest version: 0.8.0
+- 🔄 Latest version: 0.8.5
 
 ---
 
