@@ -4,6 +4,8 @@
 
 [![CI](https://github.com/chrisvanbuskirk/appshot/actions/workflows/ci.yml/badge.svg)](https://github.com/chrisvanbuskirk/appshot/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/appshot-cli.svg)](https://www.npmjs.com/package/appshot-cli)
+[![npm downloads](https://img.shields.io/npm/dm/appshot-cli.svg)](https://www.npmjs.com/package/appshot-cli)
+[![Node.js Version](https://img.shields.io/node/v/appshot-cli.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 🆕 **Version 0.8.0** - **Frame-Only Mode**, apply device frames quickly to screenshots with transparent backgrounds - perfect for design workflows and quick exports!
@@ -64,6 +66,8 @@ Appshot is the only **agent-first CLI tool** designed for automated App Store sc
 - 🎭 **Frame-Only Mode** - Quick device framing with transparent backgrounds (no gradients/captions)
 - 📏 **App Store Specs** - All official resolutions with validation and presets
 - 🔄 **Orientation Detection** - Intelligently handles both portrait and landscape
+- 👁️ **Watch Mode** - File system monitoring with auto-processing (macOS)
+- 📱 **Device Capture** - Direct capture from iOS simulators (macOS)
 - ⚡ **Parallel Processing** - Configurable concurrency for large batches
 - 🔍 **Caption Autocomplete** - Intelligent suggestions with fuzzy search and learning
 - 🔬 **Dry-Run Mode** - Preview what would be built without generating images
@@ -128,6 +132,24 @@ appshot frame screenshot.png
 appshot frame ./screenshots --recursive
 
 # ✨ Framed PNGs with transparent backgrounds ready!
+```
+
+### Watch Mode (macOS)
+
+Automatically process screenshots as they're added:
+
+```bash
+# Start watching for new screenshots
+appshot watch start --process --background
+
+# Capture from simulator (auto-processes via watch)
+appshot device capture
+
+# Check status
+appshot watch status
+
+# Stop watching
+appshot watch stop
 ```
 
 ### Example Output Structure
@@ -981,6 +1003,82 @@ appshot frame ./screenshots --dry-run --verbose
 
 # JPEG output (white background)
 appshot frame screenshot.png --format jpeg
+```
+
+### `appshot device` (macOS only)
+
+Capture screenshots from iOS simulators.
+
+```bash
+appshot device <command> [options]
+```
+
+**Commands:**
+- `capture` - Capture screenshot from device
+- `list` - List available devices
+- `prepare` - Boot simulators
+
+**Capture Options:**
+- `-d, --device <name>` - Device name or alias
+- `--all` - Capture from all devices
+- `--simulators` - Filter simulators
+- `--booted` - Currently booted simulators
+- `--process` - Auto-process with frames
+- `--app <bundleId>` - Launch app before capture
+
+**Examples:**
+```bash
+# List devices
+appshot device list
+
+# Interactive capture
+appshot device capture
+
+# Capture from specific device
+appshot device capture --device "iPhone 15 Pro"
+
+# Capture and process
+appshot device capture --process
+```
+
+### `appshot watch` (macOS only)
+
+Monitor directories for new screenshots with automatic processing.
+
+```bash
+appshot watch <command> [options]
+```
+
+**Commands:**
+- `start` - Start watching directories
+- `stop` - Stop the watch service
+- `status` - Check service status
+- `setup` - Interactive configuration
+
+**Start Options:**
+- `-d, --dirs <paths...>` - Directories to watch
+- `--devices <names...>` - Device names for processing
+- `--process` - Auto-process with frames
+- `--frame-only` - Frames only (no gradient/caption)
+- `--background` - Run in background
+- `--verbose` - Detailed output
+
+**Examples:**
+```bash
+# Interactive setup
+appshot watch setup
+
+# Start in background with processing
+appshot watch start --process --background
+
+# Watch multiple directories
+appshot watch start --dirs ./screenshots ./downloads
+
+# Check status
+appshot watch status --verbose
+
+# Stop watching
+appshot watch stop
 ```
 
 ### `appshot gradients`
@@ -1947,7 +2045,6 @@ For security vulnerabilities, please see [SECURITY.md](SECURITY.md).
 
 - 📦 [appshot-cli on NPM](https://www.npmjs.com/package/appshot-cli)
 - 🔄 Latest version: 0.8.0
-- ⬇️ Weekly downloads: ![npm](https://img.shields.io/npm/dw/appshot-cli)
 
 ---
 

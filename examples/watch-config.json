@@ -1,0 +1,37 @@
+{
+  "output": "final",
+  "frames": "frames",
+  "gradient": {
+    "colors": ["#FF6B6B", "#4ECDC4"],
+    "direction": "diagonal"
+  },
+  "caption": {
+    "font": "Inter",
+    "fontsize": 64,
+    "color": "#FFFFFF",
+    "align": "center",
+    "paddingTop": 20,
+    "position": "above"
+  },
+  "devices": {
+    "iphone": {
+      "input": "./screenshots/iphone",
+      "resolution": "1284x2778",
+      "autoFrame": true
+    },
+    "ipad": {
+      "input": "./screenshots/ipad",
+      "resolution": "2048x2732",
+      "autoFrame": true
+    }
+  },
+  "watch": {
+    "directories": ["./screenshots", "./Downloads"],
+    "devices": ["iPhone 15 Pro", "iPad Pro"],
+    "process": true,
+    "frameOnly": false,
+    "verbose": false,
+    "comment": "Watch mode configuration - monitors specified directories for new screenshots and auto-processes them"
+  },
+  "_comment": "This is an example configuration showing watch mode settings. The watch object configures automatic screenshot processing."
+}

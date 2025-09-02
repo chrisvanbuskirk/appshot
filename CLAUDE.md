@@ -49,6 +49,23 @@ appshot specs       # Apple App Store specifications
 appshot validate    # Validate screenshots against requirements
 appshot presets --generate iphone-6-9,ipad-13  # Generate preset config
 
+# Device Integration (macOS only)
+appshot device list             # List available simulators and devices
+appshot device capture          # Interactive capture from device
+appshot device capture --booted # Capture from booted simulator
+appshot device capture --process# Capture and apply frames/gradients
+appshot device prepare          # Boot simulators for capture
+
+# Watch Mode (macOS only)
+appshot watch start              # Start watching for new screenshots
+appshot watch start --background # Run in background (detached)
+appshot watch start --process    # Auto-process with frames/gradients
+appshot watch start --dirs ./screenshots ./downloads  # Watch multiple dirs
+appshot watch stop               # Stop the watch service
+appshot watch status             # Check service status
+appshot watch setup              # Interactive configuration
+appshot unwatch                  # Alias for watch stop
+
 # Cleanup
 appshot clean       # Remove final/ directory
 appshot clean --all # Remove all generated files
@@ -348,3 +365,147 @@ exec('appshot build --devices iphone');
 - Supports files and directories (`--recursive`), auto device detection, and PNG/JPEG output (`--format`).
 - Options: `--output`, `--device`, `--suffix`, `--overwrite`, `--dry-run`, `--verbose`.
 - Core additions: `composeFrameOnly()` and `detectDeviceTypeFromDimensions()`.
+
+## Device Integration (macOS Only)
+
+### Overview
+AppShot can capture screenshots directly from iOS simulators using native Apple tools (`xcrun simctl`).
+
+### System Requirements
+- **macOS** (Darwin) - Required
+- **Xcode Command Line Tools** - Minimum requirement
+- **Xcode 14+** - Recommended for full simulator support
+- **Xcode** - Required for simulator support
+
+### Commands
+
+```bash
+# List all available devices
+appshot device list
+
+# Interactive device selection and capture
+appshot device capture
+
+# Capture from booted simulator
+appshot device capture --booted
+
+# Capture and process with frames/gradients
+appshot device capture --process
+
+# Capture from all devices
+appshot device capture --all
+
+# Filter by device type
+appshot device capture --simulators  # Simulators only
+
+# Launch app before capture
+appshot device capture --app com.example.myapp
+
+# Boot simulators
+appshot device prepare --device "iPhone 16 Pro"
+```
+
+### Smart Routing
+Screenshots are automatically routed to the correct project directory:
+- iPhone simulators → `./screenshots/iphone/`
+- iPad simulators → `./screenshots/ipad/`
+- Apple Watch → `./screenshots/watch/`
+
+### Device Detection
+The system automatically:
+1. Detects device category from simulator/device name
+2. Maps to App Store resolution requirements
+3. Routes screenshots to appropriate directories
+4. Validates dimensions against App Store specs
+
+### Platform Restrictions
+Device features are **only available on macOS**. On Windows/Linux:
+- The `device` command is not registered
+- Doctor command shows "Not applicable on this platform"
+- System requirements check returns platform error
+
+## Watch Mode Implementation
+
+### Overview
+The watch mode provides automatic screenshot processing with file system monitoring, duplicate detection, and background processing capabilities.
+
+### Architecture
+**Core Components** (`src/services/` and `src/utils/`):
+- `watch-service.ts` - Main service with FSWatcher management
+- `processing-queue.ts` - FIFO queue with retry logic (3 attempts)
+- `pid-manager.ts` - Process lifecycle and PID file management
+
+**Commands** (`src/commands/`):
+- `watch.ts` - Main command with start/stop/status/setup subcommands
+- `unwatch.ts` - Alias for watch stop
+- `watch-status.ts` - Standalone status command with verbose/JSON output
+
+### Key Features
+1. **File System Monitoring**
+   - Uses Node.js `fs.watch()` with recursive option
+   - Debouncing (1 second) to handle multiple file events
+   - Filters: `.png`, `.jpg`, `.jpeg` only
+   - Excludes: `final/` and `.appshot/` directories
+
+2. **Duplicate Detection**
+   - MD5 hash-based deduplication
+   - Persistent cache at `.appshot/processed/hashes.json`
+   - Keeps last 1000 hashes to prevent unbounded growth
+
+3. **Background Mode**
+   - Detached process via `spawn()` with `detached: true`
+   - PID tracking in `.appshot/watch.pid`
+   - Graceful shutdown on SIGINT/SIGTERM
+
+4. **Processing Integration**
+   - Automatic device detection from file path
+   - Routes through `compose-bridge.ts` for frame/gradient application
+   - Falls back to simple file moving if processing disabled
+
+### Usage Examples
+```bash
+# Basic watch
+appshot watch start
+
+# Background with processing
+appshot watch start --background --process
+
+# Multiple directories with devices
+appshot watch start --dirs ./screenshots ./downloads --devices "iPhone 15 Pro" --process
+
+# Interactive setup
+appshot watch setup
+```
+
+### Configuration
+Add to `.appshot/config.json`:
+```json
+{
+  "watch": {
+    "directories": ["./screenshots"],
+    "devices": ["iPhone 15 Pro", "iPad Pro"],
+    "process": true,
+    "frameOnly": false,
+    "verbose": false
+  }
+}
+
+### Implementation Details
+
+**Services:**
+- `src/services/system-requirements.ts` - Platform and Xcode tools checking
+- `src/services/device-manager.ts` - Unified device interface
+- `src/services/screenshot-router.ts` - Smart directory routing
+- `src/services/compose-bridge.ts` - Bridge between device capture and compose system
+
+**Types:**
+- `src/types/device.ts` - Device type definitions
+
+**Commands:**
+- `src/commands/device.ts` - CLI command implementation with capture, list, and prepare subcommands
+
+**New Features (v0.9.0):**
+- Frame processing integration with device captures via `--process` flag
+- Automatic frame detection based on device dimensions
+- Smart routing to project directories
+- Device interface for iOS simulators
