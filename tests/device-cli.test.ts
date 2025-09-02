@@ -42,17 +42,11 @@ describe('Device CLI Commands', () => {
     }
   });
 
-  it.skipIf(isNotMacOS)('should handle device list command', async () => {
-    // This will run on macOS only
-    try {
-      const { stdout } = await exec('node dist/cli.js device list', {
-        timeout: 5000 // 5 second timeout
-      });
-      // Should at least show the header
-      expect(stdout).toContain('Available Devices');
-    } catch (error: any) {
-      // If no simulators installed or timeout, that's ok
-      expect(error.stderr || error.stdout || error.code).toBeDefined();
-    }
-  }, 10000); // 10 second test timeout
+  // Skip this test in CI since GitHub Actions doesn't have iOS simulators
+  it.skipIf(isNotMacOS || process.env.CI)('should handle device list command', async () => {
+    // This will run on local macOS only, not in CI
+    const { stdout } = await exec('node dist/cli.js device list');
+    // Should at least show the header
+    expect(stdout).toContain('Available Devices');
+  });
 });
