@@ -57,6 +57,15 @@ export interface DeviceConfig extends DeviceStyleConfig {
   frameOffset?: number;     // How much to cut off (percentage, default: 25)
 }
 
+export interface WatchConfig {
+  directories?: string[];     // Directories to watch
+  devices?: string[];         // Device names to process for
+  process?: boolean;          // Auto-process screenshots
+  frameOnly?: boolean;        // Frame only mode
+  verbose?: boolean;          // Verbose output
+  autoStart?: boolean;        // Auto-start on init
+}
+
 export interface AppshotConfig {
   output: string;
   frames: string;
@@ -67,6 +76,7 @@ export interface AppshotConfig {
   };
   defaultLanguage?: string;  // Optional override for system language
   useEmbeddedFonts?: boolean;  // Use embedded fonts when available
+  watch?: WatchConfig;        // Watch mode configuration
 }
 
 export interface CaptionEntry {

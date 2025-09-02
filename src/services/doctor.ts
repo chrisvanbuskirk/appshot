@@ -7,6 +7,7 @@ import sharp from 'sharp';
 import { FontService } from './fonts.js';
 import { loadConfig } from '../core/files.js';
 import { frameRegistry } from '../core/devices.js';
+import { systemRequirements } from './system-requirements.js';
 
 const execAsync = promisify(exec);
 
@@ -42,13 +43,16 @@ export class DoctorService {
     this.results = [];
     this.suggestions = [];
 
-    const availableCategories = ['system', 'dependencies', 'fonts', 'filesystem', 'frames'];
+    const availableCategories = ['system', 'xcode', 'dependencies', 'fonts', 'filesystem', 'frames'];
     const categoriesToRun = categories?.length
       ? categories.filter(c => availableCategories.includes(c))
       : availableCategories;
 
     if (categoriesToRun.includes('system')) {
       await this.checkSystemRequirements();
+    }
+    if (categoriesToRun.includes('xcode')) {
+      await this.checkXcodeTools();
     }
     if (categoriesToRun.includes('dependencies')) {
       await this.checkDependencies();
@@ -112,6 +116,103 @@ export class DoctorService {
       category: 'system',
       status: 'pass',
       message: `${os} (${this.getPlatformName(os)})`
+    });
+  }
+
+  private async checkXcodeTools() {
+    // Skip on non-macOS platforms
+    if (platform() !== 'darwin') {
+      this.addResult({
+        name: 'Xcode Tools',
+        category: 'xcode',
+        status: 'warning',
+        message: 'Not applicable on this platform',
+        details: 'Device features are only available on macOS'
+      });
+      return;
+    }
+
+    // Check Xcode Command Line Tools
+    const xcodeCheck = await systemRequirements.checkXcodeTools();
+
+    if (xcodeCheck.success && xcodeCheck.checks) {
+      // Command Line Tools
+      this.addResult({
+        name: 'Xcode Command Line Tools',
+        category: 'xcode',
+        status: xcodeCheck.checks.commandLineTools ? 'pass' : 'error',
+        message: xcodeCheck.checks.commandLineTools ? 'Installed' : 'Not installed',
+        suggestion: !xcodeCheck.checks.commandLineTools ? 'Run: xcode-select --install' : undefined
+      });
+
+      // xcrun
+      this.addResult({
+        name: 'xcrun',
+        category: 'xcode',
+        status: xcodeCheck.checks.xcrun ? 'pass' : 'error',
+        message: xcodeCheck.checks.xcrun ? 'Available' : 'Not available',
+        suggestion: !xcodeCheck.checks.xcrun ? 'Ensure Xcode or Command Line Tools are properly installed' : undefined
+      });
+
+      // simctl
+      this.addResult({
+        name: 'simctl (Simulator Control)',
+        category: 'xcode',
+        status: xcodeCheck.checks.simctl ? 'pass' : 'warning',
+        message: xcodeCheck.checks.simctl ? 'Available' : 'Not available',
+        suggestion: !xcodeCheck.checks.simctl ? 'Install Xcode from Mac App Store for simulator support' : undefined
+      });
+
+      // devicectl
+      this.addResult({
+        name: 'devicectl (Physical Devices)',
+        category: 'xcode',
+        status: xcodeCheck.checks.devicectl ? 'pass' : 'warning',
+        message: xcodeCheck.checks.devicectl ? 'Available (Xcode 15+)' : 'Not available',
+        details: !xcodeCheck.checks.devicectl ? 'Requires Xcode 15 or later' : undefined,
+        suggestion: !xcodeCheck.checks.devicectl ? 'Update to Xcode 15+ or install libimobiledevice' : undefined
+      });
+
+      // Xcode version
+      if (xcodeCheck.checks.xcodeVersion) {
+        const version = parseFloat(xcodeCheck.checks.xcodeVersion);
+        this.addResult({
+          name: 'Xcode Version',
+          category: 'xcode',
+          status: version >= 14.0 ? 'pass' : 'warning',
+          message: `Xcode ${xcodeCheck.checks.xcodeVersion}`,
+          suggestion: version < 14.0 ? 'Consider updating to Xcode 14.0 or later' : undefined
+        });
+      }
+    } else {
+      this.addResult({
+        name: 'Xcode Tools',
+        category: 'xcode',
+        status: 'error',
+        message: xcodeCheck.error || 'Failed to check Xcode tools',
+        suggestion: xcodeCheck.fix
+      });
+    }
+
+    // Check optional tools
+    const optional = await systemRequirements.checkOptionalTools();
+
+    this.addResult({
+      name: 'libimobiledevice',
+      category: 'xcode',
+      status: optional.libimobiledevice ? 'pass' : 'warning',
+      message: optional.libimobiledevice ? 'Installed' : 'Not installed (optional)',
+      details: !optional.libimobiledevice ? 'Provides physical device screenshot support' : undefined,
+      suggestion: !optional.libimobiledevice ? 'Install with: brew install libimobiledevice' : undefined
+    });
+
+    this.addResult({
+      name: 'ios-deploy',
+      category: 'xcode',
+      status: optional.iosDeploy ? 'pass' : 'warning',
+      message: optional.iosDeploy ? 'Installed' : 'Not installed (optional)',
+      details: !optional.iosDeploy ? 'Provides app deployment to physical devices' : undefined,
+      suggestion: !optional.iosDeploy ? 'Install with: npm install -g ios-deploy' : undefined
     });
   }
 
@@ -477,7 +578,7 @@ export class DoctorService {
 
     return {
       timestamp: new Date().toISOString(),
-      version: '0.8.0',
+      version: '0.8.5',
       platform: platform(),
       checks: categorizedChecks,
       summary,

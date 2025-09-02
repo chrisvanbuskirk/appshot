@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { platform } from 'os';
 import pc from 'picocolors';
 import initCmd from './commands/init.js';
 import captionCmd from './commands/caption.js';
@@ -15,6 +16,10 @@ import fontsCmd from './commands/fonts.js';
 import migrateCmd from './commands/migrate.js';
 import { createCleanCommand } from './commands/clean.js';
 import frameCmd from './commands/frame.js';
+import deviceCmd from './commands/device.js';
+import watchCmd from './commands/watch.js';
+import unwatchCmd from './commands/unwatch.js';
+import watchStatusCmd from './commands/watch-status.js';
 
 const program = new Command();
 
@@ -29,7 +34,8 @@ ${pc.bold('Features:')}
   • AI-powered translation to 25+ languages
   • Smart caption wrapping and positioning
   • All official App Store resolutions
-  • Parallel processing for large batches
+  • File system watch mode for auto-processing
+  • Device capture from simulators/physical devices (macOS)
 
 ${pc.bold('Quick Start:')}
   $ appshot init                    # Initialize project
@@ -42,10 +48,12 @@ ${pc.bold('Common Workflows:')}
   $ appshot gradients select                  # Pick gradient
   $ appshot frame ./screenshots --recursive   # Batch frame images
   $ appshot build --preset iphone-6-9,ipad-13 # App Store presets
-  $ appshot localize --langs es,fr,de        # Batch translate
+  $ appshot localize --langs es,fr,de        # Batch translate${platform() === 'darwin' ? `
+  $ appshot device capture                    # Capture from simulator/device (macOS)
+  $ appshot watch start --process             # Auto-process new screenshots` : ''}
 
 ${pc.dim('Docs: https://github.com/chrisvanbuskirk/appshot')}`)
-  .version('0.8.0')
+  .version('0.8.5')
   .addHelpText('after', `\n${pc.bold('Environment Variables:')}
   OPENAI_API_KEY              API key for translation features
   APPSHOT_DISABLE_FONT_SCAN   Skip system font detection (CI optimization)
@@ -65,6 +73,15 @@ program.addCommand(fontsCmd());
 program.addCommand(localizeCmd());
 program.addCommand(buildCmd());
 program.addCommand(frameCmd());
+
+// Add device and watch commands only on macOS
+if (platform() === 'darwin') {
+  program.addCommand(deviceCmd());
+  program.addCommand(watchCmd());
+  program.addCommand(unwatchCmd());
+  program.addCommand(watchStatusCmd());
+}
+
 program.addCommand(specsCmd());
 program.addCommand(checkCmd());
 program.addCommand(doctorCmd());

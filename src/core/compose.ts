@@ -388,6 +388,12 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     if (!Buffer.isBuffer(frame)) {
       throw new Error(`Frame is not a valid buffer for ${frameMetadata.displayName || frameMetadata.name}`);
     }
+
+    // Validate screenshot buffer
+    if (!Buffer.isBuffer(screenshot) || screenshot.length === 0) {
+      throw new Error('Screenshot is not a valid buffer or is empty');
+    }
+
     // Calculate scale factor if frame needs to be resized to fit output
     const originalFrameWidth = frameMetadata.frameWidth;
     const originalFrameHeight = frameMetadata.frameHeight;
