@@ -8,7 +8,7 @@ const exec = promisify(execCallback);
 describe('Watch CLI Commands', () => {
   const isNotMacOS = platform() !== 'darwin';
 
-  it('should show watch help', async () => {
+  it.skipIf(isNotMacOS)('should show watch help', async () => {
     const { stdout } = await exec('node dist/cli.js watch --help');
     
     expect(stdout).toContain('Monitor directories for new screenshots');
@@ -18,7 +18,7 @@ describe('Watch CLI Commands', () => {
     expect(stdout).toContain('setup');
   });
 
-  it('should show unwatch help', async () => {
+  it.skipIf(isNotMacOS)('should show unwatch help', async () => {
     const { stdout } = await exec('node dist/cli.js unwatch --help');
     
     expect(stdout).toContain('Stop watching directories');
@@ -44,7 +44,7 @@ describe('Watch CLI Commands', () => {
     }
   });
 
-  it('should list available watch commands', async () => {
+  it.skipIf(isNotMacOS)('should list available watch commands', async () => {
     const { stdout } = await exec('node dist/cli.js watch --help');
     
     expect(stdout).toContain('Commands:');

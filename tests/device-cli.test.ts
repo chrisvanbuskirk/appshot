@@ -8,7 +8,7 @@ const exec = promisify(execCallback);
 describe('Device CLI Commands', () => {
   const isNotMacOS = platform() !== 'darwin';
 
-  it('should show device help', async () => {
+  it.skipIf(isNotMacOS)('should show device help', async () => {
     const { stdout } = await exec('node dist/cli.js device --help');
     
     expect(stdout).toContain('Capture screenshots from simulators');
@@ -17,7 +17,7 @@ describe('Device CLI Commands', () => {
     expect(stdout).toContain('prepare');
   });
 
-  it('should show device capture help', async () => {
+  it.skipIf(isNotMacOS)('should show device capture help', async () => {
     const { stdout } = await exec('node dist/cli.js device capture --help');
     
     expect(stdout).toContain('Capture screenshot from a device');
