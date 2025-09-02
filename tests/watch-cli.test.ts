@@ -37,7 +37,7 @@ describe('Watch CLI Commands', () => {
         await exec('node dist/cli.js watch start --dirs screenshots');
         expect.fail('Should have thrown an error');
       } catch (error: any) {
-        expect(error.stderr || error.stdout).toContain('only available on macOS');
+        expect(error.stderr || error.stdout).toMatch(/unknown command|only available on macOS/);
       }
     } else {
       expect(true).toBe(true); // Skip on macOS

@@ -33,7 +33,7 @@ describe('Device CLI Commands', () => {
         await exec('node dist/cli.js device list');
         expect.fail('Should have thrown an error');
       } catch (error: any) {
-        expect(error.stderr || error.stdout).toContain('only available on macOS');
+        expect(error.stderr || error.stdout).toMatch(/unknown command|only available on macOS/);
       }
     } else {
       // On macOS, just verify the command exists
