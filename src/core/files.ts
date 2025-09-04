@@ -47,3 +47,11 @@ export async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
+export async function saveConfig(config: AppshotConfig, configFile?: string): Promise<void> {
+  const configPath = configFile && configFile !== 'appshot.json'
+    ? (path.isAbsolute(configFile) ? configFile : path.join(process.cwd(), configFile))
+    : path.join(process.cwd(), '.appshot', 'config.json');
+
+  await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+}
+

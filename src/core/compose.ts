@@ -1,8 +1,9 @@
 import sharp from 'sharp';
 import { promises as fs } from 'fs';
 import pc from 'picocolors';
-import type { GradientConfig, CaptionConfig, DeviceConfig } from '../types.js';
+import type { GradientConfig, CaptionConfig, DeviceConfig, BackgroundConfig } from '../types.js';
 import { renderGradient } from './render.js';
+import { renderBackground, validateBackgroundDimensions } from './background.js';
 import { applyRoundedCorners } from './mask-generator.js';
 import { calculateAdaptiveCaptionHeight, wrapText } from './text-utils.js';
 import { FontService } from '../services/fonts.js';
@@ -152,7 +153,8 @@ export interface ComposeOptions {
   };
   caption?: string;
   captionConfig: CaptionConfig;
-  gradientConfig: GradientConfig;
+  gradientConfig?: GradientConfig;  // Made optional for backwards compatibility
+  backgroundConfig?: BackgroundConfig;  // New background config
   deviceConfig: DeviceConfig;
   outputWidth: number;
   outputHeight: number;
@@ -170,6 +172,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     caption,
     captionConfig,
     gradientConfig,
+    backgroundConfig,
     deviceConfig,
     outputWidth,
     outputHeight,
@@ -294,8 +297,46 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
   const canvasWidth = outputWidth;
   const canvasHeight = outputHeight;
 
-  // Create gradient background
-  const gradient = await renderGradient(canvasWidth, canvasHeight, gradientConfig);
+  // Create background (image or gradient)
+  let backgroundBuffer: Buffer;
+
+  if (backgroundConfig) {
+    // Use new background system
+    backgroundBuffer = await renderBackground(
+      canvasWidth,
+      canvasHeight,
+      backgroundConfig,
+      deviceConfig.input  // Pass device path for auto-detection
+    );
+
+    // Validate background if it's an image
+    if (backgroundConfig.warnOnMismatch && backgroundConfig.image) {
+      const validation = await validateBackgroundDimensions(
+        backgroundConfig.image,
+        canvasWidth,
+        canvasHeight
+      );
+
+      if (validation.warnings.length > 0) {
+        console.warn(pc.yellow('⚠️  Background dimension warnings:'));
+        validation.warnings.forEach(warning => {
+          console.warn(pc.dim(`   ${warning}`));
+        });
+      }
+    }
+  } else if (gradientConfig) {
+    // Backwards compatibility: use gradient if no background config
+    backgroundBuffer = await renderGradient(canvasWidth, canvasHeight, gradientConfig);
+  } else {
+    // Default gradient if neither is specified
+    const defaultGradient: GradientConfig = {
+      colors: ['#4A90E2', '#7B68EE'],
+      direction: 'top-bottom'
+    };
+    backgroundBuffer = await renderGradient(canvasWidth, canvasHeight, defaultGradient);
+  }
+
+  const gradient = backgroundBuffer;  // Keep variable name for compatibility
 
   // Start compositing
   const composites: sharp.OverlayOptions[] = [];
@@ -426,8 +467,8 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
     if (deviceFrameScale !== undefined) {
       scale = Math.min(scaleX, scaleY) * deviceFrameScale;
     } else if (frameMetadata.deviceType === 'watch') {
-      // For watch, make it larger since bottom will be cut off
-      scale = Math.min(scaleX, scaleY) * 1.3; // Use 130% scale for watch
+      // For watch, use standard scaling
+      scale = Math.min(scaleX, scaleY) * 0.9; // Use 90% scale for watch to fit properly
     } else if (frameMetadata.deviceType === 'mac') {
       // For Mac, make it larger to be more visible
       scale = Math.min(scaleX, scaleY) * 0.95; // Use 95% scale for Mac
@@ -622,13 +663,8 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         deviceTop = canvasHeight - targetDeviceHeight;
       } else if (framePosition === 'center') {
         // Default centered positioning
-        if (frameMetadata.deviceType === 'watch' && !deviceConfig.framePosition) {
-          // Special watch positioning (unless explicitly overridden)
-          deviceTop = canvasHeight - Math.floor(targetDeviceHeight * 0.75) - 25;
-        } else {
-          const availableSpace = canvasHeight - captionHeight;
-          deviceTop = captionHeight + Math.floor((availableSpace - targetDeviceHeight) / 2);
-        }
+        const availableSpace = canvasHeight - captionHeight;
+        deviceTop = captionHeight + Math.floor((availableSpace - targetDeviceHeight) / 2);
       } else {
         // Default to centered
         deviceTop = captionHeight;
@@ -651,12 +687,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
         deviceTop = deviceAreaHeight - targetDeviceHeight;
       } else if (framePosition === 'center') {
         // Default centered positioning in device area
-        if (frameMetadata.deviceType === 'watch' && !deviceConfig.framePosition) {
-          // Special watch positioning (unless explicitly overridden)
-          deviceTop = Math.max(0, deviceAreaHeight - Math.floor(targetDeviceHeight * 0.75) - 25);
-        } else {
-          deviceTop = Math.floor((deviceAreaHeight - targetDeviceHeight) / 2);
-        }
+        deviceTop = Math.floor((deviceAreaHeight - targetDeviceHeight) / 2);
       } else {
         // Default to centered in device area
         deviceTop = Math.floor((deviceAreaHeight - targetDeviceHeight) / 2);
@@ -675,11 +706,7 @@ export async function composeAppStoreScreenshot(options: ComposeOptions): Promis
       } else if (framePosition === 'bottom') {
         deviceTop = canvasHeight - targetDeviceHeight;
       } else if (framePosition === 'center') {
-        if (frameMetadata.deviceType === 'watch' && !deviceConfig.framePosition) {
-          deviceTop = canvasHeight - Math.floor(targetDeviceHeight * 0.75) - 25;
-        } else {
-          deviceTop = Math.floor((canvasHeight - targetDeviceHeight) / 2);
-        }
+        deviceTop = Math.floor((canvasHeight - targetDeviceHeight) / 2);
       } else {
         deviceTop = Math.floor((canvasHeight - targetDeviceHeight) / 2);
       }

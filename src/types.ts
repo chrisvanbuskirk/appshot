@@ -55,6 +55,11 @@ export interface DeviceConfig extends DeviceStyleConfig {
   preferredFrame?: string;
   partialFrame?: boolean;  // Cut off bottom portion of frame
   frameOffset?: number;     // How much to cut off (percentage, default: 25)
+  background?: {            // Device-specific background override
+    image?: string;         // Path to background image
+    fit?: 'cover' | 'contain' | 'fill' | 'scale-down';
+    warnOnMismatch?: boolean;
+  };
 }
 
 export interface WatchConfig {
@@ -66,10 +71,22 @@ export interface WatchConfig {
   autoStart?: boolean;        // Auto-start on init
 }
 
+export interface BackgroundConfig {
+  mode?: 'gradient' | 'image' | 'auto';  // auto detects background.png
+  image?: string;             // Path to background image
+  fit?: 'cover' | 'contain' | 'fill' | 'scale-down';
+  position?: 'center' | 'top' | 'bottom' | 'left' | 'right';
+  color?: string;             // Solid color fallback
+  gradient?: GradientConfig;  // Gradient config (used if mode is gradient or as fallback)
+  fallback?: 'gradient' | 'solid';  // Fallback if image missing
+  warnOnMismatch?: boolean;   // Warn if dimensions don't match
+}
+
 export interface AppshotConfig {
   output: string;
   frames: string;
-  gradient: GradientConfig;
+  gradient?: GradientConfig;  // Made optional - deprecated in favor of background
+  background?: BackgroundConfig;  // New background system
   caption: CaptionConfig;
   devices: {
     [key: string]: DeviceConfig;

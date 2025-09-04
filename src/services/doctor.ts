@@ -578,7 +578,7 @@ export class DoctorService {
 
     return {
       timestamp: new Date().toISOString(),
-      version: '0.8.5',
+      version: '0.8.6',
       platform: platform(),
       checks: categorizedChecks,
       summary,

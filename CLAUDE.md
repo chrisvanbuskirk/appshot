@@ -37,6 +37,13 @@ appshot style --device iphone    # Configure positioning, styling, fonts
 appshot style --device iphone --reset  # Reset to defaults
 appshot gradients --apply ocean  # Apply gradient preset
 
+# Backgrounds & Gradients
+appshot backgrounds set iphone ./bg.jpg  # Set background image
+appshot backgrounds validate            # Check background dimensions
+appshot backgrounds preview             # Generate preview
+appshot backgrounds clear iphone        # Remove background
+appshot gradients select                # Choose gradient preset
+
 # Fonts & Localization
 appshot fonts       # Browse recommended fonts
 appshot fonts --embedded  # Show bundled fonts
@@ -73,11 +80,12 @@ appshot clean --all # Remove all generated files
 
 ## Architecture
 
-### Core Pipeline (`src/core/render.ts`)
-1. **Gradient Background** - SVG-based gradient generation
-2. **Frame Compositing** - Screenshot placed within device frame using screen coordinates
-3. **Caption Overlay** - Text rendered as SVG and composited
-4. **Sharp Processing** - All image operations use the sharp library
+### Core Pipeline
+1. **Background Rendering** (`src/core/background.ts`) - Image or gradient backgrounds with smart fitting
+2. **Gradient Generation** (`src/core/render.ts`) - SVG-based gradient creation
+3. **Frame Compositing** - Screenshot placed within device frame using screen coordinates
+4. **Caption Overlay** - Text rendered as SVG and composited
+5. **Sharp Processing** - All image operations use the sharp library
 
 ### Key Systems
 
@@ -92,9 +100,22 @@ appshot clean --all # Remove all generated files
 - Orientation (portrait/landscape) metadata
 - Device type classification (iphone/ipad/mac/watch)
 
+**Background System** (`src/core/background.ts`)
+- Auto-detects `background.png` in device folders
+- Multiple fit modes: cover, contain, fill, scale-down
+- Fallback chain: device image → global image → gradient → solid color
+- Dimension validation with App Store spec warnings
+- Smart fit detection based on aspect ratio
+
 **Configuration Schema** (`.appshot/config.json`)
 ```json
 {
+  "background": {
+    "mode": "image|gradient|auto",
+    "image": "./path/to/background.jpg",
+    "fit": "cover|contain|fill|scale-down",
+    "fallback": "gradient|solid"
+  },
   "gradient": { "colors": ["#hex1", "#hex2"], "direction": "top-bottom" },
   "caption": {
     "font": "Font Name",

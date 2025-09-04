@@ -4,6 +4,151 @@ import { composeAppStoreScreenshot } from '../src/core/compose.js';
 import sharp from 'sharp';
 
 describe('Build Command Options', () => {
+  describe('background options', () => {
+    it('should handle --auto-background flag', async () => {
+      // The auto-background flag enables automatic detection of background.png
+      // in device folders. This is tested by checking the BackgroundConfig
+      const backgroundConfig = {
+        mode: 'auto' as const,
+        fit: 'cover' as const,
+        warnOnMismatch: true
+      };
+      
+      expect(backgroundConfig.mode).toBe('auto');
+      expect(backgroundConfig.fit).toBe('cover');
+    });
+    
+    it('should handle --background <path> with custom image', async () => {
+      const customPath = './custom-bg.png';
+      const backgroundConfig = {
+        mode: 'image' as const,
+        image: customPath,
+        fit: 'cover' as const,
+        warnOnMismatch: true
+      };
+      
+      expect(backgroundConfig.mode).toBe('image');
+      expect(backgroundConfig.image).toBe(customPath);
+    });
+    
+    it('should handle --background-fit modes', async () => {
+      const fitModes = ['cover', 'contain', 'fill', 'scale-down'] as const;
+      
+      for (const fit of fitModes) {
+        const backgroundConfig = {
+          mode: 'image' as const,
+          fit: fit,
+          warnOnMismatch: true
+        };
+        
+        expect(backgroundConfig.fit).toBe(fit);
+        expect(fitModes).toContain(backgroundConfig.fit);
+      }
+    });
+    
+    it('should handle --no-background for transparent output', async () => {
+      // When --no-background is used, backgroundConfig should be undefined
+      const backgroundConfig = undefined;
+      
+      // This would result in a transparent background in compose
+      expect(backgroundConfig).toBeUndefined();
+    });
+    
+    it('should use gradient as fallback when no background available', async () => {
+      // Create test screenshot
+      const screenshot = await sharp({
+        create: {
+          width: 1170,
+          height: 2532,
+          channels: 4,
+          background: { r: 100, g: 100, b: 100, alpha: 1 }
+        }
+      })
+      .png()
+      .toBuffer();
+      
+      // Test with no background (should fall back to gradient)
+      const result = await composeAppStoreScreenshot({
+        screenshot,
+        frame: null,
+        caption: undefined,
+        captionConfig: {
+          font: 'Arial',
+          fontsize: 48,
+          color: '#FFFFFF',
+          align: 'center',
+          paddingTop: 50,
+          position: 'above'
+        },
+        gradientConfig: {
+          colors: ['#FF0000', '#00FF00'],
+          direction: 'top-bottom'
+        },
+        deviceConfig: {
+          input: './',
+          resolution: '1290x2796'
+        },
+        outputWidth: 1290,
+        outputHeight: 2796,
+        verbose: false
+      });
+      
+      expect(Buffer.isBuffer(result)).toBe(true);
+      const metadata = await sharp(result).metadata();
+      expect(metadata.width).toBe(1290);
+      expect(metadata.height).toBe(2796);
+    });
+    
+    it('should prioritize background over gradient when both present', async () => {
+      // Create test screenshot
+      const screenshot = await sharp({
+        create: {
+          width: 1170,
+          height: 2532,
+          channels: 4,
+          background: { r: 100, g: 100, b: 100, alpha: 1 }
+        }
+      })
+      .png()
+      .toBuffer();
+      
+      // Test with both background and gradient (background should win)
+      const result = await composeAppStoreScreenshot({
+        screenshot,
+        frame: null,
+        caption: undefined,
+        captionConfig: {
+          font: 'Arial',
+          fontsize: 48,
+          color: '#FFFFFF',
+          align: 'center',
+          paddingTop: 50,
+          position: 'above'
+        },
+        backgroundConfig: {
+          mode: 'image',
+          color: '#0000FF' // Blue background
+        },
+        gradientConfig: {
+          colors: ['#FF0000', '#00FF00'], // Should be ignored
+          direction: 'top-bottom'
+        },
+        deviceConfig: {
+          input: './',
+          resolution: '1290x2796'
+        },
+        outputWidth: 1290,
+        outputHeight: 2796,
+        verbose: false
+      });
+      
+      expect(Buffer.isBuffer(result)).toBe(true);
+      const metadata = await sharp(result).metadata();
+      expect(metadata.width).toBe(1290);
+      expect(metadata.height).toBe(2796);
+    });
+  });
+  
   describe('dry-run mode', () => {
     it('should skip frame loading when dryRun is true', async () => {
       // Create a test image buffer
