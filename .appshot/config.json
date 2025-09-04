@@ -18,7 +18,7 @@
   "devices": {
     "iphone": {
       "input": "./screenshots/iphone",
-      "resolution": "1284x2778",
+      "resolution": "1290x2796",
       "autoFrame": true
     },
     "ipad": {
@@ -33,7 +33,7 @@
     },
     "watch": {
       "input": "./screenshots/watch",
-      "resolution": "368x448",
+      "resolution": "410x502",
       "autoFrame": true
     }
   }

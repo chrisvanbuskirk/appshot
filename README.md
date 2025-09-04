@@ -1676,7 +1676,7 @@ cat > .appshot/config.json << EOF
 {
   "gradient": {"colors": ["#FF5733", "#FFC300"]},
   "devices": {
-    "iphone": {"resolution": "1284x2778"}
+    "iphone": {"resolution": "1290x2796"}
   }
 }
 EOF
@@ -1714,7 +1714,7 @@ def generate_screenshots(device, captions):
     config = {
         "gradient": {"colors": ["#0077BE", "#33CCCC"]},
         "devices": {
-            device: {"resolution": "1284x2778"}
+            device: {"resolution": "1290x2796"}
         }
     }
     
