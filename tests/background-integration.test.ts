@@ -537,7 +537,7 @@ describe('background integration', () => {
     
     const deviceConfig: DeviceConfig = {
       input: tempDir,
-      resolution: '368x448'
+      resolution: '410x502'
     };
     
     const result = await composeAppStoreScreenshot({

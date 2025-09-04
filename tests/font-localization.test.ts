@@ -50,12 +50,12 @@ describe('Font Localization', () => {
       },
       deviceConfig: {
         input: './screenshots/test',
-        resolution: '1284x2778',
+        resolution: '1290x2796',
         autoFrame: true,
         captionFont: 'Arial' // Device-specific font - should override global
       },
-      outputWidth: 1284,
-      outputHeight: 2778
+      outputWidth: 1290,
+      outputHeight: 2796
     });
 
     expect(result).toBeInstanceOf(Buffer);
@@ -95,12 +95,12 @@ describe('Font Localization', () => {
       },
       deviceConfig: {
         input: './screenshots/test',
-        resolution: '1284x2778',
+        resolution: '1290x2796',
         autoFrame: true
         // No captionFont specified - should use global font
       },
-      outputWidth: 1284,
-      outputHeight: 2778
+      outputWidth: 1290,
+      outputHeight: 2796
     });
 
     expect(result).toBeInstanceOf(Buffer);
@@ -148,7 +148,7 @@ describe('Font Localization', () => {
         },
         deviceConfig: {
           input: './screenshots/test',
-          resolution: '1284x2778',
+          resolution: '1290x2796',
           autoFrame: true,
           captionFont: 'Impact' // Device-specific font should apply to all languages
         },

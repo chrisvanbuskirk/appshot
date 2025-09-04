@@ -78,6 +78,54 @@ appshot clean       # Remove final/ directory
 appshot clean --all # Remove all generated files
 ```
 
+## Project Structure
+
+### Source Code Structure (appshot package)
+```
+appshot/
+├── src/
+│   ├── cli.ts              # Entry point
+│   ├── commands/           # Command implementations
+│   ├── core/               # Core functionality
+│   ├── services/           # Services (fonts, translation, etc)
+│   ├── types/              # TypeScript type definitions
+│   ├── utils/              # Utility functions
+│   └── types.ts            # Main type definitions
+├── tests/                  # Test files
+│   ├── integration/        # Integration tests
+│   └── visual/             # Visual regression tests
+├── fonts/                  # Embedded font files (10+ families)
+├── frames/                 # Bundled device frame images
+└── assets/                 # Static assets and specifications
+```
+
+### User Project Structure (created by appshot)
+```
+your-project/
+├── .appshot/
+│   ├── config.json          # Main configuration
+│   ├── captions/            # Device-specific captions
+│   │   ├── iphone.json
+│   │   ├── ipad.json
+│   │   ├── mac.json
+│   │   └── watch.json
+│   ├── caption-history.json # Autocomplete history (created on use)
+│   ├── ai-config.json       # AI translation settings (optional)
+│   ├── processed/           # Watch mode tracking (macOS only)
+│   └── watch.pid            # Watch service PID (macOS only)
+├── screenshots/             # Your original screenshots
+│   ├── iphone/
+│   │   └── background.png  # Optional device background
+│   ├── ipad/
+│   ├── mac/
+│   └── watch/
+└── final/                   # Generated output
+    └── <device>/
+        └── <language>/      # Always uses language subdirectories
+```
+
+Note: Device frames are bundled with appshot - users don't need a local frames directory.
+
 ## Architecture
 
 ### Core Pipeline
@@ -136,7 +184,7 @@ appshot clean --all # Remove all generated files
   "devices": {
     "iphone": {
       "input": "./screenshots/iphone",
-      "resolution": "1284x2778",
+      "resolution": "1290x2796",
       "autoFrame": true,
       "partialFrame": false,
       "frameOffset": 25,
