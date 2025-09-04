@@ -49,10 +49,10 @@ ${pc.bold('Next Steps:')}
             paddingTop: 100
           },
           devices: {
-            iphone: { input: './screenshots/iphone', resolution: '1284x2778', autoFrame: true },
+            iphone: { input: './screenshots/iphone', resolution: '1290x2796', autoFrame: true },
             ipad:   { input: './screenshots/ipad',   resolution: '2048x2732', autoFrame: true },
             mac:    { input: './screenshots/mac',    resolution: '2880x1800', autoFrame: true },
-            watch:  { input: './screenshots/watch',  resolution: '368x448', autoFrame: true }
+            watch:  { input: './screenshots/watch',  resolution: '410x502', autoFrame: true }
           }
         };
 

@@ -36,7 +36,7 @@ describe('files', () => {
         gradient: { colors: ['#000', '#fff'], direction: 'top-bottom' },
         caption: { font: 'Arial', fontsize: 48, color: '#000', align: 'center', paddingTop: 50 },
         devices: {
-          iphone: { input: './screenshots/iphone', resolution: '1284x2778' }
+          iphone: { input: './screenshots/iphone', resolution: '1290x2796' }
         }
       };
       

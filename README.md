@@ -170,7 +170,7 @@ final/
 
 ### Project Structure
 
-Appshot uses a simple, predictable directory structure:
+Appshot creates and manages the following directory structure in your project:
 
 ```
 your-project/
@@ -178,15 +178,37 @@ your-project/
 │   ├── config.json          # Main configuration
 │   ├── captions/            # Device-specific captions
 │   │   ├── iphone.json
-│   │   └── ipad.json
-│   └── caption-history.json # Autocomplete history
-├── screenshots/             # Original screenshots
+│   │   ├── ipad.json
+│   │   ├── mac.json
+│   │   └── watch.json
+│   ├── caption-history.json # Autocomplete history (created on use)
+│   ├── ai-config.json       # AI translation settings (optional)
+│   ├── processed/           # Watch mode tracking (macOS only)
+│   └── watch.pid            # Watch service PID (macOS only)
+├── screenshots/             # Your original screenshots
 │   ├── iphone/
+│   │   └── background.png  # Optional device background
 │   ├── ipad/
-│   └── mac/
-├── frames/                  # Device frames (auto-downloaded)
+│   ├── mac/
+│   └── watch/
 └── final/                   # Generated output
+    ├── iphone/
+    │   ├── en/              # Language subdirectory (always created)
+    │   ├── es/              # Additional languages as needed
+    │   └── fr/
+    └── ipad/
+        └── en/
 ```
+
+**Created by `appshot init`:**
+- `.appshot/` directory with config.json
+- `.appshot/captions/` with device JSON files
+- `screenshots/` directories for each device type
+
+**Created during usage:**
+- `final/` - Created when you run `appshot build`
+- `.appshot/caption-history.json` - Created when using captions
+- `.appshot/processed/` - Created by watch mode (macOS)
 
 ### Configuration Overview
 
@@ -207,7 +229,7 @@ All settings are stored in `.appshot/config.json`:
   },
   "devices": {
     "iphone": {
-      "resolution": "1284x2778",
+      "resolution": "1290x2796",
       "autoFrame": true
     }
   }
@@ -1468,7 +1490,7 @@ appshot validate [options]
   "devices": {
     "iphone": {
       "input": "./screenshots/iphone",
-      "resolution": "1284x2778",
+      "resolution": "1290x2796",
       "autoFrame": true,
       "preferredFrame": "frame-name",
       "partialFrame": false,
@@ -1498,7 +1520,7 @@ Each device can override global settings:
     "iphone": {
       // Required
       "input": "./screenshots/iphone",
-      "resolution": "1284x2778",
+      "resolution": "1290x2796",
       
       // Frame options
       "autoFrame": true,
@@ -1654,7 +1676,7 @@ cat > .appshot/config.json << EOF
 {
   "gradient": {"colors": ["#FF5733", "#FFC300"]},
   "devices": {
-    "iphone": {"resolution": "1284x2778"}
+    "iphone": {"resolution": "1290x2796"}
   }
 }
 EOF
@@ -1692,7 +1714,7 @@ def generate_screenshots(device, captions):
     config = {
         "gradient": {"colors": ["#0077BE", "#33CCCC"]},
         "devices": {
-            device: {"resolution": "1284x2778"}
+            device: {"resolution": "1290x2796"}
         }
     }
     
@@ -1802,7 +1824,7 @@ For identical device positioning across all screenshots:
 {
   "devices": {
     "iphone": {
-      "resolution": "1284x2778",
+      "resolution": "1290x2796",
       "autoFrame": false,
       "preferredFrame": "iphone-16-pro-max-portrait",
       "frameScale": 0.85,
@@ -2050,12 +2072,25 @@ appshot/
 ├── src/
 │   ├── cli.ts              # Entry point
 │   ├── commands/           # Command implementations
-│   ├── core/              # Core functionality
-│   ├── services/          # Services (fonts, translation)
-│   └── types.ts           # TypeScript definitions
-├── tests/                 # Test files
-├── frames/               # Device frame images
-└── examples/            # Example projects
+│   ├── core/               # Core functionality
+│   ├── services/           # Services (fonts, translation, etc)
+│   ├── types/              # TypeScript type definitions
+│   ├── utils/              # Utility functions
+│   └── types.ts            # Main type definitions
+├── tests/                  # Test files
+│   ├── integration/        # Integration tests
+│   └── visual/             # Visual regression tests
+├── fonts/                  # Embedded font files
+│   ├── Inter/
+│   ├── Poppins/
+│   ├── Montserrat/
+│   └── ...                 # 10+ font families
+├── frames/                 # Device frame images
+├── assets/                 # Static assets
+│   ├── specs/              # App Store specifications
+│   └── frames/             # Frame metadata
+└── examples/               # Example projects
+    └── minimal-project/    # Basic example setup
 ```
 
 ### Testing

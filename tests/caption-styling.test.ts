@@ -26,7 +26,7 @@ describe('Caption Styling', () => {
       devices: {
         iphone: {
           input: './screenshots/iphone',
-          resolution: '1284x2778',
+          resolution: '1290x2796',
           autoFrame: true
         }
       }

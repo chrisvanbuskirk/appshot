@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.7] - 2025-09-04
+
+### 🐛 Bug Fixes
+- **Default Resolutions**: Updated default iPhone resolution from 1284x2778 to 1290x2796 to match current App Store requirements (iPhone 6.9" display)
+- **Watch Resolution**: Updated default Apple Watch resolution from 368x448 to 410x502 (Apple Watch Ultra) for latest devices
+- **Caption Structure**: Fixed issue where caption command was creating incorrect file structure with language keys at top level
+
+### 🛠️ Improvements
+- **App Store Compliance**: All default device resolutions now match the latest App Store screenshot specifications
+- **Test Updates**: Updated all test files to use the new correct resolutions
+- **Documentation**: Updated README and CLAUDE.md with corrected resolution values
+
 ## [0.8.6] - 2025-09-04
 
 ### ✨ New Features

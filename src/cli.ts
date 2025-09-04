@@ -55,7 +55,7 @@ ${pc.bold('Common Workflows:')}
   $ appshot watch start --process             # Auto-process new screenshots` : ''}
 
 ${pc.dim('Docs: https://github.com/chrisvanbuskirk/appshot')}`)
-  .version('0.8.6')
+  .version('0.8.7')
   .addHelpText('after', `\n${pc.bold('Environment Variables:')}
   OPENAI_API_KEY              API key for translation features
   APPSHOT_DISABLE_FONT_SCAN   Skip system font detection (CI optimization)
