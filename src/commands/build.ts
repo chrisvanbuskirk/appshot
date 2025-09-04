@@ -20,6 +20,10 @@ export default function buildCmd() {
     .option('--no-frame', 'skip device frames')
     .option('--no-gradient', 'skip gradient backgrounds')
     .option('--no-caption', 'skip captions')
+    .option('--background <image>', 'use specific background image')
+    .option('--no-background', 'disable background (transparent)')
+    .option('--background-fit <mode>', 'background fit mode: cover, contain, fill, scale-down', 'cover')
+    .option('--auto-background', 'auto-detect background.png in device folders')
     .option('--dry-run', 'show what would be rendered without generating images')
     .option('--verbose', 'show detailed rendering information')
     .addHelpText('after', `
@@ -41,6 +45,12 @@ ${pc.bold('Examples:')}
   
   ${pc.dim('# Frames only (no gradient/caption)')}
   $ appshot build --no-gradient --no-caption
+  
+  ${pc.dim('# Use custom background image')}
+  $ appshot build --background ./assets/sunset.jpg
+  
+  ${pc.dim('# Auto-detect background.png in device folders')}
+  $ appshot build --auto-background
   
   ${pc.dim('# Preview what would be built')}
   $ appshot build --dry-run
@@ -101,9 +111,10 @@ ${pc.bold('Language Detection:')}
           // Create device output directory
           await fs.mkdir(outputDir, { recursive: true });
 
-          // Get screenshots
+          // Get screenshots (excluding background images)
           const screenshots = (await fs.readdir(inputDir))
             .filter(f => f.match(/\.(png|jpg|jpeg)$/i))
+            .filter(f => !f.match(/^background\.(png|jpg|jpeg)$/i))
             .sort();
 
           if (screenshots.length === 0) {
@@ -255,6 +266,27 @@ ${pc.bold('Language Detection:')}
                     // Actual rendering
                     let image: Buffer;
                     try {
+                      // Configure background
+                      let backgroundConfig = config.background;
+
+                      // Override with command line options
+                      if (opts.background) {
+                        backgroundConfig = {
+                          mode: 'image',
+                          image: opts.background,
+                          fit: opts.backgroundFit || 'cover',
+                          warnOnMismatch: true
+                        };
+                      } else if (opts.autoBackground) {
+                        backgroundConfig = {
+                          mode: 'auto',
+                          fit: opts.backgroundFit || 'cover',
+                          warnOnMismatch: true
+                        };
+                      } else if (opts.noBackground) {
+                        backgroundConfig = undefined;
+                      }
+
                       image = await composeAppStoreScreenshot({
                         screenshot: screenshotBuffer!,
                         frame: frame,
@@ -269,7 +301,8 @@ ${pc.bold('Language Detection:')}
                         } : undefined,
                         caption: opts.caption !== false ? captionText : undefined,
                         captionConfig: config.caption,
-                        gradientConfig: config.gradient,
+                        gradientConfig: opts.gradient === false ? undefined : config.gradient,
+                        backgroundConfig: backgroundConfig,
                         deviceConfig: deviceConfig,
                         outputWidth: outWidth,
                         outputHeight: outHeight,

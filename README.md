@@ -8,9 +8,9 @@
 [![Node.js Version](https://img.shields.io/node/v/appshot-cli.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🆕 **Version 0.8.5** - **Watch Mode & Device Capture** - File system monitoring with auto-processing and direct iOS simulator capture!
+🆕 **Version 0.8.6** - **Background Images** - Replace gradients with custom static images, auto-detection, and dimension validation!
 
-> ⚠️ **NEW in v0.8.5**: `appshot watch` for automatic screenshot processing and `appshot device` for iOS simulator capture (macOS only). Includes duplicate detection and background service management.
+> ⚠️ **NEW in v0.8.6**: Use custom background images instead of gradients! Auto-detects `background.png` in device folders, supports multiple fit modes, and validates dimensions against App Store specs.
 
 > ⚠️ **BREAKING CHANGE in v0.4.0**: Output structure now always uses language subdirectories.
 > Single language builds now output to `final/device/lang/` instead of `final/device/`.
@@ -266,6 +266,129 @@ appshot gradients --sample
   }
 }
 ```
+
+### Background System (NEW in v0.8.6)
+
+Replace gradients with custom static background images for a unique, branded look. Appshot supports automatic detection, multiple formats, and intelligent scaling.
+
+#### Background Locations
+
+Backgrounds are searched in priority order:
+
+1. **Device-specific**: `screenshots/<device>/background.png`
+2. **Global**: `screenshots/background.png`  
+3. **Custom**: Path specified via config or CLI
+
+#### Background Commands
+
+```bash
+# Set background for a device
+appshot backgrounds set iphone ./backgrounds/sunset.jpg
+
+# Set global background for all devices
+appshot backgrounds set --global ./backgrounds/brand-bg.png
+
+# Validate dimensions against App Store specs
+appshot backgrounds validate
+
+# List all configured backgrounds
+appshot backgrounds list
+
+# Clear background configuration
+appshot backgrounds clear iphone
+```
+
+#### Build Options
+
+```bash
+# Auto-detect background.png in device folders
+appshot build --auto-background
+
+# Use specific background image
+appshot build --background ./assets/custom-bg.png
+
+# Set background fit mode
+appshot build --background-fit cover
+
+# Disable backgrounds (transparent)
+appshot build --no-background
+```
+
+#### Fit Modes
+
+- **`cover`** - Scale to cover entire area (may crop)
+- **`contain`** - Scale to fit within area (may add letterbox bars)
+- **`fill`** - Stretch to exact dimensions (may distort)
+- **`scale-down`** - Only scale down if larger, never scale up
+
+#### Creating Backgrounds with ImageMagick
+
+ImageMagick is a powerful CLI tool for creating custom backgrounds:
+
+```bash
+# Solid color background
+magick -size 1290x2796 canvas:navy background.png
+
+# Gradient background
+magick -size 1290x2796 gradient:blue-purple background.png
+
+# Radial gradient
+magick -size 1290x2796 radial-gradient:white-darkblue background.png
+
+# Plasma fractal pattern
+magick -size 1290x2796 plasma:fractal background.png
+
+# Blurred noise texture
+magick -size 1290x2796 xc: +noise Random -blur 0x10 background.png
+
+# Tiled pattern
+magick -size 100x100 pattern:checkerboard -scale 1290x2796 background.png
+
+# Multi-point color interpolation
+magick -size 1290x2796 xc: -sparse-color barycentric \
+  '0,0 skyblue 1290,0 white 645,2796 lightblue' background.png
+```
+
+#### Configuration
+
+```json
+{
+  "background": {
+    "mode": "image",
+    "image": "./backgrounds/global.png",
+    "fit": "cover"
+  },
+  "devices": {
+    "iphone": {
+      "background": {
+        "image": "./backgrounds/iphone.png",
+        "fit": "contain"
+      }
+    }
+  }
+}
+```
+
+#### Mixed Configurations
+
+You can mix backgrounds and gradients across devices:
+
+- iPhone uses a custom background image
+- iPad falls back to gradient
+- Mac uses a different background
+- Watch uses the global background
+
+This flexibility allows you to optimize each device's appearance independently.
+
+#### Dimension Validation
+
+Appshot validates background dimensions and warns about:
+
+- Images smaller than target resolution (will be upscaled)
+- Aspect ratio mismatches (may cause cropping/distortion)
+- Large file sizes (>10MB triggers optimization suggestion)
+
+Use `appshot backgrounds validate` to check all backgrounds before building.
 
 ### Font System
 
@@ -2044,7 +2167,7 @@ For security vulnerabilities, please see [SECURITY.md](SECURITY.md).
 ### NPM Package
 
 - 📦 [appshot-cli on NPM](https://www.npmjs.com/package/appshot-cli)
-- 🔄 Latest version: 0.8.5
+- 🔄 Latest version: 0.8.6
 
 ---
 

@@ -12,6 +12,7 @@ import presetsCmd from './commands/presets.js';
 import validateCmd from './commands/validate.js';
 import styleCmd from './commands/style.js';
 import gradientsCmd from './commands/gradients.js';
+import backgroundsCmd from './commands/backgrounds.js';
 import fontsCmd from './commands/fonts.js';
 import migrateCmd from './commands/migrate.js';
 import { createCleanCommand } from './commands/clean.js';
@@ -25,12 +26,12 @@ const program = new Command();
 
 program
   .name('appshot')
-  .description(`Generate App Store–ready screenshots with frames, gradients, and captions.
+  .description(`Generate App Store–ready screenshots with frames, backgrounds, and captions.
 
 ${pc.bold('Features:')}
   • Auto-detects portrait/landscape orientation
   • 8 embedded font families with italic & bold variants  
-  • 24+ gradient presets with visual preview
+  • Custom background images or 24+ gradient presets
   • AI-powered translation to 25+ languages
   • Smart caption wrapping and positioning
   • All official App Store resolutions
@@ -46,6 +47,7 @@ ${pc.bold('Quick Start:')}
 ${pc.bold('Common Workflows:')}
   $ appshot fonts --set "Poppins Italic"     # Set italic font
   $ appshot gradients select                  # Pick gradient
+  $ appshot backgrounds set iphone bg.jpg     # Set background image
   $ appshot frame ./screenshots --recursive   # Batch frame images
   $ appshot build --preset iphone-6-9,ipad-13 # App Store presets
   $ appshot localize --langs es,fr,de        # Batch translate${platform() === 'darwin' ? `
@@ -53,7 +55,7 @@ ${pc.bold('Common Workflows:')}
   $ appshot watch start --process             # Auto-process new screenshots` : ''}
 
 ${pc.dim('Docs: https://github.com/chrisvanbuskirk/appshot')}`)
-  .version('0.8.5')
+  .version('0.8.6')
   .addHelpText('after', `\n${pc.bold('Environment Variables:')}
   OPENAI_API_KEY              API key for translation features
   APPSHOT_DISABLE_FONT_SCAN   Skip system font detection (CI optimization)
@@ -69,6 +71,7 @@ program.addCommand(initCmd());
 program.addCommand(captionCmd());
 program.addCommand(styleCmd());
 program.addCommand(gradientsCmd());
+program.addCommand(backgroundsCmd());
 program.addCommand(fontsCmd());
 program.addCommand(localizeCmd());
 program.addCommand(buildCmd());
