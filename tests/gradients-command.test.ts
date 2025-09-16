@@ -13,11 +13,13 @@ describe('gradients command', () => {
     // Create temp directory
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'appshot-test-'));
     originalCwd = process.cwd();
-    process.chdir(tempDir);
 
-    // Create .appshot directory with config
-    await fs.mkdir('.appshot', { recursive: true });
-    await fs.writeFile('.appshot/config.json', JSON.stringify({
+    // Mock process.cwd to return our temp directory
+    vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
+
+    // Create .appshot directory with config using absolute path
+    await fs.mkdir(path.join(tempDir, '.appshot'), { recursive: true });
+    await fs.writeFile(path.join(tempDir, '.appshot', 'config.json'), JSON.stringify({
       output: './final',
       frames: './frames',
       gradient: {
@@ -38,7 +40,7 @@ describe('gradients command', () => {
   });
 
   afterEach(async () => {
-    process.chdir(originalCwd);
+    vi.restoreAllMocks();
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
@@ -50,7 +52,7 @@ describe('gradients command', () => {
       await cmd.parseAsync(['node', 'appshot', '--apply', 'ocean']);
 
       // Read updated config
-      const configContent = await fs.readFile('.appshot/config.json', 'utf-8');
+      const configContent = await fs.readFile(path.join(tempDir, '.appshot/config.json'), 'utf-8');
       const config = JSON.parse(configContent);
 
       expect(config.gradient.colors).toEqual(['#0077BE', '#33CCCC']);

@@ -42,6 +42,9 @@ junit.xml
 examples/*/final/
 examples/*/frames/*.png
 
+# Planning documents
+plans/
+
 # Temporary files
 tmp/
 temp/

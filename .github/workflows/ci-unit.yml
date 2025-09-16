@@ -37,8 +37,8 @@ jobs:
       - name: Build TypeScript
         run: npm run build
       
-      - name: Run unit tests
-        run: npm run test:unit
+      - name: Run unit tests (fork pool)
+        run: npm run test:unit -- --pool forks
         env:
           CI: true
       

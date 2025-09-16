@@ -535,3 +535,14 @@ appshot build
 - **NPM Package**: https://www.npmjs.com/package/appshot-cli
 - **GitHub Repository**: https://github.com/chrisvanbuskirk/appshot
 - **Documentation**: https://github.com/chrisvanbuskirk/appshot#readme
+## [0.9.0] - 2025-09-09
+
+### ⚠ Behavior Notice
+- Refined caption placement logic. Results may differ from 0.8.x in edge cases:
+  - Overlay captions anchor to the bottom of their outer box (padding/border included). Explicit `0` values are respected for bottom spacing.
+  - Above/Below captions enforce a small optical gap from the device and remain fully on‑canvas. When device + caption cannot both fit, the engine adapts placement while preserving order.
+
+### ✨ Additions & Fixes
+- Overlay: bottom anchoring uses full box metrics (text + padding + border).
+- Watch: improved below placement around bands; safer caption/device ordering.
+- Template applier: template `caption.fontsize` now takes effect unless a device override sets `captionSize`; zeros respected with `??` fallbacks.

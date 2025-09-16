@@ -9,13 +9,17 @@ import type { AppshotConfig } from '../src/types.js';
 describe('backgrounds command', () => {
   let tempDir: string;
   let configPath: string;
+  let originalCwd: string;
 
   beforeEach(async () => {
+    // Save original working directory
+    originalCwd = process.cwd();
+
     // Create temp directory
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'appshot-cmd-test-'));
-    
-    // Set working directory
-    process.chdir(tempDir);
+
+    // Mock process.cwd to return our temp directory
+    vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
     
     // Create basic appshot structure
     await fs.mkdir(path.join(tempDir, '.appshot'), { recursive: true });
@@ -55,9 +59,9 @@ describe('backgrounds command', () => {
   });
 
   afterEach(async () => {
-    // Reset working directory
-    process.chdir('/');
-    
+    // Restore mocks
+    vi.restoreAllMocks();
+
     try {
       await fs.rm(tempDir, { recursive: true });
     } catch {

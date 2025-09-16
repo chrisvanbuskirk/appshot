@@ -1,6 +1,6 @@
 {
   "name": "appshot-cli",
-  "version": "0.8.7",
+  "version": "0.9.0",
   "description": "Generate App Store–ready screenshots with frames, gradients, and captions",
   "bin": {
     "appshot": "bin/appshot.js"
@@ -18,7 +18,8 @@
     "test:visual": "vitest run tests/visual",
     "prepare": "npm run build",
     "clean": "rm -rf final/",
-    "clean:all": "rm -rf final/ dist/ .appshot/"
+    "clean:all": "rm -rf final/ dist/ .appshot/",
+    "samples": "bash template-samples/scripts/generate-all.sh"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.8.3",

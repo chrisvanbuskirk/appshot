@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appshot — Template Gallery</title>
+    <style>
+        :root {
+            --bg-start: #0f1221;
+            --bg-end: #161a2b;
+            --card: #0f1221;
+            --text: #e6e8ee;
+            --muted: #8e99b3;
+            --accent: #00ff88;
+            --accent-2: #59f5ff;
+            --border: #1e243b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: var(--text);
+            background: radial-gradient(1100px 700px at 10% 0%, #1b2140 0%, var(--bg-end) 40%), linear-gradient(180deg, var(--bg-start), var(--bg-end));
+            min-height: 100vh;
+            padding: 32px 20px 64px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: center; margin-bottom: 36px; }
+        .hero-title { font-size: 42px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 10px; }
+        .hero-sub { color: var(--muted); font-size: 18px; line-height: 1.6; }
+        .hero-accent { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .hero-cta { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+        .btn { border: 1px solid var(--border); background: #0f142b; color: var(--text); padding: 10px 14px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .btn.primary { background: linear-gradient(90deg, #1dd56a, #20d2e2); color: #041018; border: none; }
+
+        .ascii { background: #0b0f24; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; color: #8fb3ff; text-shadow: 0 0 10px rgba(79,145,255,0.35); overflow: auto; }
+        .ascii pre { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace; font-size: 12px; line-height: 1.2; }
+        
+        .templates-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 48px; }
+        
+        .template-card { background: linear-gradient(180deg, #0f142b, #0b0f24); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; transition: transform .25s ease, box-shadow .25s ease; box-shadow: 0 10px 28px rgba(0,0,0,0.25); }
+        
+        .template-card:hover { transform: translateY(-3px); box-shadow: 0 16px 42px rgba(0,0,0,0.35); }
+        
+        .template-image { width: 100%; height: auto; object-fit: contain; background: #0a0e20; border-bottom: 1px solid var(--border); }
+        
+        .template-info { padding: 18px; }
+        
+        .template-name { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+        
+        .template-description { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+        
+        .template-features { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        
+        .feature-tag { display: inline-block; padding: 4px 10px; background: #0e1737; color: #9ab0de; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; font-weight: 600; }
+        
+        .template-command { background: #0b0f24; border: 1px solid var(--border); color: var(--accent); padding: 10px 12px; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; display: flex; align-items: center; justify-content: space-between; }
+        
+        .copy-button { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: background 0.2s; }
+        .copy-button:hover { background: rgba(255,255,255,0.08); }
+        
+        .quickstart-section { background: linear-gradient(180deg, #0f142b, #0b0f24); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 28px; box-shadow: 0 10px 28px rgba(0,0,0,0.25); }
+        
+        .quickstart-title { font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 16px; }
+        
+        .quickstart-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+        
+        .step { padding: 16px; background: #0e1533; border: 1px solid var(--border); border-radius: 12px; }
+        
+        .step-number { display: inline-block; width: 26px; height: 26px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #041018; border-radius: 50%; text-align: center; line-height: 26px; font-weight: 800; margin-bottom: 8px; }
+        
+        .step-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+        
+        .step-description { color: var(--muted); line-height: 1.6; }
+        
+        .code { background: #0b0f24; border: 1px solid var(--border); padding: 2px 6px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; color: var(--accent); }
+        
+        /* Device showcase section */
+        .device-showcase { background: linear-gradient(180deg, #0f142b, #0b0f24); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 28px; box-shadow: 0 10px 28px rgba(0,0,0,0.25); }
+        
+        .device-showcase-title { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+        
+        .device-showcase-subtitle { font-size: 14px; color: var(--muted); margin-bottom: 18px; }
+        
+        .device-tabs { display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+        
+        .device-tab { padding: 10px 14px; background: #0e1533; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; cursor: pointer; position: relative; transition: color 0.2s, transform .1s; }
+        
+        .device-tab:hover { color: var(--text); transform: translateY(-1px); }
+        
+        .device-tab.active { color: #041018; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border: none; }
+        
+        .device-tab.active::after { display: none; }
+        
+        .device-content {
+            display: none;
+        }
+        
+        .device-content.active {
+            display: block;
+        }
+        
+        .device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+        
+        .device-sample { background: #0a0e20; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: transform .15s; }
+        
+        .device-sample:hover {
+            transform: scale(1.02);
+        }
+        
+        .device-sample img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        .device-sample-label { padding: 10px; text-align: center; font-weight: 700; color: var(--text); }
+        
+        /* Device specifications table */
+        .device-specs { background: #0e1533; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-top: 16px; }
+        
+        .device-specs-title { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+        
+        .specs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        
+        .spec-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .spec-label { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+        
+        .spec-value { font-size: 14px; font-weight: 700; }
+        
+        /* How templates adapt section */
+        .adaptation-section { background: linear-gradient(180deg, #0f142b, #0b0f24); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 28px; box-shadow: 0 10px 28px rgba(0,0,0,0.25); }
+        
+        .adaptation-title { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+        
+        .adaptation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        
+        .adaptation-card { background: #0e1533; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+        
+        .adaptation-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        
+        .adaptation-device { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+        
+        .adaptation-details { font-size: 14px; color: var(--muted); line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <div>
+                <div class="hero-title">Beautiful App Store screenshots, <span class="hero-accent">in minutes</span></div>
+                <div class="hero-sub">Appshot composes device frames, captions, and gradients with smart defaults and tweakable templates.</div>
+                <div class="hero-cta">
+                    <button class="btn primary" onclick="copyCommand('appshot quickstart')">Copy: appshot quickstart</button>
+                    <button class="btn" onclick="copyCommand('appshot template modern && appshot build')">Copy: template + build</button>
+                </div>
+            </div>
+            <div class="ascii">
+                <pre>
+     _                       _           _   
+    / \   _ __  _ __  ___| |__   ___ | |_ 
+   / _ \ | '_ \| '_ \/ __| '_ \ / _ \| __|
+  / ___ \| |_) | |_) \__ \ | | | (_) | |_ 
+ /_/   \_\ .__/| .__/|___/_| |_|\___/ \__|
+         |_|   |_|                         
+                </pre>
+            </div>
+        </div>
+        
+        <div class="quickstart-section">
+            <h2 class="quickstart-title">🚀 Quick Start</h2>
+            <div class="quickstart-steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <h3 class="step-title">Install Appshot</h3>
+                    <p class="step-description">Install globally via npm:<br><code class="code">npm install -g appshot-cli</code></p>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <h3 class="step-title">Quick Start</h3>
+                    <p class="step-description">Interactive setup with templates:<br><code class="code">appshot quickstart</code></p>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <h3 class="step-title">Add Screenshots</h3>
+                    <p class="step-description">Copy your screenshots to:<br><code class="code">screenshots/iphone/</code></p>
+                </div>
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <h3 class="step-title">Build</h3>
+                    <p class="step-description">Generate final screenshots:<br><code class="code">appshot build</code></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- New Device Showcase Section -->
+        <div class="device-showcase">
+            <h2 class="device-showcase-title">📱 Multi-Device Support</h2>
+            <p class="device-showcase-subtitle">Templates automatically adapt to different Apple devices with intelligent optimizations</p>
+            
+            <div class="device-tabs">
+                <button class="device-tab active" onclick="showDevice('iphone')">📱 iPhone</button>
+                <button class="device-tab" onclick="showDevice('ipad')">📱 iPad</button>
+                <button class="device-tab" onclick="showDevice('watch')">⌚ Apple Watch</button>
+                <button class="device-tab" onclick="showDevice('mac')">💻 Mac</button>
+            </div>
+            
+            <div id="iphone-content" class="device-content active">
+                <div class="device-grid">
+                    <div class="device-sample"><img src="iphone/modern-iphone.png" alt="Modern iPhone"><div class="device-sample-label">Modern</div></div>
+                    <div class="device-sample"><img src="iphone/minimal-iphone.png" alt="Minimal iPhone"><div class="device-sample-label">Minimal</div></div>
+                    <div class="device-sample"><img src="iphone/bold-iphone.png" alt="Bold iPhone"><div class="device-sample-label">Bold</div></div>
+                    <div class="device-sample"><img src="iphone/elegant-iphone.png" alt="Elegant iPhone"><div class="device-sample-label">Elegant</div></div>
+                    <div class="device-sample"><img src="iphone/showcase-iphone.png" alt="Showcase iPhone"><div class="device-sample-label">Showcase</div></div>
+                    <div class="device-sample"><img src="iphone/playful-iphone.png" alt="Playful iPhone"><div class="device-sample-label">Playful</div></div>
+                    <div class="device-sample"><img src="iphone/corporate-iphone.png" alt="Corporate iPhone"><div class="device-sample-label">Corporate</div></div>
+                    <div class="device-sample"><img src="iphone/nerdy-iphone.png" alt="Nerdy iPhone"><div class="device-sample-label">Nerdy OSS</div></div>
+                </div>
+                <div class="device-specs">
+                    <h3 class="device-specs-title">iPhone Specifications</h3>
+                    <div class="specs-grid">
+                        <div class="spec-item">
+                            <span class="spec-label">Resolution</span>
+                            <span class="spec-value">1290x2796</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Default Scale</span>
+                            <span class="spec-value">85%</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Caption Size</span>
+                            <span class="spec-value">64px</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Position</span>
+                            <span class="spec-value">Center</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="ipad-content" class="device-content">
+                <div class="device-grid">
+                    <div class="device-sample"><img src="ipad/modern-ipad.png" alt="Modern iPad"><div class="device-sample-label">Modern</div></div>
+                    <div class="device-sample"><img src="ipad/minimal-ipad.png" alt="Minimal iPad"><div class="device-sample-label">Minimal</div></div>
+                    <div class="device-sample"><img src="ipad/bold-ipad.png" alt="Bold iPad"><div class="device-sample-label">Bold</div></div>
+                    <div class="device-sample"><img src="ipad/elegant-ipad.png" alt="Elegant iPad"><div class="device-sample-label">Elegant</div></div>
+                    <div class="device-sample"><img src="ipad/showcase-ipad.png" alt="Showcase iPad"><div class="device-sample-label">Showcase</div></div>
+                    <div class="device-sample"><img src="ipad/playful-ipad.png" alt="Playful iPad"><div class="device-sample-label">Playful</div></div>
+                    <div class="device-sample"><img src="ipad/corporate-ipad.png" alt="Corporate iPad"><div class="device-sample-label">Corporate</div></div>
+                    <div class="device-sample"><img src="ipad/nerdy-ipad.png" alt="Nerdy iPad"><div class="device-sample-label">Nerdy OSS</div></div>
+                </div>
+                <div class="device-specs">
+                    <h3 class="device-specs-title">iPad Specifications</h3>
+                    <div class="specs-grid">
+                        <div class="spec-item">
+                            <span class="spec-label">Resolution</span>
+                            <span class="spec-value">2048x2732</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Optimized Scale</span>
+                            <span class="spec-value">75%</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Caption Size</span>
+                            <span class="spec-value">64px</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Position</span>
+                            <span class="spec-value">Lower (60%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="watch-content" class="device-content">
+                <div class="device-grid">
+                    <div class="device-sample"><img src="watch/modern-watch.png" alt="Modern Watch"><div class="device-sample-label">Modern</div></div>
+                    <div class="device-sample"><img src="watch/minimal-watch.png" alt="Minimal Watch"><div class="device-sample-label">Minimal</div></div>
+                    <div class="device-sample"><img src="watch/bold-watch.png" alt="Bold Watch"><div class="device-sample-label">Bold</div></div>
+                    <div class="device-sample"><img src="watch/elegant-watch.png" alt="Elegant Watch"><div class="device-sample-label">Elegant</div></div>
+                    <div class="device-sample"><img src="watch/showcase-watch.png" alt="Showcase Watch"><div class="device-sample-label">Showcase</div></div>
+                    <div class="device-sample"><img src="watch/playful-watch.png" alt="Playful Watch"><div class="device-sample-label">Playful</div></div>
+                    <div class="device-sample"><img src="watch/corporate-watch.png" alt="Corporate Watch"><div class="device-sample-label">Corporate</div></div>
+                    <div class="device-sample"><img src="watch/nerdy-watch.png" alt="Nerdy Watch"><div class="device-sample-label">Nerdy OSS</div></div>
+                </div>
+                <div class="device-specs">
+                    <h3 class="device-specs-title">Apple Watch Specifications</h3>
+                    <div class="specs-grid">
+                        <div class="spec-item">
+                            <span class="spec-label">Resolution</span>
+                            <span class="spec-value">410x502</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Optimized Scale</span>
+                            <span class="spec-value">110-130%</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Caption Size</span>
+                            <span class="spec-value">32-36px</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Special</span>
+                            <span class="spec-value">2-line wrap</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="mac-content" class="device-content">
+                <div class="device-grid">
+                    <div class="device-sample"><img src="mac/modern-mac.png" alt="Modern Mac"><div class="device-sample-label">Modern</div></div>
+                    <div class="device-sample"><img src="mac/minimal-mac.png" alt="Minimal Mac"><div class="device-sample-label">Minimal</div></div>
+                    <div class="device-sample"><img src="mac/bold-mac.png" alt="Bold Mac"><div class="device-sample-label">Bold</div></div>
+                    <div class="device-sample"><img src="mac/elegant-mac.png" alt="Elegant Mac"><div class="device-sample-label">Elegant</div></div>
+                    <div class="device-sample"><img src="mac/showcase-mac.png" alt="Showcase Mac"><div class="device-sample-label">Showcase</div></div>
+                    <div class="device-sample"><img src="mac/playful-mac.png" alt="Playful Mac"><div class="device-sample-label">Playful</div></div>
+                    <div class="device-sample"><img src="mac/corporate-mac.png" alt="Corporate Mac"><div class="device-sample-label">Corporate</div></div>
+                    <div class="device-sample"><img src="mac/nerdy-mac.png" alt="Nerdy Mac"><div class="device-sample-label">Nerdy OSS</div></div>
+                </div>
+                <div class="device-specs">
+                    <h3 class="device-specs-title">Mac Specifications</h3>
+                    <div class="specs-grid">
+                        <div class="spec-item">
+                            <span class="spec-label">Resolution</span>
+                            <span class="spec-value">2880x1800</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Optimized Scale</span>
+                            <span class="spec-value">90-95%</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Caption Size</span>
+                            <span class="spec-value">54-64px</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Aspect</span>
+                            <span class="spec-value">16:10</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- How Templates Adapt Section -->
+        <div class="adaptation-section">
+            <h2 class="adaptation-title">🎯 How Templates Adapt to Each Device</h2>
+            <div class="adaptation-grid">
+                <div class="adaptation-card">
+                    <div class="adaptation-icon">📱</div>
+                    <div class="adaptation-device">iPhone</div>
+                    <div class="adaptation-details">
+                        Standard positioning with 85% scale. Templates use full-height frames with centered positioning for maximum impact.
+                    </div>
+                </div>
+                <div class="adaptation-card">
+                    <div class="adaptation-icon">📱</div>
+                    <div class="adaptation-device">iPad</div>
+                    <div class="adaptation-details">
+                        Automatically scales to 75% with lower positioning (60%) to balance the larger screen. Captions remain readable at 64px.
+                    </div>
+                </div>
+                <div class="adaptation-card">
+                    <div class="adaptation-icon">⌚</div>
+                    <div class="adaptation-device">Apple Watch</div>
+                    <div class="adaptation-details">
+                        Larger device scale (110-130%) for visibility. Captions auto-wrap to 2 lines with smaller font size (32-36px).
+                    </div>
+                </div>
+                <div class="adaptation-card">
+                    <div class="adaptation-icon">💻</div>
+                    <div class="adaptation-device">Mac</div>
+                    <div class="adaptation-details">
+                        Professional scaling at 90-95% with flexible caption positioning. Optimized for 16:10 aspect ratio displays.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="templates-grid">
+            <div class="template-card">
+                <img src="gallery/modern-sample.png" alt="Modern Template" class="template-image">
+                <div class="template-info">
+                    <h2 class="template-name">Modern</h2>
+                    <p class="template-description">Eye-catching vibrant gradient with floating device and clean captions. Perfect for most apps.</p>
+                    <div class="template-features">
+                        <span class="feature-tag">Vibrant Gradient</span>
+                        <span class="feature-tag">85% Scale</span>
+                        <span class="feature-tag">Centered</span>
+                        <span class="feature-tag">All Devices</span>
+                    </div>
+                    <div class="template-command">
+                        <span>appshot template modern</span>
+                        <button class="copy-button" onclick="copyCommand('appshot template modern')">Copy</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="template-card">
+                <img src="gallery/minimal-sample.png" alt="Minimal Template" class="template-image">
+                <div class="template-info">
+                    <h2 class="template-name">Minimal</h2>
+                    <p class="template-description">Soft pastel background with elegant typography. Clean and simple design.</p>
+                    <div class="template-features">
+                        <span class="feature-tag">Pastel Colors</span>
+                        <span class="feature-tag">75% Scale</span>
+                        <span class="feature-tag">Lower Position</span>
+                        <span class="feature-tag">All Devices</span>
+                    </div>
+                    <div class="template-command">
+                        <span>appshot template minimal</span>
+                        <button class="copy-button" onclick="copyCommand('appshot template minimal')">Copy</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="template-card">
+                <img src="gallery/bold-sample.png" alt="Bold Template" class="template-image">
+                <div class="template-info">
+                    <h2 class="template-name">Bold</h2>
+                    <p class="template-description">Dark dramatic gradient with large device and overlay captions. Make a statement.</p>
+                    <div class="template-features">
+                        <span class="feature-tag">Dark Theme</span>
+                        <span class="feature-tag">100% Scale</span>
+                        <span class="feature-tag">Overlay Caption</span>
+                        <span class="feature-tag">All Devices</span>
+                    </div>
+                    <div class="template-command">
+                        <span>appshot template bold</span>
+                        <button class="copy-button" onclick="copyCommand('appshot template bold')">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="template-card">
+                <img src="gallery/nerdy-sample.png" alt="Nerdy OSS Template" class="template-image">
+                <div class="template-info">
+                    <h2 class="template-name">Nerdy OSS</h2>
+                    <p class="template-description">Grid-lined midnight blue with JetBrains Mono typography. Built for terminal lovers.</p>
+                    <div class="template-features">
+                        <span class="feature-tag">JetBrains Mono</span>
+                        <span class="feature-tag">Overlay Caption</span>
+                        <span class="feature-tag">Custom Background</span>
+                        <span class="feature-tag">All Devices</span>
+                    </div>
+                    <div class="template-command">
+                        <span>appshot template nerdy</span>
+                        <button class="copy-button" onclick="copyCommand('appshot template nerdy')">Copy</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="template-card">
+                <img src="gallery/elegant-sample.png" alt="Elegant Template" class="template-image">
+                <div class="template-info">
+                    <h2 class="template-name">Elegant</h2>
+                    <p class="template-description">Sophisticated monochrome design with floating device. Professional and refined.</p>
+                    <div class="template-features">
+                        <span class="feature-tag">Monochrome</span>
+                        <span class="feature-tag">80% Scale</span>
+                        <span class="feature-tag">Bottom Caption</span>
+                        <span class="feature-tag">Mac Optimized</span>
+                    </div>
+                    <div class="template-command">
+                        <span>appshot template elegant</span>
+                        <button class="copy-button" onclick="copyCommand('appshot template elegant')">Copy</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="template-card">
+                <img src="gallery/showcase-sample.png" alt="Showcase Template" class="template-image">
+                <div class="template-info">
+                    <h2 class="template-name">Showcase</h2>
+                    <p class="template-description">Features custom backgrounds with glass effects. Auto-detects background.png files.</p>
+                    <div class="template-features">
+                        <span class="feature-tag">Auto Background</span>
+                        <span class="feature-tag">88% Scale</span>
+                        <span class="feature-tag">Glass Effect</span>
+                        <span class="feature-tag">All Devices</span>
+                    </div>
+                    <div class="template-command">
+                        <span>appshot template showcase</span>
+                        <button class="copy-button" onclick="copyCommand('appshot template showcase')">Copy</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="template-card">
+                <img src="gallery/playful-sample.png" alt="Playful Template" class="template-image">
+                <div class="template-info">
+                    <h2 class="template-name">Playful</h2>
+                    <p class="template-description">Bright, fun gradients perfect for games and entertainment apps. Full of energy.</p>
+                    <div class="template-features">
+                        <span class="feature-tag">Bright Colors</span>
+                        <span class="feature-tag">95% Scale</span>
+                        <span class="feature-tag">Fun Style</span>
+                        <span class="feature-tag">Watch Ready</span>
+                    </div>
+                    <div class="template-command">
+                        <span>appshot template playful</span>
+                        <button class="copy-button" onclick="copyCommand('appshot template playful')">Copy</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="template-card">
+                <img src="gallery/corporate-sample.png" alt="Corporate Template" class="template-image">
+                <div class="template-info">
+                    <h2 class="template-name">Corporate</h2>
+                    <p class="template-description">Clean, professional look for business and productivity apps. Trustworthy design.</p>
+                    <div class="template-features">
+                        <span class="feature-tag">Professional</span>
+                        <span class="feature-tag">85% Scale</span>
+                        <span class="feature-tag">Left Aligned</span>
+                        <span class="feature-tag">Mac Ready</span>
+                    </div>
+                    <div class="template-command">
+                        <span>appshot template corporate</span>
+                        <button class="copy-button" onclick="copyCommand('appshot template corporate')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function copyCommand(command) {
+            navigator.clipboard.writeText(command).then(() => {
+                // Show feedback
+                event.target.textContent = 'Copied!';
+                setTimeout(() => {
+                    event.target.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+        
+        function showDevice(device) {
+            // Hide all device contents
+            document.querySelectorAll('.device-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.device-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected device content
+            document.getElementById(device + '-content').classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

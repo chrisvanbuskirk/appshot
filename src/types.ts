@@ -9,12 +9,16 @@ export interface CaptionBoxConfig {
   lineHeight?: number;        // Line height multiplier (default: 1.4)
   minHeight?: number;         // Minimum caption area height
   maxHeight?: number;         // Maximum caption area height
+  verticalAlign?: 'top' | 'center'; // Vertical alignment of text inside caption box (default: center)
+  marginTop?: number;         // Outer margin above the caption box (px, default: 0)
+  marginBottom?: number;      // Outer margin below device/caption area (px, default: 0)
 }
 
 export interface CaptionBackgroundConfig {
   color?: string;             // Hex color for background (e.g., "#000000")
   opacity?: number;           // Background opacity (0-1, default: 0.8)
   padding?: number;           // Padding around text within background (default: 20)
+  sideMargin?: number;        // Side margin from canvas edges for caption box (default: 30)
 }
 
 export interface CaptionBorderConfig {
@@ -59,6 +63,17 @@ export interface DeviceConfig extends DeviceStyleConfig {
     image?: string;         // Path to background image
     fit?: 'cover' | 'contain' | 'fill' | 'scale-down';
     warnOnMismatch?: boolean;
+  };
+  captionBackground?: {     // Device-specific caption background override
+    color?: string;
+    opacity?: number;
+    padding?: number;
+    sideMargin?: number;
+  };
+  captionBorder?: {         // Device-specific caption border override
+    color?: string;
+    width?: number;
+    radius?: number;
   };
 }
 

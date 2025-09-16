@@ -444,6 +444,19 @@ ${pc.bold('Output:')}
               };
             }
 
+            // Side margin (applies to caption box width)
+            const sideMarginAnswer = await inquirer.prompt([{
+              type: 'number',
+              name: 'sideMargin',
+              message: 'Caption side margin (px from edges, default 30):',
+              default: (config.caption.background && (config.caption.background as any).sideMargin) || 30,
+              validate: (v) => (v !== undefined && v >= 0 && v <= 100) || 'Enter a value between 0 and 100'
+            }]);
+            config.caption.background = {
+              ...(config.caption.background || {}),
+              sideMargin: sideMarginAnswer.sideMargin
+            };
+
             // Border configuration
             const borderAnswer = await inquirer.prompt([{
               type: 'confirm',
@@ -452,6 +465,7 @@ ${pc.bold('Output:')}
               default: false
             }]);
 
+            let chosenRadius: number | undefined;
             if (borderAnswer.addBorder) {
               const borderColorAnswer = await inquirer.prompt([{
                 type: 'list',
@@ -502,12 +516,51 @@ ${pc.bold('Output:')}
                 ],
                 default: 12
               }]);
+              chosenRadius = borderRadiusAnswer.radius;
 
               config.caption.border = {
                 color: borderColor,
                 width: borderWidthAnswer.width,
                 radius: borderRadiusAnswer.radius
               };
+            }
+
+            // Even if border is not enabled, allow setting corner radius for background rounding
+            if (!borderAnswer.addBorder) {
+              const radiusOnlyAnswer = await inquirer.prompt([{
+                type: 'list',
+                name: 'radius',
+                message: 'Caption corner radius (applies to background even without border):',
+                choices: [
+                  { name: 'Default (12px)', value: 12 },
+                  { name: 'Square (0)', value: 0 },
+                  { name: 'Slightly rounded (8px)', value: 8 },
+                  { name: 'Very rounded (20px)', value: 20 },
+                  { name: 'Custom...', value: 'custom' }
+                ],
+                default: 12
+              }]);
+
+              if (radiusOnlyAnswer.radius === 'custom') {
+                const customRadius = await inquirer.prompt([{
+                  type: 'number',
+                  name: 'value',
+                  message: 'Enter radius in pixels (0-30):',
+                  default: 12,
+                  validate: (v) => (v !== undefined && v >= 0 && v <= 30) || 'Enter a value between 0 and 30'
+                }]);
+                chosenRadius = customRadius.value;
+              } else {
+                chosenRadius = radiusOnlyAnswer.radius as number;
+              }
+
+              // Store radius in border config even without color/width so renderer can use it for background
+              if (typeof chosenRadius === 'number') {
+                config.caption.border = {
+                  ...(config.caption.border || {}),
+                  radius: chosenRadius
+                };
+              }
             }
           }
 
@@ -531,6 +584,19 @@ ${pc.bold('Output:')}
             }]);
             captionBox.autoSize = autoSizeAnswer.autoSize;
 
+            // Vertical alignment
+            const valignAnswer = await inquirer.prompt([{
+              type: 'list',
+              name: 'verticalAlign',
+              message: 'Vertical alignment within caption area:',
+              choices: [
+                { name: 'Center', value: 'center' },
+                { name: 'Top', value: 'top' }
+              ],
+              default: (config.caption.box && (config.caption.box as any).verticalAlign) || 'center'
+            }]);
+            captionBox.verticalAlign = valignAnswer.verticalAlign;
+
             // Max lines
             const maxLinesAnswer = await inquirer.prompt([{
               type: 'number',
@@ -540,6 +606,27 @@ ${pc.bold('Output:')}
               validate: (value) => (value !== undefined && value >= 1 && value <= 10) || 'Please enter 1-10 lines'
             }]);
             captionBox.maxLines = maxLinesAnswer.maxLines;
+
+            // Min/Max height (only applies when auto-size is OFF)
+            if (!autoSizeAnswer.autoSize) {
+              const minHeightAnswer = await inquirer.prompt([{
+                type: 'number',
+                name: 'minHeight',
+                message: 'Minimum caption height (px):',
+                default: (config.caption.box && (config.caption.box as any).minHeight) || 100,
+                validate: (v) => (v !== undefined && v >= 0 && v <= 4000) || 'Enter a value between 0 and 4000'
+              }]);
+              captionBox.minHeight = minHeightAnswer.minHeight;
+
+              const maxHeightAnswer = await inquirer.prompt([{
+                type: 'number',
+                name: 'maxHeight',
+                message: 'Maximum caption height (px):',
+                default: (config.caption.box && (config.caption.box as any).maxHeight) || 500,
+                validate: (v) => (v !== undefined && v >= 0 && v <= 8000) || 'Enter a value between 0 and 8000'
+              }]);
+              captionBox.maxHeight = maxHeightAnswer.maxHeight;
+            }
 
             // Line height
             const lineHeightAnswer = await inquirer.prompt([{
@@ -555,6 +642,25 @@ ${pc.bold('Output:')}
               default: 1.4
             }]);
             captionBox.lineHeight = lineHeightAnswer.lineHeight;
+
+            // Outer margins
+            const marginTopAnswer = await inquirer.prompt([{
+              type: 'number',
+              name: 'marginTop',
+              message: 'Outer margin above caption (px):',
+              default: (config.caption.box && (config.caption.box as any).marginTop) || 0,
+              validate: (v) => (v !== undefined && v >= 0 && v <= 400) || 'Enter a value between 0 and 400'
+            }]);
+            captionBox.marginTop = marginTopAnswer.marginTop;
+
+            const marginBottomAnswer = await inquirer.prompt([{
+              type: 'number',
+              name: 'marginBottom',
+              message: 'Outer margin below device/caption (px):',
+              default: (config.caption.box && (config.caption.box as any).marginBottom) || 0,
+              validate: (v) => (v !== undefined && v >= 0 && v <= 400) || 'Enter a value between 0 and 400'
+            }]);
+            captionBox.marginBottom = marginBottomAnswer.marginBottom;
           }
         }
 

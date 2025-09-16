@@ -338,6 +338,33 @@ Note: Device frames are bundled with appshot - users don't need a local frames d
 3. SVG rendering: Multi-line text with proper spacing
 4. Device positioning: After caption height is known
 
+**Frame Positioning System**:
+
+The `framePosition` value (0-100) is interpreted differently based on `captionPosition`:
+
+- **With `captionPosition: "above"` or `"below"`**:
+  - Position is RELATIVE to remaining space after caption
+  - Line 729: `deviceTop = topMargin + captionHeight + Math.floor(availableSpace * (framePosition / 100))`
+  - Available space = canvas minus caption minus device heights
+  - `framePosition: 0` means top of remaining space (not top of canvas)
+  - `framePosition: 100` means bottom of remaining space
+
+- **With `captionPosition: "overlay"`**:
+  - Position is ABSOLUTE to entire canvas
+  - Line 815: `deviceTop = Math.floor(availableSpace * (framePosition / 100))`
+  - Available space = full canvas minus device height
+  - `framePosition: 0` means pixel 0 (absolute top)
+  - Caption renders at bottom, independent of device position
+
+**Critical Bug Fix (Line 208)**:
+```javascript
+// WRONG: const framePosition = deviceConfig.framePosition || 'center';
+// This treats 0 as falsy and defaults to 'center'
+
+// CORRECT:
+const framePosition = deviceConfig.framePosition !== undefined ? deviceConfig.framePosition : 'center';
+```
+
 ### Text Utilities (`src/core/text-utils.ts`)
 
 **Core Functions**:
@@ -352,6 +379,9 @@ Note: Device frames are bundled with appshot - users don't need a local frames d
 3. Caption height affects device position - order matters
 4. Watch devices have special 2-line wrapping
 5. Reset must remove ALL device-specific settings
+6. **framePosition: 0 is falsy** - Must use `!== undefined` check, not `||`
+7. **framePosition is relative** - Same value produces different results with above/below vs overlay captions
+8. **marginBottom affects positioning** - Even with overlay mode, marginBottom reduces available space
 
 ## Agent Integration
 

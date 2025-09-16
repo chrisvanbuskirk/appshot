@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
@@ -6,20 +6,25 @@ import { loadConfig, loadCaptions, fileExists } from '../src/core/files.js';
 
 describe('files', () => {
   let tempDir: string;
+  let originalCwd: string;
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'appshot-test-'));
+    originalCwd = process.cwd();
+
+    // Mock process.cwd to return our temp directory
+    vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
   });
 
   afterEach(async () => {
-    // Change back to root temp dir before cleanup (Windows can't delete current directory)
-    process.chdir(os.tmpdir());
-    
+    // Restore mocks
+    vi.restoreAllMocks();
+
     // Add delay for Windows file system
     if (process.platform === 'win32') {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    
+
     try {
       await fs.rm(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     } catch (err) {
@@ -39,32 +44,19 @@ describe('files', () => {
           iphone: { input: './screenshots/iphone', resolution: '1290x2796' }
         }
       };
-      
+
       // Create .appshot directory and config.json
       const appshotDir = path.join(tempDir, '.appshot');
       await fs.mkdir(appshotDir, { recursive: true });
       const configPath = path.join(appshotDir, 'config.json');
       await fs.writeFile(configPath, JSON.stringify(config));
-      
-      // Change to tempDir for loadConfig to work
-      const originalCwd = process.cwd();
-      process.chdir(tempDir);
-      try {
-        const loaded = await loadConfig();
-        expect(loaded).toEqual(config);
-      } finally {
-        process.chdir(originalCwd);
-      }
+
+      const loaded = await loadConfig();
+      expect(loaded).toEqual(config);
     });
 
     it('should throw error when config.json not found', async () => {
-      const originalCwd = process.cwd();
-      process.chdir(tempDir);
-      try {
-        await expect(loadConfig()).rejects.toThrow('Configuration not found');
-      } finally {
-        process.chdir(originalCwd);
-      }
+      await expect(loadConfig()).rejects.toThrow('Configuration not found');
     });
 
     it('should throw error for invalid JSON', async () => {
@@ -72,14 +64,8 @@ describe('files', () => {
       await fs.mkdir(appshotDir, { recursive: true });
       const configPath = path.join(appshotDir, 'config.json');
       await fs.writeFile(configPath, 'invalid json');
-      
-      const originalCwd = process.cwd();
-      process.chdir(tempDir);
-      try {
-        await expect(loadConfig()).rejects.toThrow('Failed to load configuration');
-      } finally {
-        process.chdir(originalCwd);
-      }
+
+      await expect(loadConfig()).rejects.toThrow('Failed to load configuration');
     });
   });
 
@@ -89,46 +75,63 @@ describe('files', () => {
         'screenshot1.png': { en: 'Hello', fr: 'Bonjour' },
         'screenshot2.png': 'Simple text'
       };
-      
+
       const captionsPath = path.join(tempDir, 'captions.json');
       await fs.writeFile(captionsPath, JSON.stringify(captions));
-      
+
       const loaded = await loadCaptions(captionsPath);
       expect(loaded).toEqual(captions);
     });
 
     it('should return empty object when file not found', async () => {
-      const loaded = await loadCaptions('nonexistent.json');
+      const captionsPath = path.join(tempDir, 'nonexistent.json');
+      const loaded = await loadCaptions(captionsPath);
       expect(loaded).toEqual({});
     });
 
     it('should return empty object for invalid JSON', async () => {
-      const captionsPath = path.join(tempDir, 'captions.json');
-      await fs.writeFile(captionsPath, 'invalid json');
-      
+      const captionsPath = path.join(tempDir, 'invalid-captions.json');
+      await fs.writeFile(captionsPath, 'not json');
+
       const loaded = await loadCaptions(captionsPath);
       expect(loaded).toEqual({});
+    });
+
+    it('should handle device-specific caption path', async () => {
+      const captions = {
+        'screenshot1.png': 'iPhone caption'
+      };
+
+      const appshotDir = path.join(tempDir, '.appshot', 'captions');
+      await fs.mkdir(appshotDir, { recursive: true });
+      const captionsPath = path.join(appshotDir, 'iphone.json');
+      await fs.writeFile(captionsPath, JSON.stringify(captions));
+
+      const loaded = await loadCaptions(captionsPath);
+      expect(loaded).toEqual(captions);
     });
   });
 
   describe('fileExists', () => {
     it('should return true for existing file', async () => {
-      const testFile = path.join(tempDir, 'test.txt');
-      await fs.writeFile(testFile, 'content');
-      const exists = await fileExists(testFile);
+      const filePath = path.join(tempDir, 'exists.txt');
+      await fs.writeFile(filePath, 'content');
+
+      const exists = await fileExists(filePath);
       expect(exists).toBe(true);
     });
 
     it('should return false for non-existing file', async () => {
-      const testFile = path.join(tempDir, 'nonexistent.txt');
-      const exists = await fileExists(testFile);
+      const filePath = path.join(tempDir, 'nonexistent.txt');
+      const exists = await fileExists(filePath);
       expect(exists).toBe(false);
     });
 
     it('should return true for existing directory', async () => {
-      const testDir = path.join(tempDir, 'testdir');
-      await fs.mkdir(testDir);
-      const exists = await fileExists(testDir);
+      const dirPath = path.join(tempDir, 'testdir');
+      await fs.mkdir(dirPath);
+
+      const exists = await fileExists(dirPath);
       expect(exists).toBe(true);
     });
   });
