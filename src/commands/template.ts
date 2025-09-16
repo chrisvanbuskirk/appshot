@@ -11,6 +11,11 @@ import {
   getTemplateCaptionSuggestions,
   getTemplateCategories
 } from '../templates/registry.js';
+import {
+  validateTemplateId,
+  sanitizeCaption,
+  validateJson
+} from '../utils/validation.js';
 import type { AppshotConfig, CaptionsFile } from '../types.js';
 
 export default function templateCmd() {
@@ -66,6 +71,11 @@ ${pc.bold('Output:')}
 
         // Preview template
         if (opts.preview) {
+          if (!validateTemplateId(opts.preview)) {
+            console.error(pc.red(`Template "${opts.preview}" not found`));
+            console.log(pc.dim('Run "appshot template --list" to see available templates'));
+            process.exit(1);
+          }
           previewTemplate(opts.preview);
           return;
         }
@@ -76,10 +86,16 @@ ${pc.bold('Output:')}
         }
 
         // Validate template
-        const template = getTemplate(templateId);
-        if (!template) {
+        if (!validateTemplateId(templateId)) {
           console.error(pc.red(`Template "${templateId}" not found`));
           console.log(pc.dim('Run "appshot template --list" to see available templates'));
+          process.exit(1);
+        }
+
+        const template = getTemplate(templateId);
+        if (!template) {
+          // This shouldn't happen after validation, but keep as safety
+          console.error(pc.red(`Template "${templateId}" not found`));
           process.exit(1);
         }
 
@@ -385,6 +401,9 @@ async function addCaptions(
   await fs.mkdir(captionsDir, { recursive: true });
 
   if (singleCaption) {
+    // Sanitize the caption
+    const sanitizedCaption = sanitizeCaption(singleCaption);
+
     // Apply single caption to all devices
     if (config.devices) {
       for (const device of Object.keys(config.devices)) {
@@ -400,17 +419,17 @@ async function addCaptions(
         }
 
         // Add caption to all screenshots (we'll use a generic key)
-        captions['default'] = singleCaption;
+        captions['default'] = sanitizedCaption;
 
         await fs.writeFile(captionFile, JSON.stringify(captions, null, 2));
       }
     }
 
-    console.log(pc.dim(`Caption "${singleCaption}" added to all devices`));
+    console.log(pc.dim(`Caption "${sanitizedCaption}" added to all devices`));
   } else if (captionsJson) {
     // Parse and apply JSON captions
     try {
-      const captions = JSON.parse(captionsJson);
+      const captions = validateJson(captionsJson);
 
       if (config.devices) {
         for (const device of Object.keys(config.devices)) {

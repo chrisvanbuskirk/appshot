@@ -7,6 +7,11 @@ import {
   getTemplate,
   getTemplateCaptionSuggestions
 } from '../templates/registry.js';
+import {
+  validateTemplateId,
+  sanitizeCaption,
+  validateDeviceArray
+} from '../utils/validation.js';
 import type { AppshotConfig } from '../types.js';
 
 export default function quickstartCmd() {
@@ -72,6 +77,23 @@ ${pc.bold('Templates:')}
         let caption = opts.caption;
         let devices = ['iphone', 'ipad'];
 
+        // Validate template if provided
+        if (opts.template && !validateTemplateId(opts.template)) {
+          console.error(pc.red(`Template "${opts.template}" not found`));
+          console.log(pc.dim('Available templates: modern, minimal, bold, elegant, showcase, playful, corporate, nerdy'));
+          process.exit(1);
+        }
+
+        // Sanitize caption if provided
+        if (caption) {
+          try {
+            caption = sanitizeCaption(caption);
+          } catch (err) {
+            console.error(pc.red(`Invalid caption: ${err instanceof Error ? err.message : 'Unknown error'}`));
+            process.exit(1);
+          }
+        }
+
         if (opts.interactive !== false && (!opts.template || !opts.caption)) {
           // Interactive prompts
           const answers = await inquirer.prompt([
@@ -112,8 +134,16 @@ ${pc.bold('Templates:')}
           ]);
 
           templateId = answers.template;
-          caption = answers.caption;
+          caption = sanitizeCaption(answers.caption);
           devices = answers.devices;
+        }
+
+        // Validate devices array
+        try {
+          devices = validateDeviceArray(devices);
+        } catch (err) {
+          console.error(pc.red(`Invalid devices: ${err instanceof Error ? err.message : 'Unknown error'}`));
+          process.exit(1);
         }
 
         // Step 1: Initialize project structure
@@ -274,11 +304,14 @@ async function applyTemplate(templateId: string, devices: string[]): Promise<App
 async function setupCaptions(devices: string[], mainCaption: string, templateId: string) {
   const suggestions = getTemplateCaptionSuggestions(templateId);
 
+  // Sanitize the main caption
+  const sanitizedMainCaption = sanitizeCaption(mainCaption);
+
   // Create example captions for common screenshot names
   const exampleCaptions: Record<string, string> = {
-    'home.png': mainCaption,
-    'dashboard.png': mainCaption,
-    'main.png': mainCaption,
+    'home.png': sanitizedMainCaption,
+    'dashboard.png': sanitizedMainCaption,
+    'main.png': sanitizedMainCaption,
     'features.png': suggestions.features[0],
     'settings.png': 'Customize Everything',
     'profile.png': 'Your Personal Space',

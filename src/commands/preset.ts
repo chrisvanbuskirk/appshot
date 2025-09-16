@@ -4,6 +4,13 @@ import * as path from 'path';
 import chalk from 'chalk';
 import { templates } from '../templates/registry.js';
 import { execFileSync } from 'child_process';
+import {
+  sanitizeDevices,
+  sanitizeLanguages,
+  sanitizePath,
+  validateTemplateId,
+  sanitizeCaption
+} from '../utils/validation.js';
 
 interface PresetOptions {
   caption?: string;
@@ -12,43 +19,6 @@ interface PresetOptions {
   output?: string;
   dryRun?: boolean;
   verbose?: boolean;
-}
-
-// Security: Input validation functions
-function sanitizeDevices(devices: string): string {
-  // Only allow alphanumeric characters, commas, and hyphens
-  const sanitized = devices.replace(/[^a-zA-Z0-9,_-]/g, '');
-  // Validate each device is in allowed list
-  const validDevices = ['iphone', 'ipad', 'watch', 'mac'];
-  const deviceList = sanitized.split(',').map(d => d.trim().toLowerCase());
-  const validated = deviceList.filter(d => validDevices.includes(d));
-  if (validated.length === 0) {
-    throw new Error('No valid devices specified');
-  }
-  return validated.join(',');
-}
-
-function sanitizeLanguages(langs: string): string {
-  // Only allow language codes (2-3 letters, optional country code)
-  const sanitized = langs.replace(/[^a-zA-Z,_-]/g, '');
-  // Basic validation for language codes
-  const langList = sanitized.split(',').map(l => l.trim().toLowerCase());
-  const validated = langList.filter(l => /^[a-z]{2,3}(-[a-z]{2})?$/.test(l));
-  if (validated.length === 0) {
-    throw new Error('No valid language codes specified');
-  }
-  return validated.join(',');
-}
-
-function sanitizePath(outputPath: string): string {
-  // Remove any dangerous characters from paths
-  // Allow only alphanumeric, spaces, hyphens, underscores, dots, and forward slashes
-  return outputPath.replace(/[^a-zA-Z0-9 \-_./]/g, '');
-}
-
-function validateTemplateId(templateId: string): boolean {
-  // Only accept known template IDs
-  return templates.some((t: any) => t.id === templateId);
 }
 
 export const presetCommand = new Command('preset')
@@ -102,7 +72,8 @@ export const presetCommand = new Command('preset')
         console.log(`Output: ${displayOutput}`);
 
         if (options.caption) {
-          console.log(`Caption: "${options.caption}"`);
+          const sanitizedCaption = sanitizeCaption(options.caption);
+          console.log(`Caption: "${sanitizedCaption}"`);
         }
 
         console.log(chalk.gray('\nRun without --dry-run to build screenshots'));
@@ -146,6 +117,7 @@ export const presetCommand = new Command('preset')
           console.log(chalk.gray('Adding captions...'));
         }
 
+        const sanitizedCaption = sanitizeCaption(options.caption);
         const deviceInput = options.devices ? sanitizeDevices(options.devices) : 'iphone,ipad,watch,mac';
         const devices = deviceInput.split(',');
 
@@ -162,7 +134,7 @@ export const presetCommand = new Command('preset')
           if (screenshots.length > 0) {
             // Create captions object with the provided caption for first screenshot
             const captions: Record<string, string> = {};
-            captions[screenshots[0]] = options.caption;
+            captions[screenshots[0]] = sanitizedCaption;
 
             // Ensure captions directory exists
             mkdirSync(path.dirname(captionFile), { recursive: true });
@@ -204,8 +176,11 @@ export const presetCommand = new Command('preset')
         console.log(chalk.green('\n✅ Screenshots generated successfully!'));
         console.log(chalk.gray(`Output: ${options.output || './final'}`));
 
-      } catch {
+      } catch (buildError) {
         console.error(chalk.red('❌ Build failed'));
+        if (buildError instanceof Error) {
+          console.error(chalk.gray(`Error: ${buildError.message}`));
+        }
         if (!options.verbose) {
           console.log(chalk.gray('Run with --verbose for details'));
         }
@@ -234,7 +209,13 @@ export const quickPresetCommand = new Command('qp')
     // Build args safely
     const args = ['preset', preset];
     if (options.caption) {
-      args.push('--caption', options.caption);
+      try {
+        const sanitizedCaption = sanitizeCaption(options.caption);
+        args.push('--caption', sanitizedCaption);
+      } catch (err) {
+        console.error(chalk.red(`❌ ${err instanceof Error ? err.message : 'Invalid caption'}`));
+        process.exit(1);
+      }
     }
     if (options.devices) {
       // Validate devices before passing

@@ -1,28 +1,25 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { loadConfig, saveConfig, fileExists } from '../src/core/files.js';
 import { validateBackgroundDimensions, detectBestFit } from '../src/core/background.js';
 import type { AppshotConfig } from '../src/types.js';
-import { isMainThread } from 'worker_threads';
 
-// Vitest vmThreads disallows process.chdir inside workers. In that pool we
-// conditionally skip this suite to keep CI/environment compatibility while
-// retaining coverage in normal process pools.
-const canChdir = typeof process.chdir === 'function' && isMainThread;
-const describeMaybe = canChdir ? describe : describe.skip;
-
-describeMaybe('backgrounds command', () => {
+describe('backgrounds command', () => {
   let tempDir: string;
   let configPath: string;
+  let originalCwd: string;
 
   beforeEach(async () => {
+    // Save original working directory
+    originalCwd = process.cwd();
+
     // Create temp directory
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'appshot-cmd-test-'));
-    
-    // Set working directory (guarded for environments that disallow chdir)
-    if (canChdir) process.chdir(tempDir);
+
+    // Mock process.cwd to return our temp directory
+    vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
     
     // Create basic appshot structure
     await fs.mkdir(path.join(tempDir, '.appshot'), { recursive: true });
@@ -62,9 +59,9 @@ describeMaybe('backgrounds command', () => {
   });
 
   afterEach(async () => {
-    // Reset working directory
-    if (canChdir) process.chdir('/');
-    
+    // Restore mocks
+    vi.restoreAllMocks();
+
     try {
       await fs.rm(tempDir, { recursive: true });
     } catch {

@@ -3,13 +3,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import gradientsCmd from '../src/commands/gradients.js';
-import { isMainThread } from 'worker_threads';
-
-const canChdir = typeof process.chdir === 'function' && isMainThread;
-const describeMaybe = canChdir ? describe : describe.skip;
 import { gradientPresets } from '../src/core/gradient-presets.js';
 
-describeMaybe('gradients command', () => {
+describe('gradients command', () => {
   let tempDir: string;
   let originalCwd: string;
 
@@ -17,11 +13,13 @@ describeMaybe('gradients command', () => {
     // Create temp directory
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'appshot-test-'));
     originalCwd = process.cwd();
-    if (canChdir) process.chdir(tempDir);
 
-    // Create .appshot directory with config
-    await fs.mkdir('.appshot', { recursive: true });
-    await fs.writeFile('.appshot/config.json', JSON.stringify({
+    // Mock process.cwd to return our temp directory
+    vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
+
+    // Create .appshot directory with config using absolute path
+    await fs.mkdir(path.join(tempDir, '.appshot'), { recursive: true });
+    await fs.writeFile(path.join(tempDir, '.appshot', 'config.json'), JSON.stringify({
       output: './final',
       frames: './frames',
       gradient: {
@@ -42,7 +40,7 @@ describeMaybe('gradients command', () => {
   });
 
   afterEach(async () => {
-    if (canChdir) process.chdir(originalCwd);
+    vi.restoreAllMocks();
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
@@ -54,7 +52,7 @@ describeMaybe('gradients command', () => {
       await cmd.parseAsync(['node', 'appshot', '--apply', 'ocean']);
 
       // Read updated config
-      const configContent = await fs.readFile('.appshot/config.json', 'utf-8');
+      const configContent = await fs.readFile(path.join(tempDir, '.appshot/config.json'), 'utf-8');
       const config = JSON.parse(configContent);
 
       expect(config.gradient.colors).toEqual(['#0077BE', '#33CCCC']);
