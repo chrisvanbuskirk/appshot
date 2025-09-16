@@ -4,6 +4,44 @@ This directory contains custom commands for Claude Code to use in this project.
 
 ## Available Commands
 
+### `/export`
+Exports Appshot-generated screenshots for Fastlane upload to App Store Connect.
+
+**Usage:**
+```bash
+/export [options]
+```
+
+**Options:**
+- `--devices iphone,ipad` - Export specific devices only
+- `--copy` - Copy files instead of symlinks
+- `--clean` - Clean output directory first
+- `--dry-run` - Preview without creating files
+- `--generate-config` - Generate Fastlane configuration
+
+**What it does:**
+1. Auto-detects languages from screenshots
+2. Maps language codes to Fastlane format
+3. Validates against App Store requirements
+4. Creates Fastlane directory structure
+5. Handles special device naming (iPad Pro)
+6. Optionally generates Fastlane config files
+
+### `/build`
+Builds and installs the appshot CLI tool locally for testing.
+
+**Usage:**
+```bash
+/build
+```
+
+**What it does:**
+1. Cleans previous build artifacts
+2. Installs dependencies
+3. Compiles TypeScript
+4. Links globally
+5. Verifies installation
+
 ### `/commit`
 Automates the process of creating a pull request with proper quality checks.
 

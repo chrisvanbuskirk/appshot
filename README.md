@@ -10,7 +10,18 @@
 [![Node.js Version](https://img.shields.io/node/v/appshot-cli.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🆕 **Version 0.9.0** - **Professional Template System & Enhanced Positioning**
+🆕 **Version 0.9.1** - **Fastlane Export Integration**
+- **Export Command**: New `appshot export` command for seamless Fastlane integration
+- **Auto-Detection**: Automatically detects languages from your screenshots
+- **Language Mapping**: Smart mapping to Fastlane-compatible language codes (en → en-US, etc.)
+- **Device Filtering**: Export specific devices with `--devices iphone,ipad`
+- **Validation**: Pre-export validation with warnings and clear error messages
+- **Configuration Generation**: Auto-generate Deliverfile and Fastfile with `--generate-config`
+- **Flexible Output**: Choose between symlinks (default) or file copying with `--copy`
+- **iPad Pro Support**: Automatic IPAD_PRO_3GEN_129_ prefix for proper Fastlane recognition
+- **Dry Run Mode**: Preview export operations with `--dry-run`
+
+**Version 0.9.0** - **Professional Template System & Enhanced Positioning**
 - **Quick Start**: New `appshot quickstart` command for instant setup with templates
 - **Templates**: 8 professional templates (modern, minimal, bold, elegant, showcase, playful, corporate, nerdy)
 - **One Command Setup**: Apply complete visual styles with `appshot template <name>`
@@ -46,6 +57,7 @@
   - [Style System Guide](#style-system-guide)
 - [Localization & Translation](#-localization--translation)
 - [Device Support](#-device-support)
+- [Fastlane Integration](#-fastlane-integration)
 - [Command Reference](#-command-reference)
 - [Configuration Reference](#️-configuration-reference)
 - [Agent & Automation Guide](#-agent--automation-guide)
@@ -1202,6 +1214,206 @@ appshot validate --strict
 # Get fix suggestions
 appshot validate --fix
 ```
+
+## 🚀 Fastlane Integration
+
+Appshot seamlessly integrates with [Fastlane](https://docs.fastlane.tools/) for uploading screenshots to App Store Connect. The `export` command reorganizes your Appshot-generated screenshots into Fastlane's expected directory structure.
+
+### Overview
+
+Appshot and Fastlane work together but remain separate tools:
+- **Appshot**: Generates beautiful screenshots with frames, gradients, and captions
+- **Fastlane**: Uploads screenshots to App Store Connect
+
+### Quick Start
+
+```bash
+# 1. Generate screenshots with Appshot
+appshot build --preset iphone-6-9,ipad-13
+
+# 2. Export for Fastlane (auto-detects languages)
+appshot export
+
+# 3. Upload with Fastlane
+cd fastlane && fastlane deliver
+```
+
+### Export Command
+
+The `appshot export` command bridges Appshot and Fastlane:
+
+```bash
+# Basic export (auto-detects languages, creates symlinks)
+appshot export
+
+# Export specific devices only
+appshot export --devices iphone,ipad
+
+# Copy files instead of symlinks (for CI/CD)
+appshot export --copy --clean
+
+# Generate Fastlane configuration
+appshot export --generate-config
+
+# Preview without creating files
+appshot export --dry-run
+
+# Custom paths
+appshot export --source ./my-screenshots --output ./upload
+```
+
+### Language Mapping
+
+Appshot automatically maps language codes to Fastlane format:
+- `en` → `en-US`
+- `es` → `es-ES`
+- `fr` → `fr-FR`
+- `de` → `de-DE`
+- `zh` → `zh-Hans`
+- `pt` → `pt-PT`
+- [and 20+ more mappings]
+
+Custom mappings via `.appshot/export-config.json`:
+```json
+{
+  "languageMappings": {
+    "en": "en-GB",
+    "custom": "x-special"
+  }
+}
+```
+
+### Directory Structure
+
+**Appshot Output** (source):
+```
+final/
+├── iphone/
+│   ├── en/
+│   │   ├── home.png
+│   │   └── features.png
+│   └── es/
+│       └── home.png
+└── ipad/
+    └── en/
+        └── home.png
+```
+
+**Fastlane Structure** (after export):
+```
+fastlane/screenshots/
+├── en-US/
+│   ├── iphone/
+│   │   ├── home.png
+│   │   └── features.png
+│   └── ipad/
+│       └── IPAD_PRO_3GEN_129_home.png  # Auto-renamed
+└── es-ES/
+    └── iphone/
+        └── home.png
+```
+
+### Special Handling
+
+#### iPad Pro Naming
+iPad Pro 12.9" (3rd gen) screenshots are automatically renamed with the `IPAD_PRO_3GEN_129_` prefix for proper Fastlane recognition.
+
+#### Symlinks vs Copying
+- **Default**: Creates symlinks (saves disk space, instant)
+- **CI/CD**: Use `--copy` for portable archives
+- **Clean**: Use `--clean` to remove old exports before creating new ones
+
+### Complete Workflow Example
+
+```bash
+# 1. Initialize Appshot project
+appshot init
+
+# 2. Add your raw screenshots
+# Place them in screenshots/iphone/home.png, etc.
+
+# 3. Generate styled screenshots
+appshot build --preset iphone-6-9,ipad-13 --langs en,es,fr
+
+# 4. Export for Fastlane with config generation
+appshot export --generate-config
+
+# 5. Configure Fastlane (one-time setup)
+cd fastlane
+# Edit Deliverfile with your App Store Connect credentials
+# app_identifier "com.example.myapp"
+# username "your@email.com"
+
+# 6. Upload to App Store Connect
+fastlane deliver --skip_metadata --skip_app_version_update
+
+# 7. For updates, just rebuild and re-export
+appshot build --preset iphone-6-9,ipad-13
+appshot export --clean
+cd fastlane && fastlane deliver
+```
+
+### CI/CD Integration
+
+```yaml
+# GitHub Actions Example
+- name: Generate Screenshots
+  run: |
+    npm install -g appshot-cli
+    appshot build --preset iphone-6-9,ipad-13
+
+- name: Export for Fastlane
+  run: appshot export --copy --clean
+
+- name: Upload to App Store
+  env:
+    APP_STORE_CONNECT_API_KEY: ${{ secrets.ASC_API_KEY }}
+  run: |
+    cd fastlane
+    fastlane deliver --api_key_path api_key.json
+```
+
+### Validation
+
+The export command includes comprehensive validation:
+- Checks for valid output directory permissions
+- Validates language codes against Fastlane's supported set
+- Warns about missing screenshots for requested devices
+- Suggests App Store required presets if missing
+
+```bash
+# Preview and validate
+appshot export --dry-run --verbose
+
+# Check what would be exported
+appshot export --dry-run --json | jq
+```
+
+### Generated Fastlane Files
+
+With `--generate-config`, Appshot creates:
+- **Deliverfile**: Screenshot configuration
+- **Fastfile**: Upload lanes
+- **README.md**: Instructions
+- **.gitignore**: Excludes screenshots
+
+Example generated Deliverfile:
+```ruby
+# Generated by Appshot
+screenshots_path "./screenshots"
+languages ["en-US", "es-ES", "fr-FR"]
+skip_binary_upload true
+skip_metadata true
+overwrite_screenshots true
+```
+
+### Tips
+
+1. **Language Detection**: Let Appshot auto-detect languages from your screenshots
+2. **Device Filtering**: Export only what you need with `--devices`
+3. **Dry Run First**: Always preview with `--dry-run` before actual export
+4. **Validation**: Run `appshot validate` before export to ensure compliance
+5. **Incremental Updates**: Use `--clean` to ensure fresh exports
 
 ## 📝 Command Reference
 

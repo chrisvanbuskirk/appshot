@@ -66,3 +66,10 @@ npm run dev -- build    # run CLI in dev mode: appshot build
 appshot build --dry-run --verbose  # print layout decisions
 ```
 
+
+## Fastlane Export Notes
+- `src/commands/export.ts` powers the Fastlane-compatible export flow. Device ordering, language mapping, and dry-run behaviour are covered by integration tests in `tests/integration/export-command.test.ts`.
+- Language code normalization lives in `src/services/fastlane-language-mapper.ts`; defaults and overrides are locked down by `tests/fastlane-language-mapper.test.ts`.
+- File moves are handled by `src/services/screenshot-organizer.ts`; symlink vs copy, flattening, device prefixes, and iPad Pro renaming are verified in `tests/screenshot-organizer.test.ts`.
+- Validation rules (requested-device checks, output safety) are centralized in `src/services/export-validator.ts` with coverage in `tests/export-validator.test.ts`.
+- Fastlane config scaffolding (`Deliverfile`, `Fastfile`, README, `.gitignore`) comes from `src/services/fastlane-config-generator.ts` and is snapshot-tested in `tests/fastlane-config-generator.test.ts`.
