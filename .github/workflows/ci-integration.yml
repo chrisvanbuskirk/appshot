@@ -47,8 +47,8 @@ jobs:
           which appshot || echo "appshot path: $(which appshot)"
           appshot --version
       
-      - name: Run integration tests
-        run: npm run test:integration
+      - name: Run integration tests (fork pool)
+        run: npm run test:integration -- --pool forks
         env:
           CI: true
         timeout-minutes: 10

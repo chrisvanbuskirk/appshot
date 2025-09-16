@@ -13,8 +13,12 @@ import {
   extractPatterns
 } from '../src/utils/caption-history.js';
 import type { CaptionHistory } from '../src/types.js';
+import { isMainThread } from 'worker_threads';
 
-describe('caption-history', () => {
+const canChdir = typeof process.chdir === 'function' && isMainThread;
+const describeMaybe = canChdir ? describe : describe.skip;
+
+describeMaybe('caption-history', () => {
   let testDir: string;
   let originalCwd: string;
 
@@ -22,12 +26,12 @@ describe('caption-history', () => {
     // Create a temporary directory for testing
     testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'appshot-caption-test-'));
     originalCwd = process.cwd();
-    process.chdir(testDir);
+    if (canChdir) process.chdir(testDir);
   });
 
   afterEach(async () => {
     // Clean up
-    process.chdir(originalCwd);
+    if (canChdir) process.chdir(originalCwd);
     await fs.rm(testDir, { recursive: true, force: true });
   });
 

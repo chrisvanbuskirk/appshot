@@ -69,10 +69,27 @@ ${pc.bold('Language Detection:')}
   5. Fallback to 'en'`)
     .action(async (opts) => {
       try {
+        const logo = String.raw`     _                       _           _   
+    / \   _ __  _ __  ___| |__   ___ | |_ 
+   / _ \ | '_ \| '_ \/ __| '_ \ / _ \| __|
+  / ___ \| |_) | |_) \__ \ | | | (_) | |_ 
+ /_/   \_\ .__/| .__/|___/_| |_|\___/ \__|
+         |_|   |_|                          `;
+
         if (opts.dryRun) {
-          console.log(pc.bold('Dry run mode - no images will be generated\n'));
+          console.log(pc.cyan(logo));
+          console.log(pc.bold('\nDry run mode - no images will be generated\n'));
         } else {
-          console.log(pc.bold('Building screenshots...'));
+          console.log(pc.cyan(logo));
+          console.log(pc.bold('\nBuilding screenshots...'));
+          // Layout behavior note for 0.9.0
+          console.log(
+            pc.yellow('\n⚠ Layout behavior notice (v0.9.0):') +
+            pc.dim('\n  • "below/above" captions now enforce a minimum optical gap from the device, and will adjust placement to remain truly below/above.') +
+            pc.dim('\n  • Overlay captions anchor to the bottom of their outer box (padding/border included); explicit zeros are respected.') +
+            pc.dim('\n  • In edge cases where device + caption cannot both fit, the engine adapts placement; visuals may differ from 0.8.x.') +
+            '\n'
+          );
         }
 
         // Load configuration

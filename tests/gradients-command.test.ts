@@ -3,9 +3,13 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import gradientsCmd from '../src/commands/gradients.js';
+import { isMainThread } from 'worker_threads';
+
+const canChdir = typeof process.chdir === 'function' && isMainThread;
+const describeMaybe = canChdir ? describe : describe.skip;
 import { gradientPresets } from '../src/core/gradient-presets.js';
 
-describe('gradients command', () => {
+describeMaybe('gradients command', () => {
   let tempDir: string;
   let originalCwd: string;
 
@@ -13,7 +17,7 @@ describe('gradients command', () => {
     // Create temp directory
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'appshot-test-'));
     originalCwd = process.cwd();
-    process.chdir(tempDir);
+    if (canChdir) process.chdir(tempDir);
 
     // Create .appshot directory with config
     await fs.mkdir('.appshot', { recursive: true });
@@ -38,7 +42,7 @@ describe('gradients command', () => {
   });
 
   afterEach(async () => {
-    process.chdir(originalCwd);
+    if (canChdir) process.chdir(originalCwd);
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 

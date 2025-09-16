@@ -3,8 +3,12 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { loadConfig, loadCaptions, fileExists } from '../src/core/files.js';
+import { isMainThread } from 'worker_threads';
 
-describe('files', () => {
+const canChdir = typeof process.chdir === 'function' && isMainThread;
+const describeMaybe = canChdir ? describe : describe.skip;
+
+describeMaybe('files', () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -13,7 +17,7 @@ describe('files', () => {
 
   afterEach(async () => {
     // Change back to root temp dir before cleanup (Windows can't delete current directory)
-    process.chdir(os.tmpdir());
+    if (canChdir) process.chdir(os.tmpdir());
     
     // Add delay for Windows file system
     if (process.platform === 'win32') {
@@ -48,22 +52,22 @@ describe('files', () => {
       
       // Change to tempDir for loadConfig to work
       const originalCwd = process.cwd();
-      process.chdir(tempDir);
+      if (canChdir) process.chdir(tempDir);
       try {
         const loaded = await loadConfig();
         expect(loaded).toEqual(config);
       } finally {
-        process.chdir(originalCwd);
+        if (canChdir) process.chdir(originalCwd);
       }
     });
 
     it('should throw error when config.json not found', async () => {
       const originalCwd = process.cwd();
-      process.chdir(tempDir);
+      if (canChdir) process.chdir(tempDir);
       try {
         await expect(loadConfig()).rejects.toThrow('Configuration not found');
       } finally {
-        process.chdir(originalCwd);
+        if (canChdir) process.chdir(originalCwd);
       }
     });
 
@@ -74,11 +78,11 @@ describe('files', () => {
       await fs.writeFile(configPath, 'invalid json');
       
       const originalCwd = process.cwd();
-      process.chdir(tempDir);
+      if (canChdir) process.chdir(tempDir);
       try {
         await expect(loadConfig()).rejects.toThrow('Failed to load configuration');
       } finally {
-        process.chdir(originalCwd);
+        if (canChdir) process.chdir(originalCwd);
       }
     });
   });

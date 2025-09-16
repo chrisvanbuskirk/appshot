@@ -21,12 +21,24 @@ import deviceCmd from './commands/device.js';
 import watchCmd from './commands/watch.js';
 import unwatchCmd from './commands/unwatch.js';
 import watchStatusCmd from './commands/watch-status.js';
+import templateCmd from './commands/template.js';
+import quickstartCmd from './commands/quickstart.js';
+import presetCmd from './commands/preset.js';
 
 const program = new Command();
 
+const logo = String.raw`     _                       _           _   
+    / \   _ __  _ __  ___| |__   ___ | |_ 
+   / _ \ | '_ \| '_ \/ __| '_ \ / _ \| __|
+  / ___ \| |_) | |_) \__ \ | | | (_) | |_ 
+ /_/   \_\ .__/| .__/|___/_| |_|\___/ \__|
+         |_|   |_|                          `;
+
 program
   .name('appshot')
-  .description(`Generate App Store–ready screenshots with frames, backgrounds, and captions.
+  .description(`${pc.cyan(logo)}
+
+Generate App Store–ready screenshots with frames, backgrounds, and captions.
 
 ${pc.bold('Features:')}
   • Auto-detects portrait/landscape orientation
@@ -39,10 +51,10 @@ ${pc.bold('Features:')}
   • Device capture from simulators/physical devices (macOS)
 
 ${pc.bold('Quick Start:')}
-  $ appshot init                    # Initialize project
+  $ appshot quickstart               # Interactive setup with templates
+  $ appshot template modern          # Apply professional template
   $ appshot caption --device iphone  # Add captions
-  $ appshot frame screenshot.png     # Apply device frame only
-  $ appshot build                    # Generate full screenshots
+  $ appshot build                    # Generate final screenshots
 
 ${pc.bold('Common Workflows:')}
   $ appshot fonts --set "Poppins Italic"     # Set italic font
@@ -55,7 +67,7 @@ ${pc.bold('Common Workflows:')}
   $ appshot watch start --process             # Auto-process new screenshots` : ''}
 
 ${pc.dim('Docs: https://github.com/chrisvanbuskirk/appshot')}`)
-  .version('0.8.7')
+  .version('0.9.0')
   .addHelpText('after', `\n${pc.bold('Environment Variables:')}
   OPENAI_API_KEY              API key for translation features
   APPSHOT_DISABLE_FONT_SCAN   Skip system font detection (CI optimization)
@@ -67,7 +79,10 @@ ${pc.bold('Configuration Files:')}
 
 ${pc.dim('Run \'appshot <command> --help\' for command details.')}`);
 
+program.addCommand(quickstartCmd());
 program.addCommand(initCmd());
+program.addCommand(templateCmd());
+program.addCommand(presetCmd());
 program.addCommand(captionCmd());
 program.addCommand(styleCmd());
 program.addCommand(gradientsCmd());

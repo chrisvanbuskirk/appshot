@@ -1,0 +1,106 @@
+{
+  "output": "./final",
+  "frames": "../frames",
+  "caption": {
+    "font": "Helvetica",
+    "fontsize": 54,
+    "color": "#2c3e50",
+    "align": "left",
+    "position": "above",
+    "paddingTop": 100,
+    "paddingBottom": 60,
+    "background": {
+      "color": "#FFFFFF",
+      "opacity": 0.95,
+      "padding": 30,
+      "sideMargin": 40
+    },
+    "border": {
+      "color": "#1F5F8B",
+      "width": 2,
+      "radius": 14
+    },
+    "box": {
+      "autoSize": true,
+      "maxLines": 3,
+      "lineHeight": 1.4,
+      "marginTop": 50,
+      "marginBottom": 20
+    },
+    "paddingLeft": 50
+  },
+  "devices": {
+    "iphone": {
+      "input": "./screenshots/iphone",
+      "resolution": "1290x2796",
+      "autoFrame": true,
+      "frameScale": 0.85,
+      "framePosition": 50,
+      "captionPosition": "above",
+      "captionBox": {
+        "marginTop": 56
+      }
+    },
+    "ipad": {
+      "input": "./screenshots/ipad",
+      "resolution": "2048x2732",
+      "autoFrame": true,
+      "frameScale": 0.85,
+      "framePosition": 50,
+      "captionPosition": "above",
+      "captionBox": {
+        "marginTop": 20,
+        "marginBottom": 0
+      }
+    },
+    "mac": {
+      "input": "./screenshots/mac",
+      "resolution": "2880x1800",
+      "autoFrame": true,
+      "frameScale": 0.9,
+      "framePosition": 25,
+      "captionPosition": "above",
+      "captionBox": {
+        "marginTop": 20,
+        "marginBottom": 0
+      }
+    },
+    "watch": {
+      "input": "./screenshots/watch",
+      "resolution": "410x502",
+      "autoFrame": false,
+      "preferredFrame": "watch-ultra-2024",
+      "frameScale": 0.8,
+      "framePosition": 75,
+      "captionPosition": "above",
+      "captionBox": {
+        "marginTop": 12,
+        "marginBottom": 12,
+        "lineHeight": 1.4,
+        "maxLines": 2
+      },
+      "captionBackground": {
+        "color": "#eef1f5",
+        "opacity": 0.9,
+        "padding": 12,
+        "sideMargin": 18
+      },
+      "captionBorder": {
+        "color": "#f6d7d7ff",
+        "width": 1,
+        "radius": 5
+      },
+      "captionSize": 18
+    }
+  },
+  "background": {
+    "mode": "gradient",
+    "gradient": {
+      "colors": [
+        "#0077BE",
+        "#33CCCC"
+      ],
+      "direction": "top-bottom"
+    }
+  }
+}

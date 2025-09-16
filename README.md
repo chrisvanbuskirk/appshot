@@ -2,19 +2,31 @@
 
 > **AI-First CLI for App Store Screenshots** - Generate beautiful, localized screenshots with device frames, gradients, and captions.
 
+🌐 https://appshot.sh
+
 [![CI](https://github.com/chrisvanbuskirk/appshot/actions/workflows/ci.yml/badge.svg)](https://github.com/chrisvanbuskirk/appshot/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/appshot-cli.svg)](https://www.npmjs.com/package/appshot-cli)
 [![npm downloads](https://img.shields.io/npm/dm/appshot-cli.svg)](https://www.npmjs.com/package/appshot-cli)
 [![Node.js Version](https://img.shields.io/node/v/appshot-cli.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🆕 **Version 0.8.6** - **Background Images** - Replace gradients with custom static images, auto-detection, and dimension validation!
+🆕 **Version 0.9.0** - **Professional Template System & Enhanced Positioning**
+- **Quick Start**: New `appshot quickstart` command for instant setup with templates
+- **Templates**: 8 professional templates (modern, minimal, bold, elegant, showcase, playful, corporate, nerdy)
+- **One Command Setup**: Apply complete visual styles with `appshot template <name>`
+- **Smart Defaults**: Each template includes optimized settings for all devices
+- **Caption Integration**: Templates can include captions directly with `--caption`
+- **Vertical Alignment**: Pin caption text to top or center within the caption box
+- **Side Margins**: Control caption box width with `sideMargin` (unified wrapping calculation)
+- **Outer Margins**: Add spacing with `marginTop`/`marginBottom` for better visual balance
+- **Apple Watch Fix**: Resolved positioning bug allowing proper framePosition control
+- **Exact Width Parity**: Caption wrapping now identical between preview and final render
+- **Template Samples Overhaul**: Local-only gallery with consolidated generator. Run `npm run samples` to regenerate all 8 presets across iPhone, iPad, Watch, and Mac. Gallery assets now live under `template-samples/gallery/` and the samples page matches the appshot.sh look (including ASCII header).
 
-> ⚠️ **NEW in v0.8.6**: Use custom background images instead of gradients! Auto-detects `background.png` in device folders, supports multiple fit modes, and validates dimensions against App Store specs.
-
-> ⚠️ **BREAKING CHANGE in v0.4.0**: Output structure now always uses language subdirectories.
-> Single language builds now output to `final/device/lang/` instead of `final/device/`.
-> Run `appshot migrate --output-structure` to update existing projects.
+> Note on layout changes (0.9.0): This release refines caption placement rules.
+> - Overlay captions are anchored by the bottom of the entire caption box (padding/border included), and `0` values are respected.
+> - Above/Below captions enforce a minimum optical clearance from the device and stay fully on‑canvas. In pathological cases where device + caption don’t fit, the engine adapts placement so order is preserved.
+> - Visual results may differ compared to 0.8.x when captions were near device edges. Adjust `marginTop` (below) / `marginBottom` (above) or `frameScale`/`framePosition` for fine‑tuning.
 
 ## 📖 Table of Contents
 
@@ -24,12 +36,14 @@
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Your First Screenshot](#your-first-screenshot)
+- [Claude Code Integration](#-claude-code-integration)
 - [Core Concepts](#-core-concepts)
 - [Visual Customization](#-visual-customization)
   - [Gradient System](#gradient-system)
   - [Font System](#font-system)
   - [Device Frames](#device-frames)
   - [Caption System](#caption-system)
+  - [Style System Guide](#style-system-guide)
 - [Localization & Translation](#-localization--translation)
 - [Device Support](#-device-support)
 - [Command Reference](#-command-reference)
@@ -44,6 +58,8 @@
 ## 🌟 Why Appshot?
 
 Appshot is the only **agent-first CLI tool** designed for automated App Store screenshot generation. Built for LLM agents, CI/CD pipelines, and developers who value automation over GUIs.
+
+**NEW in v0.9.0**: One-line preset commands! Generate professional screenshots instantly with `appshot preset bold --caption "Amazing App" --devices iphone,watch`
 
 ### Key Differentiators
 
@@ -97,9 +113,28 @@ appshot --version
 
 > **Note**: The package is called `appshot-cli` on NPM, but the command is `appshot`
 
-### Your First Screenshot
+### Your First Screenshot - Two Ways
 
-Create App Store-ready screenshots in 5 simple steps:
+#### Option 1: Quick Start with Templates (NEW! 🎨)
+
+The fastest way to get professional screenshots:
+
+```bash
+# One command interactive setup
+appshot quickstart
+
+# Or apply a specific template
+appshot template modern --caption "Your Amazing App"
+
+# Build your screenshots
+appshot build
+
+# ✨ Professional screenshots ready in seconds!
+```
+
+#### Option 2: Traditional Step-by-Step
+
+Full control over every aspect:
 
 ```bash
 # 1. Initialize your project
@@ -165,6 +200,82 @@ final/
     └── en/           # Language subdirectory
         └── dashboard.png  # 2048×2732 iPad Pro screenshot
 ```
+
+## 🤖 Claude Code Integration
+
+Appshot includes comprehensive [Claude Code](https://claude.ai/code) slash commands for AI-assisted screenshot generation. See the [complete commands documentation](./commands/README.md) for detailed examples and workflows.
+
+### Available Commands
+
+Appshot provides specialized commands for different tasks:
+
+- `/appshot-init` - Initialize and configure new projects
+- `/appshot-preset` - One-line preset commands for instant screenshots
+- `/appshot-style` - Apply gradients, fonts, and visual styling
+- `/appshot-caption` - Manage captions and translations
+- `/appshot-build` - Build screenshots with troubleshooting
+- `/appshot-config` - Complete configuration reference
+- `/appshot-quick` - Quick reference for common tasks
+
+### Quick Installation
+
+```bash
+# If you have AppShot source code
+cd appshot
+./commands/install.sh
+
+# If installed via npm
+cd node_modules/appshot-cli
+./commands/install.sh
+
+# Manual installation
+mkdir -p ~/.claude/commands
+ln -sf "$(pwd)/commands"/*.md ~/.claude/commands/
+```
+
+### How It Works
+
+When you use a command like `/appshot-style ocean iphone` in Claude Code:
+
+1. Claude receives complete documentation for that specific task
+2. All necessary configurations and examples are provided inline
+3. No need to search documentation or run help commands
+4. Claude can immediately execute the appropriate AppShot CLI commands
+
+### Example Conversation
+
+```
+User: I need to add Apple Watch support to my existing iPhone project
+
+Claude: I'll help you add Apple Watch to your project. Let me use /appshot-config
+        to show you the exact configuration needed.
+
+        Add this to your .appshot/config.json under "devices":
+
+        "watch": {
+          "input": "./screenshots/watch",
+          "resolution": "410x502",
+          "autoFrame": true
+        }
+
+        Note: Apple Watch has special caption handling - uses 2-line wrapping 
+        and smaller font size (36px max) for the smaller screen.
+```
+
+### Features for AI Agents
+
+- **Self-Contained**: Each command includes all necessary information
+- **No Lookups Required**: Commands work without external documentation
+- **Agent-Friendly**: Non-interactive commands for full automation
+- **Complete Examples**: Real-world configurations and workflows
+- **Troubleshooting**: Built-in solutions for common issues
+
+### Learn More
+
+For complete documentation, examples, and advanced workflows, see:
+- 📚 [Commands Documentation](./commands/README.md) - Full guide with examples
+- 📁 [Commands Directory](./commands/) - Individual command files
+- 🛠️ [Installation Script](./commands/install.sh) - Automated setup
 
 ## 📘 Core Concepts
 
@@ -246,6 +357,132 @@ All settings are stored in `.appshot/config.json`:
 
 ## 🎨 Visual Customization
 
+### Template System (NEW! 🚀)
+
+Appshot now includes professional screenshot templates that configure everything with a single command. Each template includes carefully designed backgrounds, device positioning, caption styling, and device-specific optimizations.
+
+#### Quick Start with Templates
+
+```bash
+# Interactive template selection
+appshot quickstart
+
+# Apply a specific template
+appshot template modern
+
+# Apply template with caption
+appshot template minimal --caption "Beautiful & Simple"
+
+# Preview template settings
+appshot template --preview bold
+
+# List all templates
+appshot template --list
+```
+
+#### Available Templates
+
+📸 **[View Template Gallery](./template-samples/index.html)** - See visual examples of all templates
+
+| Template | Description | Best For |
+|----------|-------------|----------|
+| **modern** | Vibrant gradient with floating device and clean captions | Most apps, eye-catching |
+| **minimal** | Soft pastel background with elegant typography | Clean, simple apps |
+| **bold** | Dark dramatic gradient with overlay captions | Gaming, entertainment |
+| **elegant** | Sophisticated monochrome design | Professional, business |
+| **showcase** | Auto-detects custom backgrounds, partial frames | Apps with branded assets |
+| **playful** | Bright, fun gradients | Games, kids apps |
+| **corporate** | Clean, professional look | Business, productivity |
+| **nerdy** | JetBrains Mono typography with OSS grid background | Developer tools |
+
+![Template Gallery](./template-samples/gallery/template-gallery.png)
+
+##### Rebuild the Gallery Locally
+
+```bash
+# From repo root
+npm run samples
+```
+
+This generates:
+- Device samples: `template-samples/{iphone|ipad|watch|mac}/<template>-<device>.png`
+- Gallery cards: `template-samples/gallery/*-sample.png`
+- Combined image: `template-samples/gallery/template-gallery.png`
+
+#### Template Features
+
+Each template automatically configures:
+- **Background**: Gradient colors and direction or image settings
+- **Device Scale**: Optimal size for visual balance (70-110%)
+- **Device Position**: Top, center, bottom, or custom percentage
+- **Caption Style**: Font, size, color, and position
+- **Caption Background**: Optional semi-transparent background with padding
+- **Caption Border**: Optional border with customizable radius
+- **Partial Frames**: Modern look with cut-off device bottoms
+- **Device Overrides**: Optimized settings for watch, iPad, etc.
+
+#### Template Examples
+
+```bash
+# Modern Template - Perfect for most apps
+appshot template modern
+# → Vibrant diagonal gradient (#667eea → #764ba2 → #f093fb)
+# → 85% device scale, centered
+# → White captions with dark semi-transparent background
+
+# Minimal Template - Clean and simple
+appshot template minimal  
+# → Soft pastel gradient (#ffecd2 → #fcb69f)
+# → 75% device scale, lower position
+# → Dark text on light background
+
+# Bold Template - Make a statement
+appshot template bold
+# → Dark gradient (#0f0c29 → #302b63 → #24243e)
+# → 110% device scale with partial frame
+# → Large overlay captions with border
+
+# Showcase Template - Feature your backgrounds
+appshot template showcase
+# → Auto-detects background.png in device folders
+# → 90% scale with 25% partial frame
+# → Glass-morphism caption effect
+```
+
+#### Customizing Templates
+
+Templates provide a starting point that you can further customize:
+
+```bash
+# 1. Apply a template
+appshot template modern
+
+# 2. Fine-tune specific settings
+appshot style --device iphone  # Adjust positioning
+appshot fonts --set "Poppins Bold"  # Change font
+appshot caption --device iphone  # Update captions
+
+# 3. Build with your customizations
+appshot build
+```
+
+#### Creating Consistent Screenshots
+
+Templates ensure consistency across all your screenshots:
+
+```json
+// After applying a template, all devices share:
+{
+  "background": { /* Same gradient/image */ },
+  "caption": { /* Same font and styling */ },
+  "devices": {
+    "iphone": { /* Optimized for iPhone */ },
+    "ipad": { /* Optimized for iPad */ },
+    "watch": { /* Special watch handling */ }
+  }
+}
+```
+
 ### Gradient System
 
 Appshot includes 24+ professional gradient presets organized by category:
@@ -289,7 +526,7 @@ appshot gradients --sample
 }
 ```
 
-### Background System (NEW in v0.8.6)
+### Background System
 
 Replace gradients with custom static background images for a unique, branded look. Appshot supports automatic detection, multiple formats, and intelligent scaling.
 
@@ -592,6 +829,79 @@ Create modern App Store screenshots with cut-off device frames:
 }
 ```
 
+#### Frame Positioning System
+
+**Important**: The `framePosition` value (0-100) behaves differently depending on your caption positioning mode.
+
+##### Relative vs Absolute Positioning
+
+When using `captionPosition: "above"` or `"below"`:
+- **Frame positioning is RELATIVE to the remaining space** after accounting for the caption
+- `framePosition: 0` = Top of available space (immediately after/before caption)
+- `framePosition: 50` = Center of remaining space
+- `framePosition: 100` = Bottom of available space
+
+When using `captionPosition: "overlay"`:
+- **Frame positioning is ABSOLUTE to the entire canvas**
+- `framePosition: 0` = Top of canvas (pixel 0)
+- `framePosition: 50` = Center of entire canvas
+- `framePosition: 100` = Bottom of canvas
+
+##### Visual Examples
+
+```json
+// Example 1: Caption above with framePosition: 0
+{
+  "devices": {
+    "iphone": {
+      "captionPosition": "above",
+      "framePosition": 0  // Device starts right after caption
+    }
+  }
+}
+// Result: [Caption] then [Device at top of remaining space]
+
+// Example 2: Caption overlay with framePosition: 0
+{
+  "devices": {
+    "iphone": {
+      "captionPosition": "overlay",
+      "framePosition": 0  // Device at absolute top
+    }
+  }
+}
+// Result: [Device at canvas top] with [Caption overlaid at bottom]
+```
+
+##### The Math Behind Positioning
+
+For **"above" mode**, the device position is calculated as:
+```
+deviceTop = topMargin + captionHeight + (availableSpace * framePosition/100)
+where availableSpace = canvasHeight - topMargin - captionHeight - bottomMargin - deviceHeight
+```
+
+For **"overlay" mode**, the device position is calculated as:
+```
+deviceTop = availableSpace * (framePosition/100)
+where availableSpace = canvasHeight - bottomMargin - deviceHeight
+```
+
+##### Practical Implications
+
+1. **Same framePosition, Different Results**: A `framePosition: 0` will place the device at different absolute positions:
+   - With `above` caption: Device starts after the caption (e.g., at pixel 198)
+   - With `overlay` caption: Device starts at the top (pixel 0)
+
+2. **Caption Height Affects Layout**: In `above`/`below` modes, varying caption lengths change the available space, affecting all frame positions. Use `overlay` mode for consistent device positioning across screenshots with different caption lengths.
+
+3. **Best Practices**:
+   - Use `above`/`below` for guaranteed caption-device separation
+   - Use `overlay` for consistent device positioning across all screenshots
+   - Set fixed caption heights (`minHeight`/`maxHeight`) for uniform layouts
+
+📚 **[Visual Preset Showcase](./positioning-guide/preset-showcase.html)** - Interactive visual guide showing all available preset templates and their styles
+
 ### Caption System
 
 #### Dynamic Caption Box
@@ -634,7 +944,7 @@ appshot style --device iphone
 }
 ```
 
-#### Caption Styling (New in v0.7.0)
+#### Caption Styling (Enhanced in v0.8.7)
 
 Create professional captions with customizable backgrounds and borders:
 
@@ -650,7 +960,7 @@ Create professional captions with customizable backgrounds and borders:
     "border": {
       "color": "#FFFFFF",         // Border color (hex)
       "width": 2,                 // Border thickness (1-10)
-      "radius": 12                // Rounded corners (0-30)
+      "radius": 12                // Rounded corners (0-30); used for background too
     }
   }
 }
@@ -661,6 +971,8 @@ Create professional captions with customizable backgrounds and borders:
 - **Flexible positioning** - Works with above, below, and overlay positions
 - **Device-specific overrides** - Customize styling per device type
 - **Professional appearance** - Rounded corners and padding for polished look
+ - **Vertical anchoring (NEW)** - Align caption text to top or center of the box
+ - **Unified side margins (NEW)** - Control caption box width with `caption.background.sideMargin`
 
 **Interactive Configuration:**
 ```bash
@@ -669,6 +981,8 @@ appshot style --device iphone
 # → Choose caption position (above/below/overlay)
 # → Configure background color and opacity
 # → Set border color, width, and radius
+# → Set vertical alignment (top/center)
+# → Set side margin, min/max height, max lines
 ```
 
 **Examples:**
@@ -698,11 +1012,43 @@ appshot style --device iphone
     "background": {
       "color": "#FF5733",
       "opacity": 0.6,
-      "padding": 25
+      "padding": 25,
+      "sideMargin": 24
     }
   }
 }
 ```
+
+#### Fixed vs Adaptive Caption Height
+
+```json
+{
+  "caption": {
+    "position": "above",
+    "box": {
+      "autoSize": false,       // Fixed height banner
+      "minHeight": 320,
+      "maxHeight": 320,
+      "verticalAlign": "top"   // Pin text to top of banner
+    }
+  }
+}
+```
+
+- Set `autoSize: true` plus `minHeight`/`maxHeight` clamps for adaptive banners.
+- Use `verticalAlign: 'top'` to avoid recenters when height changes.
+
+### Preset Templates Guide
+
+An interactive showcase of all available preset templates is available at `positioning-guide/preset-showcase.html`.
+
+- Visual preview of all 7 professional templates (modern, minimal, bold, elegant, showcase, playful, corporate)
+- Side-by-side comparison across iPhone, iPad, Mac, and Watch devices
+- Shows gradient backgrounds, device positioning, and caption styles
+- Helps you choose the perfect template for your app's style
+- One-line command examples for each preset
+
+Open the file in a browser to explore all available templates before applying them via `appshot preset` or `appshot template`.
 
 #### Caption Autocomplete
 
@@ -858,6 +1204,125 @@ appshot validate --fix
 ```
 
 ## 📝 Command Reference
+
+### `appshot quickstart` (NEW!)
+
+Get started with App Store screenshots in seconds with interactive setup.
+
+```bash
+appshot quickstart [options]
+```
+
+**Options:**
+- `--template <id>` - Template to use (default: modern)
+- `--caption <text>` - Main caption for screenshots
+- `--no-interactive` - Skip interactive prompts
+- `--force` - Overwrite existing configuration
+
+**What it does:**
+1. Creates project structure
+2. Applies professional template
+3. Sets up example captions
+4. Shows next steps
+
+**Examples:**
+```bash
+# Interactive setup
+appshot quickstart
+
+# Quick setup with template
+appshot quickstart --template minimal --caption "My App"
+
+# Non-interactive
+appshot quickstart --template bold --no-interactive
+```
+
+### `appshot template` (NEW!)
+
+Apply professional screenshot templates for instant visual styling.
+
+```bash
+appshot template [template] [options]
+```
+
+**Arguments:**
+- `[template]` - Template ID (modern, minimal, bold, elegant, showcase, playful, corporate)
+
+**Options:**
+- `--list` - List all available templates
+- `--preview <id>` - Preview template configuration
+- `--caption <text>` - Add caption to all screenshots
+- `--device <name>` - Apply to specific device only
+- `--no-backup` - Skip config backup
+- `--dry-run` - Preview without applying
+
+**Examples:**
+```bash
+# List templates
+appshot template --list
+
+# Apply template
+appshot template modern
+
+# With caption
+appshot template minimal --caption "Beautiful App"
+
+# Preview settings
+appshot template --preview bold
+
+# Device-specific
+appshot template elegant --device iphone
+```
+
+### `appshot preset` (NEW!)
+
+Ultra-simple one-line commands to generate App Store screenshots with professional templates.
+
+```bash
+appshot preset <preset-name> [options]
+```
+
+**Arguments:**
+- `<preset-name>` - Template to use (modern, bold, minimal, elegant, showcase, playful, corporate)
+
+**Options:**
+- `-c, --caption <text>` - Add caption to all screenshots
+- `-d, --devices <list>` - Comma-separated device list
+- `-l, --langs <list>` - Comma-separated language codes
+- `-o, --output <path>` - Output directory (default: ./final)
+- `--dry-run` - Preview without building
+- `-v, --verbose` - Show detailed output
+
+**Examples:**
+```bash
+# Quick professional screenshots
+appshot preset modern --caption "Amazing Features"
+
+# Multiple devices
+appshot preset bold --devices iphone,ipad,watch
+
+# Multiple languages
+appshot preset minimal --langs en,es,fr,de
+
+# Custom output
+appshot preset elegant --output ./marketing/screenshots
+
+# Preview mode
+appshot preset corporate --dry-run
+
+# Full example
+appshot preset showcase \
+  --caption "Summer Sale!" \
+  --devices iphone,ipad \
+  --langs en,es,fr \
+  --output ./app-store-assets
+```
+
+**What it does:**
+1. Applies professional template (gradient, positioning, styling)
+2. Adds caption to first screenshot if provided
+3. Builds screenshots for specified devices and languages
+4. All in one command - perfect for CI/CD!
 
 ### `appshot build`
 
@@ -2202,7 +2667,7 @@ For security vulnerabilities, please see [SECURITY.md](SECURITY.md).
 ### NPM Package
 
 - 📦 [appshot-cli on NPM](https://www.npmjs.com/package/appshot-cli)
-- 🔄 Latest version: 0.8.6
+- 🔄 Latest version: 0.9.0
 
 ---
 

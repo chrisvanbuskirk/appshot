@@ -3,8 +3,12 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import sharp from 'sharp';
+import { isMainThread } from 'worker_threads';
 
-describe('Build Command Font Localization', () => {
+const canChdir = typeof process.chdir === 'function' && isMainThread;
+const describeMaybe = canChdir ? describe : describe.skip;
+
+describeMaybe('Build Command Font Localization', () => {
   let testDir: string;
 
   beforeEach(async () => {
@@ -12,8 +16,8 @@ describe('Build Command Font Localization', () => {
     testDir = path.join(process.cwd(), 'test-build-fonts');
     await fs.mkdir(testDir, { recursive: true });
     
-    // Change to test directory
-    process.chdir(testDir);
+    // Change to test directory (guarded for vmThreads which disallow chdir)
+    if (canChdir) process.chdir(testDir);
     
     // Initialize project using the built CLI directly
     const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
@@ -22,7 +26,7 @@ describe('Build Command Font Localization', () => {
 
   afterEach(async () => {
     // Return to original directory
-    process.chdir(path.dirname(testDir));
+    if (canChdir) process.chdir(path.dirname(testDir));
     
     // Clean up
     await fs.rm(testDir, { recursive: true, force: true });

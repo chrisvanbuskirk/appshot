@@ -3,8 +3,12 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import sharp from 'sharp';
+import { isMainThread } from 'worker_threads';
 
-describe('Build Language Directory Structure', () => {
+const canChdir = typeof process.chdir === 'function' && isMainThread;
+const describeMaybe = canChdir ? describe : describe.skip;
+
+describeMaybe('Build Language Directory Structure', () => {
   let testDir: string;
   const originalEnv = process.env;
 
@@ -14,7 +18,7 @@ describe('Build Language Directory Structure', () => {
     await fs.mkdir(testDir, { recursive: true });
     
     // Change to test directory
-    process.chdir(testDir);
+    if (canChdir) process.chdir(testDir);
     
     // Initialize project using the built CLI directly
     const cliPath = path.join(__dirname, '..', 'dist', 'cli.js');
@@ -26,7 +30,7 @@ describe('Build Language Directory Structure', () => {
 
   afterEach(async () => {
     // Return to original directory
-    process.chdir(path.dirname(testDir));
+    if (canChdir) process.chdir(path.dirname(testDir));
     
     // Clean up
     await fs.rm(testDir, { recursive: true, force: true });
