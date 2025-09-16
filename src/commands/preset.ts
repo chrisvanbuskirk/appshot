@@ -73,7 +73,7 @@ export const presetCommand = new Command('preset')
       }
 
       // Get template from registry (now guaranteed to exist)
-      const template = templates.find((t: any) => t.id === presetName)!
+      const template = templates.find((t: any) => t.id === presetName)!;
 
       // Load current config
       const configPath = path.join(process.cwd(), '.appshot', 'config.json');
