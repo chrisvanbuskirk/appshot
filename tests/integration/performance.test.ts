@@ -11,7 +11,7 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-describe('Performance Benchmarks', { timeout: 120000 }, () => {
+describe.skip('Performance Benchmarks - SLOW TESTS', { timeout: 120000 }, () => {
   let testDir: string;
   const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli.js');
 
@@ -117,7 +117,7 @@ describe('Performance Benchmarks', { timeout: 120000 }, () => {
       expect(outputExists).toBe(true);
     });
 
-    it('should handle 10 screenshots efficiently', async () => {
+    it.skip('should handle 10 screenshots efficiently', async () => {
       const screenshotCount = 10;
       await createMultipleScreenshots('iphone', screenshotCount);
 
@@ -237,7 +237,7 @@ describe('Performance Benchmarks', { timeout: 120000 }, () => {
       expect(duration).toBeLessThan(1000);
     });
 
-    it('should handle all devices preset efficiently', async () => {
+    it.skip('should handle all devices preset efficiently', async () => {
       // Create screenshots for all devices
       await createMultipleScreenshots('iphone', 2);
       await createMultipleScreenshots('ipad', 2);

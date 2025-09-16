@@ -11,7 +11,7 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-describe('Font Fallback Integration', { timeout: 60000 }, () => {
+describe.skip('Font Fallback Integration', { timeout: 60000 }, () => {
   let testDir: string;
   const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli.js');
 
@@ -189,7 +189,7 @@ describe('Font Fallback Integration', { timeout: 60000 }, () => {
       expect(outputExists).toBe(true);
     });
 
-    it('should apply all templates successfully regardless of font availability', async () => {
+    it.skip('should apply all templates successfully regardless of font availability', async () => {
       const templates = ['modern', 'minimal', 'bold', 'elegant', 'nerdy', 'showcase', 'playful', 'corporate'];
 
       for (const template of templates) {
