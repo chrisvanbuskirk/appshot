@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from 
 import * as path from 'path';
 import chalk from 'chalk';
 import { templates } from '../templates/registry.js';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 interface PresetOptions {
   caption?: string;
@@ -12,6 +12,43 @@ interface PresetOptions {
   output?: string;
   dryRun?: boolean;
   verbose?: boolean;
+}
+
+// Security: Input validation functions
+function sanitizeDevices(devices: string): string {
+  // Only allow alphanumeric characters, commas, and hyphens
+  const sanitized = devices.replace(/[^a-zA-Z0-9,_-]/g, '');
+  // Validate each device is in allowed list
+  const validDevices = ['iphone', 'ipad', 'watch', 'mac'];
+  const deviceList = sanitized.split(',').map(d => d.trim().toLowerCase());
+  const validated = deviceList.filter(d => validDevices.includes(d));
+  if (validated.length === 0) {
+    throw new Error('No valid devices specified');
+  }
+  return validated.join(',');
+}
+
+function sanitizeLanguages(langs: string): string {
+  // Only allow language codes (2-3 letters, optional country code)
+  const sanitized = langs.replace(/[^a-zA-Z,_-]/g, '');
+  // Basic validation for language codes
+  const langList = sanitized.split(',').map(l => l.trim().toLowerCase());
+  const validated = langList.filter(l => /^[a-z]{2,3}(-[a-z]{2})?$/.test(l));
+  if (validated.length === 0) {
+    throw new Error('No valid language codes specified');
+  }
+  return validated.join(',');
+}
+
+function sanitizePath(outputPath: string): string {
+  // Remove any dangerous characters from paths
+  // Allow only alphanumeric, spaces, hyphens, underscores, dots, and forward slashes
+  return outputPath.replace(/[^a-zA-Z0-9 \-_./]/g, '');
+}
+
+function validateTemplateId(templateId: string): boolean {
+  // Only accept known template IDs
+  return templates.some((t: any) => t.id === templateId);
 }
 
 export const presetCommand = new Command('preset')
@@ -25,10 +62,8 @@ export const presetCommand = new Command('preset')
   .option('-v, --verbose', 'Show detailed output')
   .action(async (presetName: string, options: PresetOptions) => {
     try {
-      // Get template from registry
-      const template = templates.find((t: any) => t.id === presetName);
-
-      if (!template) {
+      // Security: Validate template ID first
+      if (!validateTemplateId(presetName)) {
         console.error(chalk.red(`❌ Preset "${presetName}" not found`));
         console.log('\nAvailable presets:');
         templates.forEach((t: any) => {
@@ -36,6 +71,9 @@ export const presetCommand = new Command('preset')
         });
         process.exit(1);
       }
+
+      // Get template from registry (now guaranteed to exist)
+      const template = templates.find((t: any) => t.id === presetName)!
 
       // Load current config
       const configPath = path.join(process.cwd(), '.appshot', 'config.json');
@@ -55,9 +93,13 @@ export const presetCommand = new Command('preset')
           console.log(`Gradient: ${colors.join(' → ')}`);
         }
 
-        console.log(`\nDevices: ${options.devices || 'all'}`);
-        console.log(`Languages: ${options.langs || 'en'}`);
-        console.log(`Output: ${options.output || './final'}`);
+        const displayDevices = options.devices ? sanitizeDevices(options.devices) : 'all';
+        const displayLangs = options.langs ? sanitizeLanguages(options.langs) : 'en';
+        const displayOutput = options.output ? sanitizePath(options.output) : './final';
+
+        console.log(`\nDevices: ${displayDevices}`);
+        console.log(`Languages: ${displayLangs}`);
+        console.log(`Output: ${displayOutput}`);
 
         if (options.caption) {
           console.log(`Caption: "${options.caption}"`);
@@ -89,9 +131,9 @@ export const presetCommand = new Command('preset')
         }
       };
 
-      // Override output if specified
+      // Override output if specified (with sanitization)
       if (options.output) {
-        newConfig.output = options.output;
+        newConfig.output = sanitizePath(options.output);
       }
 
       writeFileSync(configPath, JSON.stringify(newConfig, null, 2));
@@ -104,10 +146,11 @@ export const presetCommand = new Command('preset')
           console.log(chalk.gray('Adding captions...'));
         }
 
-        const devices = options.devices ? options.devices.split(',') : ['iphone', 'ipad', 'watch', 'mac'];
+        const deviceInput = options.devices ? sanitizeDevices(options.devices) : 'iphone,ipad,watch,mac';
+        const devices = deviceInput.split(',');
 
         for (const device of devices) {
-          const captionFile = path.join(process.cwd(), '.appshot', 'captions', `${device.trim()}.json`);
+          const captionFile = path.join(process.cwd(), '.appshot', 'captions', `${device}.json`);
 
           // Get screenshots for this device
           const screenshotDir = path.join(process.cwd(), 'screenshots', device.trim());
@@ -135,22 +178,25 @@ export const presetCommand = new Command('preset')
       // Step 3: Build screenshots
       console.log(chalk.cyan('\n📸 Building screenshots...\n'));
 
-      let buildCmd = 'appshot build';
+      // Security: Build command args safely
+      const buildArgs = ['build'];
 
       if (options.devices) {
-        buildCmd += ` --devices ${options.devices}`;
+        const sanitizedDevices = sanitizeDevices(options.devices);
+        buildArgs.push('--devices', sanitizedDevices);
       }
 
       if (options.langs) {
-        buildCmd += ` --langs ${options.langs}`;
+        const sanitizedLangs = sanitizeLanguages(options.langs);
+        buildArgs.push('--langs', sanitizedLangs);
       }
 
       if (options.verbose) {
-        console.log(chalk.gray(`Running: ${buildCmd}`));
+        console.log(chalk.gray(`Running: appshot ${buildArgs.join(' ')}`));
       }
 
       try {
-        execSync(buildCmd, {
+        execFileSync('appshot', buildArgs, {
           stdio: options.verbose ? 'inherit' : 'pipe',
           cwd: process.cwd()
         });
@@ -179,12 +225,29 @@ export const quickPresetCommand = new Command('qp')
   .option('-c, --caption <text>', 'Caption text')
   .option('-d, --devices <list>', 'Device list')
   .action((preset: string, options: any) => {
-    // Redirect to main preset command
-    const args = ['preset', preset];
-    if (options.caption) args.push('--caption', options.caption);
-    if (options.devices) args.push('--devices', options.devices);
+    // Security: Validate preset ID first
+    if (!validateTemplateId(preset)) {
+      console.error(chalk.red(`❌ Invalid preset: ${preset}`));
+      process.exit(1);
+    }
 
-    execSync(`appshot ${args.join(' ')}`, { stdio: 'inherit' });
+    // Build args safely
+    const args = ['preset', preset];
+    if (options.caption) {
+      args.push('--caption', options.caption);
+    }
+    if (options.devices) {
+      // Validate devices before passing
+      try {
+        const validDevices = sanitizeDevices(options.devices);
+        args.push('--devices', validDevices);
+      } catch (err) {
+        console.error(chalk.red(`❌ ${err instanceof Error ? err.message : 'Invalid devices'}`));
+        process.exit(1);
+      }
+    }
+
+    execFileSync('appshot', args, { stdio: 'inherit' });
   });
 
 export default function presetCmd() {
