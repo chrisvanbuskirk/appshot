@@ -406,4 +406,207 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
     expect(stdout).toContain('--category');
   });
   });
+
+  describe('End-to-End Template Workflows', () => {
+    it('should complete full workflow: quickstart → template → build → validate', async () => {
+      // Step 1: Quickstart with template
+      const { stdout: quickstartOut } = await runAppshot('quickstart --force --template modern');
+      expect(quickstartOut).toContain('modern');
+
+      // Step 2: Create test screenshots
+      await sharp({
+        create: {
+          width: 1290,
+          height: 2796,
+          channels: 4,
+          background: { r: 50, g: 100, b: 150, alpha: 1 }
+        }
+      }).png().toFile('screenshots/iphone/home.png');
+
+      await sharp({
+        create: {
+          width: 1290,
+          height: 2796,
+          channels: 4,
+          background: { r: 150, g: 50, b: 100, alpha: 1 }
+        }
+      }).png().toFile('screenshots/iphone/features.png');
+
+      // Step 3: Add captions
+      await fs.writeFile(
+        '.appshot/captions/iphone.json',
+        JSON.stringify({
+          'home.png': 'Welcome Screen',
+          'features.png': 'Amazing Features'
+        }, null, 2)
+      );
+
+      // Step 4: Build
+      const { stdout: buildOut, stderr: buildErr } = await runAppshot('build --devices iphone');
+
+      if (buildErr) {
+        console.error('Build error:', buildErr);
+      }
+
+      // Step 5: Validate
+      const { stdout: validateOut } = await runAppshot('validate --devices iphone');
+
+      // Verify outputs exist
+      const homeExists = await fs.access('final/iphone/en/home.png')
+        .then(() => true).catch(() => false);
+      const featuresExists = await fs.access('final/iphone/en/features.png')
+        .then(() => true).catch(() => false);
+
+      expect(homeExists).toBe(true);
+      expect(featuresExists).toBe(true);
+    });
+
+    it('should complete preset workflow with multiple devices', async () => {
+      // Create screenshots for multiple devices
+      await sharp({
+        create: {
+          width: 1290,
+          height: 2796,
+          channels: 4,
+          background: { r: 100, g: 100, b: 200, alpha: 1 }
+        }
+      }).png().toFile('screenshots/iphone/test.png');
+
+      await sharp({
+        create: {
+          width: 2048,
+          height: 2732,
+          channels: 4,
+          background: { r: 200, g: 100, b: 100, alpha: 1 }
+        }
+      }).png().toFile('screenshots/ipad/test.png');
+
+      // Add captions
+      await fs.writeFile('.appshot/captions/iphone.json',
+        JSON.stringify({ 'test.png': 'iPhone Screenshot' }, null, 2));
+      await fs.writeFile('.appshot/captions/ipad.json',
+        JSON.stringify({ 'test.png': 'iPad Screenshot' }, null, 2));
+
+      // Apply preset and build
+      const { stdout, stderr } = await runAppshot('preset elegant --devices iphone,ipad');
+
+      if (stderr) {
+        console.error('Preset error:', stderr);
+      }
+
+      // Verify outputs for both devices
+      const iphoneOut = await fs.access('final/iphone/en/test.png')
+        .then(() => true).catch(() => false);
+      const ipadOut = await fs.access('final/ipad/en/test.png')
+        .then(() => true).catch(() => false);
+
+      expect(iphoneOut).toBe(true);
+      expect(ipadOut).toBe(true);
+
+      // Verify template was applied
+      const config = JSON.parse(await fs.readFile('.appshot/config.json', 'utf-8'));
+      expect(config.caption.font).toBe('Playfair Display'); // Elegant template font
+    });
+
+    it('should handle security: malicious inputs are sanitized', async () => {
+      // Test command injection prevention
+      const { stdout, stderr } = await runAppshot('preset modern --devices "iphone; echo HACKED > /tmp/hacked.txt" --dry-run');
+
+      // Should sanitize the input
+      expect(stdout).toContain('No valid devices');
+
+      // Verify no file was created
+      const hackedFileExists = await fs.access('/tmp/hacked.txt')
+        .then(() => true).catch(() => false);
+      expect(hackedFileExists).toBe(false);
+
+      // Test path traversal prevention
+      try {
+        await runAppshot('template ../../../etc/passwd');
+        expect.fail('Should have rejected invalid template');
+      } catch (error: any) {
+        expect(error.stderr || error.message).toContain('Template not found');
+      }
+    });
+
+    it('should apply all templates successfully in sequence', async () => {
+      const templates = ['modern', 'minimal', 'bold', 'elegant'];
+
+      // Create a test screenshot
+      await sharp({
+        create: {
+          width: 1290,
+          height: 2796,
+          channels: 4,
+          background: { r: 100, g: 150, b: 200, alpha: 1 }
+        }
+      }).png().toFile('screenshots/iphone/test.png');
+
+      // Add caption
+      await fs.writeFile('.appshot/captions/iphone.json',
+        JSON.stringify({ 'test.png': 'Test Screenshot' }, null, 2));
+
+      for (const template of templates) {
+        // Apply template
+        const { stderr: templateErr } = await runAppshot(`template ${template}`);
+        expect(templateErr || '').toBe('');
+
+        // Build with template
+        const { stderr: buildErr } = await runAppshot('build --devices iphone');
+
+        if (buildErr) {
+          console.error(`Build error with ${template}:`, buildErr);
+        }
+
+        // Verify output exists
+        const outputExists = await fs.access('final/iphone/en/test.png')
+          .then(() => true).catch(() => false);
+        expect(outputExists).toBe(true);
+
+        // Clean up for next iteration
+        await fs.rm('final', { recursive: true, force: true });
+      }
+    });
+
+    it('should handle multi-language workflow', async () => {
+      // Apply template
+      await runAppshot('template modern');
+
+      // Create screenshot
+      await sharp({
+        create: {
+          width: 1290,
+          height: 2796,
+          channels: 4,
+          background: { r: 50, g: 150, b: 100, alpha: 1 }
+        }
+      }).png().toFile('screenshots/iphone/app.png');
+
+      // Add multi-language captions
+      await fs.writeFile('.appshot/captions/iphone.json',
+        JSON.stringify({
+          'app.png': {
+            en: 'Amazing App',
+            es: 'Aplicación Increíble',
+            fr: 'Application Incroyable',
+            de: 'Erstaunliche App'
+          }
+        }, null, 2));
+
+      // Build for all languages
+      const { stdout, stderr } = await runAppshot('build --devices iphone --langs en,es,fr,de');
+
+      if (stderr) {
+        console.error('Multi-language build error:', stderr);
+      }
+
+      // Verify all language outputs
+      const languages = ['en', 'es', 'fr', 'de'];
+      for (const lang of languages) {
+        const outputExists = await fs.access(`final/iphone/${lang}/app.png`)
+          .then(() => true).catch(() => false);
+        expect(outputExists).toBe(true);
+      }
+    });
+  });
 });
