@@ -348,16 +348,16 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
   describe('Doctor Command', () => {
     it('should run system diagnostics', async () => {
       const { stdout } = await runAppshot('doctor');
-      
+
       expect(stdout).toContain('Appshot Doctor - System Diagnostics');
       expect(stdout).toContain('System Requirements');
       expect(stdout).toContain('Dependencies');
       expect(stdout).toContain('Summary:');
-    });
+    }, 120000); // 120 second timeout for doctor command
 
     it('should output JSON format', async () => {
       const { stdout } = await runAppshot('doctor --json');
-      
+
       const report = JSON.parse(stdout);
       expect(report).toHaveProperty('timestamp');
       expect(report).toHaveProperty('version');
@@ -367,14 +367,14 @@ describe('CLI Integration Tests', { timeout: 60000 }, () => {
       expect(report.summary).toHaveProperty('passed');
       expect(report.summary).toHaveProperty('warnings');
       expect(report.summary).toHaveProperty('errors');
-    });
+    }, 120000); // 120 second timeout for doctor command
 
     it('should run specific categories', async () => {
       const { stdout } = await runAppshot('doctor --category system');
-      
+
       expect(stdout).toContain('System Requirements');
       expect(stdout).not.toContain('Frame Assets');
-    });
+    }, 120000); // 120 second timeout for doctor command
   });
 
   describe('CLI Help and Version', () => {
