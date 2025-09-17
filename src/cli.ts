@@ -24,6 +24,8 @@ import watchStatusCmd from './commands/watch-status.js';
 import templateCmd from './commands/template.js';
 import quickstartCmd from './commands/quickstart.js';
 import presetCmd from './commands/preset.js';
+import exportCmd from './commands/export.js';
+import orderCmd from './commands/order.js';
 
 const program = new Command();
 
@@ -62,12 +64,13 @@ ${pc.bold('Common Workflows:')}
   $ appshot backgrounds set iphone bg.jpg     # Set background image
   $ appshot frame ./screenshots --recursive   # Batch frame images
   $ appshot build --preset iphone-6-9,ipad-13 # App Store presets
+  $ appshot export fastlane                   # Export for Fastlane upload
   $ appshot localize --langs es,fr,de        # Batch translate${platform() === 'darwin' ? `
   $ appshot device capture                    # Capture from simulator/device (macOS)
   $ appshot watch start --process             # Auto-process new screenshots` : ''}
 
 ${pc.dim('Docs: https://github.com/chrisvanbuskirk/appshot')}`)
-  .version('0.9.0')
+  .version('0.9.1')
   .addHelpText('after', `\n${pc.bold('Environment Variables:')}
   OPENAI_API_KEY              API key for translation features
   APPSHOT_DISABLE_FONT_SCAN   Skip system font detection (CI optimization)
@@ -91,6 +94,8 @@ program.addCommand(fontsCmd());
 program.addCommand(localizeCmd());
 program.addCommand(buildCmd());
 program.addCommand(frameCmd());
+program.addCommand(orderCmd());
+program.addCommand(exportCmd());
 
 // Add device and watch commands only on macOS
 if (platform() === 'darwin') {

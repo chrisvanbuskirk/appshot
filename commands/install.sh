@@ -95,6 +95,7 @@ echo -e "  ${GREEN}/appshot-preset${NC}  - One-line preset commands for instant 
 echo -e "  ${GREEN}/appshot-style${NC}   - Style screenshots with gradients/fonts"
 echo -e "  ${GREEN}/appshot-caption${NC} - Manage captions and translations"
 echo -e "  ${GREEN}/appshot-build${NC}   - Build screenshots with options"
+echo -e "  ${GREEN}/appshot-export${NC}  - Export for Fastlane upload"
 echo -e "  ${GREEN}/appshot-config${NC}  - Complete configuration reference"
 
 echo ""

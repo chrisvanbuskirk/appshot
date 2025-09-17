@@ -52,3 +52,10 @@ temp/
 
 # Package files
 *.tgz
+
+# Test artifacts
+.playwright-mcp/
+
+# Local test projects
+.appshot/
+fastlane/
