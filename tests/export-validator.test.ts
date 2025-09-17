@@ -80,6 +80,12 @@ describe('export-validator', () => {
     });
 
     it('fails when nearest parent is not writable', async () => {
+      // Skip this test on Windows as chmod doesn't work the same way
+      if (process.platform === 'win32') {
+        console.log('Skipping readonly test on Windows');
+        return;
+      }
+
       const readOnlyDir = path.join(tempDir, 'readonly');
       await fs.mkdir(readOnlyDir, { recursive: true, mode: 0o555 });
 
