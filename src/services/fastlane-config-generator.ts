@@ -123,6 +123,56 @@ lane :download_screenshots do
   UI.success "Current screenshots downloaded to ./screenshots_backup/"
 end
 
+# Alternative upload method using staging to handle nested directories
+# Use this if the standard upload fails with nested directories
+desc "Upload screenshots using staging approach (handles nested dirs)"
+lane :upload_screenshots_staged do
+  require 'fileutils'
+
+  UI.message "Preparing screenshots with staging approach..."
+
+  source_root = File.expand_path("screenshots", __dir__)
+  staging_root = File.expand_path("screenshots_staging", __dir__)
+
+  # Clean staging directory
+  FileUtils.rm_rf(staging_root)
+  FileUtils.mkdir_p(staging_root)
+
+  # Process each language directory
+  Dir.glob(File.join(source_root, "*")).each do |language_dir|
+    next unless File.directory?(language_dir)
+
+    language = File.basename(language_dir)
+    dest_language_dir = File.join(staging_root, language)
+    FileUtils.mkdir_p(dest_language_dir)
+
+    # Flatten nested structure (device/screenshot.png -> device__screenshot.png)
+    Dir.glob(File.join(language_dir, '**', '*.{png,jpg,jpeg}')).each do |image_path|
+      rel = Pathname.new(image_path).relative_path_from(Pathname.new(language_dir)).to_s
+
+      # Replace directory separators with double underscores
+      sanitized = rel.gsub(File::SEPARATOR, '__')
+
+      FileUtils.cp(image_path, File.join(dest_language_dir, sanitized))
+    end
+  end
+
+  UI.message "Uploading screenshots from staging directory..."
+
+  deliver(
+    screenshots_path: staging_root,
+    overwrite_screenshots: true,
+    skip_metadata: true,
+    skip_binary_upload: true,
+    force: true
+  )
+
+  # Clean up staging
+  FileUtils.rm_rf(staging_root)
+
+  UI.success "Screenshots uploaded successfully using staging approach!"
+end
+
 # Helper lane to set up App Store Connect API authentication
 desc "Configure App Store Connect API authentication"
 private_lane :setup_app_store_connect_api do

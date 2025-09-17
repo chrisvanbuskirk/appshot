@@ -10,6 +10,8 @@ export interface OrganizeOptions {
   flatten?: boolean;
   prefixDevice?: boolean;
   devicePrefixes?: Record<string, string>;
+  orderConfig?: any;  // Screenshot order configuration
+  applyOrder?: boolean;  // Whether to apply ordering
   copy?: boolean;
   clean?: boolean;
   dryRun?: boolean;
@@ -188,20 +190,41 @@ export async function organizeScreenshots(options: OrganizeOptions): Promise<Org
 
       // Get all image files
       const files = await fs.readdir(langSourceDir);
-      const screenshots = files.filter(f =>
+      let screenshots = files.filter(f =>
         f.match(/\.(png|jpg|jpeg)$/i) && !f.startsWith('.')
       );
 
-      for (const screenshot of screenshots) {
+      // Apply ordering if requested
+      if (options.applyOrder && options.orderConfig) {
+        const { applyOrder } = await import('../services/screenshot-order.js');
+        screenshots = applyOrder(screenshots, device, options.orderConfig);
+      }
+
+      // Process screenshots with optional ordering
+      for (let i = 0; i < screenshots.length; i++) {
+        const screenshot = screenshots[i];
         const sourcePath = path.join(langSourceDir, screenshot);
 
-        // Generate output filename
-        const { name: outputName, specialHandling } = await generateFilename(
-          screenshot,
+        // When applying order, strip existing numeric prefixes so we don't double-prefix
+        const cleanName = options.applyOrder
+          ? screenshot.replace(/^\d+[-_.]/, '')
+          : screenshot;
+
+        // Generate output filename using the clean base name
+        const { name: baseOutputName, specialHandling } = await generateFilename(
+          cleanName,
           device,
           sourcePath,
           options
         );
+
+        // Add numeric prefix if ordering is applied
+        let outputName = baseOutputName;
+        if (options.applyOrder) {
+          // Remove any existing numeric prefix to avoid double-prefixing
+          const baseWithoutPrefix = baseOutputName.replace(/^\d+[-_.]/, '');
+          outputName = `${String(i + 1).padStart(2, '0')}_${baseWithoutPrefix}`;
+        }
 
         // Determine output path
         const destDir = options.flatten

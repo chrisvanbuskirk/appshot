@@ -10,8 +10,11 @@
 [![Node.js Version](https://img.shields.io/node/v/appshot-cli.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-🆕 **Version 0.9.1** - **Fastlane Export Integration**
+🆕 **Version 0.9.1** - **Fastlane Export Integration & Screenshot Ordering**
 - **Export Command**: New `appshot export` command for seamless Fastlane integration
+- **Screenshot Ordering**: New `appshot order` command to control App Store screenshot sequence
+- **Order Flag**: Export with `--order` to add numeric prefixes (01_, 02_, etc.)
+- **Smart Ordering**: Handles existing prefixes, prevents double-prefixing
 - **Auto-Detection**: Automatically detects languages from your screenshots
 - **Language Mapping**: Smart mapping to Fastlane-compatible language codes (en → en-US, etc.)
 - **Device Filtering**: Export specific devices with `--devices iphone,ipad`
@@ -1322,6 +1325,95 @@ iPad Pro 12.9" (3rd gen) screenshots are automatically renamed with the `IPAD_PR
 - **Default**: Creates symlinks (saves disk space, instant)
 - **CI/CD**: Use `--copy` for portable archives
 - **Clean**: Use `--clean` to remove old exports before creating new ones
+
+### Screenshot Ordering (NEW! v0.9.1)
+
+> **📌 Important Discovery**: Fastlane uploads screenshots in alphabetical order by filename. Without explicit ordering, your carefully arranged screenshots may appear in the wrong sequence on the App Store!
+
+#### The Order Problem
+When exporting screenshots for Fastlane, the alphabetical ordering can disrupt your intended flow:
+- ❌ Without ordering: `bluesky.png`, `cast.png`, `home.png`, `media.png`, `updates.png`
+- ✅ With ordering: `01_home.png`, `02_updates.png`, `03_cast.png`, `04_media.png`, `05_bluesky.png`
+
+#### Managing Screenshot Order
+
+```bash
+# Set order interactively for each device
+appshot order --device iphone
+appshot order --device ipad
+appshot order --device watch
+
+# Export with numeric prefixes
+appshot export --order --copy --clean
+
+# View current order
+appshot order --show
+```
+
+The order configuration is saved in `.appshot/screenshot-order.json` and intelligently handles:
+- Files with existing numeric prefixes (prevents double-prefixing like `01_01_home.png`)
+- Mixed naming conventions in your source files
+- New screenshots added after initial ordering
+
+#### Quick Order Setup
+
+Create a standard order configuration:
+```bash
+cat > .appshot/screenshot-order.json << 'EOF'
+{
+  "version": "1.0",
+  "orders": {
+    "iphone": ["home.png", "features.png", "search.png", "profile.png", "settings.png"],
+    "ipad": ["home.png", "features.png", "search.png", "profile.png", "settings.png"],
+    "watch": ["home.png", "features.png", "profile.png"]
+  }
+}
+EOF
+```
+
+### Fastlane Gotchas & Solutions
+
+> **🔍 Key Discoveries from Real-World Integration**
+
+#### 1. Nested Directory Limitations
+**Problem**: Fastlane's `deliver` command struggles with nested device directories inside language folders.
+
+**Solution**: Appshot v0.9.1+ automatically flattens the structure during export:
+```bash
+# Appshot structure (nested):
+final/iphone/en/home.png →
+
+# Fastlane structure (flattened):
+fastlane/screenshots/en-US/iphone/home.png
+```
+
+#### 2. Device-Specific Prefixes
+**Discovery**: Some devices require specific filename prefixes for Fastlane to recognize them correctly.
+
+**Handled Automatically**:
+- iPad Pro 12.9" (3rd gen) → `IPAD_PRO_3GEN_129_` prefix
+- iPad Pro 11" → `IPAD_PRO_11_` prefix
+
+#### 3. Upload Staging Approach
+For complex projects with many screenshots, use the staging approach in your Fastfile:
+
+```ruby
+lane :upload_screenshots_staged do
+  # Flattens nested structures for Fastlane compatibility
+  # Handles device prefixes automatically
+  # See full implementation in Fastlane export --generate-config
+end
+```
+
+#### 4. API Key Configuration
+**Important**: Never commit your `api_key.json` to version control!
+
+```bash
+# Use the template
+cp fastlane/api_key.json.template fastlane/api_key.json
+# Edit with your credentials
+# Add to .gitignore (done automatically by export --generate-config)
+```
 
 ### Complete Workflow Example
 

@@ -25,6 +25,7 @@ import templateCmd from './commands/template.js';
 import quickstartCmd from './commands/quickstart.js';
 import presetCmd from './commands/preset.js';
 import exportCmd from './commands/export.js';
+import orderCmd from './commands/order.js';
 
 const program = new Command();
 
@@ -93,6 +94,7 @@ program.addCommand(fontsCmd());
 program.addCommand(localizeCmd());
 program.addCommand(buildCmd());
 program.addCommand(frameCmd());
+program.addCommand(orderCmd());
 program.addCommand(exportCmd());
 
 // Add device and watch commands only on macOS

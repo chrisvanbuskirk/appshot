@@ -151,4 +151,32 @@ describe('screenshot-organizer', () => {
     await expect(fs.lstat(watchExport)).resolves.toBeDefined();
     await expect(fs.access(iphoneDir)).rejects.toThrow();
   });
+
+  it('applies saved order without double-prefixing', async () => {
+    await createScreenshot('iphone', 'en', '01_home.png', { width: 1290, height: 2796 });
+    await createScreenshot('iphone', 'en', 'feature.png', { width: 1290, height: 2796 });
+    await createScreenshot('iphone', 'en', 'extra.png', { width: 1290, height: 2796 });
+
+    const orderConfig = {
+      version: '1.0',
+      created: '2024-01-01T00:00:00.000Z',
+      modified: '2024-01-01T00:00:00.000Z',
+      orders: {
+        iphone: ['home.png', 'feature.png']
+      }
+    };
+
+    const options: OrganizeOptions = {
+      source: sourceDir,
+      output: outputDir,
+      languageMap: new Map([[ 'en', 'en-US' ]]),
+      applyOrder: true,
+      orderConfig
+    };
+
+    await organizeScreenshots(options);
+
+    const exportedFiles = await fs.readdir(path.join(outputDir, 'en-US', 'iphone'));
+    expect(exportedFiles).toEqual(['01_home.png', '02_feature.png', '03_extra.png']);
+  });
 });

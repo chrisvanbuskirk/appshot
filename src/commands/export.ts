@@ -22,6 +22,7 @@ import {
   generateFastlaneReadme,
   generateFastlaneGitignore
 } from '../services/fastlane-config-generator.js';
+import { loadOrderConfig } from '../services/screenshot-order.js';
 
 export default function exportCmd() {
   const cmd = new Command('export')
@@ -34,6 +35,7 @@ export default function exportCmd() {
     .option('--copy', 'Copy files instead of creating symlinks')
     .option('--flatten', 'Put all screenshots directly in language folders')
     .option('--prefix-device', 'Prefix filenames with device type (e.g., iPhone_screenshot.png)')
+    .option('--order', 'Apply saved screenshot order with numeric prefixes')
     .option('--clean', 'Clean output directory before exporting')
     .option('--generate-config', 'Generate Deliverfile and Fastfile for Fastlane')
     .option('--dry-run', 'Preview export without creating files')
@@ -184,6 +186,17 @@ ${pc.bold('Integration with Fastlane:')}
           process.exit(1);
         }
 
+        // Load order configuration if --order is specified
+        let orderConfig = null;
+        if (opts.order) {
+          orderConfig = await loadOrderConfig();
+          if (!orderConfig) {
+            console.log(pc.yellow('⚠ No order configuration found'));
+            console.log(pc.dim('  Run "appshot order --device [device]" to create one'));
+            console.log(pc.dim('  Continuing without ordering...\n'));
+          }
+        }
+
         // Handle dry run
         if (opts.dryRun) {
           const organizeOpts: OrganizeOptions = {
@@ -193,6 +206,8 @@ ${pc.bold('Integration with Fastlane:')}
             devices: deviceFilter,
             flatten: opts.flatten,
             prefixDevice: opts.prefixDevice,
+            orderConfig,
+            applyOrder: opts.order && orderConfig !== null,
             copy: opts.copy,
             clean: opts.clean,
             dryRun: true,
@@ -282,6 +297,8 @@ ${pc.bold('Integration with Fastlane:')}
           devices: deviceFilter,
           flatten: opts.flatten,
           prefixDevice: opts.prefixDevice,
+          orderConfig,
+          applyOrder: opts.order && orderConfig !== null,
           copy: opts.copy,
           clean: false, // Already handled above
           dryRun: false,
@@ -384,6 +401,10 @@ ${pc.bold('Integration with Fastlane:')}
 
           console.log('\n' + pc.cyan('Ready for upload:'));
           console.log(pc.dim(`  cd ${path.relative(process.cwd(), path.dirname(outputPath))} && fastlane deliver`));
+
+          console.log('\n' + pc.yellow('⚠️  Note about Fastlane:'));
+          console.log(pc.dim('  Fastlane\'s deliver may have issues with nested directories.'));
+          console.log(pc.dim('  If uploads fail, try flattening the structure or use a staging approach.'));
 
           if (!opts.generateConfig) {
             console.log('\n' + pc.dim('Tip: Use --generate-config to create Fastlane configuration files'));
