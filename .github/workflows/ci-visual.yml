@@ -229,7 +229,7 @@ jobs:
       
       - name: Upload visual test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: visual-test-results-${{ github.run_id }}
           path: |
@@ -240,7 +240,7 @@ jobs:
       
       - name: Upload pixel diffs on failure
         if: failure() || env.VISUAL_TEST_FAILED == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: pixel-diffs-${{ github.run_id }}
           path: |
@@ -353,7 +353,7 @@ jobs:
           echo "✅ Technical validation complete" >> technical-report.md
       
       - name: Upload technical report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: technical-validation-report-${{ github.run_id }}
           path: technical-report.md
