@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-01-25
+
+### 🐛 Fixed
+- **CI Workflow Deduplication**: Removed duplicate push/PR triggers from `ci-unit.yml` and `ci-visual.yml` that caused parallel workflow runs and allowed releases when standalone tests failed
+- **Test Timeout**: Increased `background-integration.test.ts` timeout to 60s for Windows CI stability
+
 ## [2.0.0] - 2026-01-25
 
 ### ✨ Added
