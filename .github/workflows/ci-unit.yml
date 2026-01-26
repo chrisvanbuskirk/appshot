@@ -1,11 +1,7 @@
 name: Unit Tests
 
 on:
-  workflow_call:  # Allow this workflow to be called by others
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_call:  # Called by ci.yml - this is the only trigger needed
 
 jobs:
   unit-tests:

@@ -1,17 +1,7 @@
 name: Visual Tests
 
 on:
-  workflow_call:  # Allow this workflow to be called by others
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'src/core/compose.ts'
-      - 'src/core/render.ts'
-      - 'src/core/text-renderer.ts'
-      - 'src/commands/build.ts'
-      - 'tests/visual/**'
+  workflow_call:  # Called by ci.yml - this is the only trigger needed
 
 jobs:
   visual-tests:

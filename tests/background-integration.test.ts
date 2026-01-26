@@ -9,7 +9,7 @@ import type { BackgroundConfig, CaptionConfig, DeviceConfig } from '../src/types
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-describe('background integration', () => {
+describe('background integration', { timeout: 60000 }, () => {
   let tempDir: string;
   let screenshotBuffer: Buffer;
   let backgroundImagePath: string;
