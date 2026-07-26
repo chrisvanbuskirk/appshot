@@ -1,3 +1,7 @@
+> [!WARNING]
+> ## Retired project
+> Appshot is no longer maintained or distributed. For current workflows, use [Frames CLI](https://github.com/viticci/frames-cli) for device framing, [App Store Connect CLI](https://github.com/rorkai/App-Store-Connect-CLI) for App Store Connect automation, and Codex or Claude to create and iterate on screenshot assets. This repository remains available as an archive; no new releases, support, or security updates are planned.
+
 # Appshot 📸
 
 > **AI-First CLI for App Store Screenshots** - Generate beautiful, localized screenshots with device frames, gradients, and captions.
