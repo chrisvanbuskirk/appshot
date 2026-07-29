@@ -172,7 +172,7 @@ jobs:
       
       - name: Check if version changed
         id: version
-        uses: EndBug/version-check@v2
+        uses: EndBug/version-check@v3
         with:
           diff-search: true
       
