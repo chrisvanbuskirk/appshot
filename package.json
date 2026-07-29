@@ -22,15 +22,15 @@
     "samples": "bash template-samples/scripts/generate-all.sh"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.8.3",
+    "@inquirer/prompts": "^8.2.0",
     "@modelcontextprotocol/sdk": "^1.25.2",
-    "commander": "^12.0.0",
+    "commander": "^14.0.3",
     "fuzzy": "^0.1.3",
-    "inquirer": "^12.0.0",
+    "inquirer": "^13.2.2",
     "inquirer-autocomplete-standalone": "^0.8.1",
     "openai": "^6.16.0",
     "picocolors": "^1.0.0",
-    "sharp": "^0.33.5",
+    "sharp": "^0.34.5",
     "zod": "^4.3.5"
   },
   "devDependencies": {
